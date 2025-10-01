@@ -692,21 +692,6 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
     xtermObj.write(` $ `);
     terminalLog.push(` $ `);
 
-    // Enabled Webgl Addon
-    // const webglAddon = (() => {
-    //     if ('WebglAddon' in window && 'WebglAddon' in window.WebglAddon) {
-    //         try {
-    //             const webglAddon = new window.WebglAddon.WebglAddon(); // Load the WebGL Addon
-    //             xtermObj.loadAddon(webglAddon); // Add the WebGL Addon to xtermObj frame
-    //             return webglAddon;
-    //         } catch (error) {
-    //             alert(`Failed to load the WebGL-addon (${error})`);
-    //             return null;
-    //         }
-    //     }
-    //     console.warn('window.WebglAddon.WebglAddon does not exist.');
-    //     return null;
-    // })();
     // Enabled Fit Addon
     const fitAddon = (() => { // every fit-addon can be subcribed to exactly ONE XTerm object!!!
         if ('FitAddon' in window && 'FitAddon' in window.FitAddon) {
@@ -850,7 +835,6 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         /*
         *  Terminal Status/Content Getters
         * */
-        getWebglAddon: () => webglAddon,
         getFitAddon: () => fitAddon,
         getTerminalLogString: () => terminalLog.reduce((acc, elem) => acc + elem, ''),
         getHTMLDivForTerminalWindow: () => HTMLDivElement_TerminalWindowContainer,
