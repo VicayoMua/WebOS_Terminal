@@ -1,63 +1,10 @@
 // let _root = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // export the full FS tree plus cwd
-    function exportFS(root, cwd) {
-        // serialize a FolderObject tree into plain JS objects
-        function serializeFolder(folder) {
-            return {
-                files: {...folder.files},
-                subfolders: Object.fromEntries(
-                    Object.entries(folder.subfolders)
-                        .map(([name, sub]) => [name, serializeFolder(sub)])
-                )
-            };
-        }
-
-        return {
-            fs: serializeFolder(root),
-            cwd: cwd
-        };
-    }
-
-    // import the saved state back into in‑memory root
-    function importFS(root, state) {
-        // recursively rebuild a FolderObject tree from plain data
-        function buildFolder(folder, data) {
-            folder.files = {...data.files};
-            folder.subfolders = {};
-            for (const [name, subData] of Object.entries(data.subfolders)) {
-                folder.subfolders[name] = {parentFolder: folder, subfolders: {}, files: {}};
-                buildFolder(folder.subfolders[name], subData);
-            }
-        }
-
-        buildFolder(root, state.fs);
-    }
 
     const
         fsRoot = generateRootDirectory(), // Initialize File System Root
         supportedCommands = {}; // Initialize Supported Commands
-
-    // testing
-    // _root = fsRoot;
-
-    // ── Load persisted FS on startup ──
-    (async () => {
-        try {
-            const resp = await fetch('http://localhost:3000/api/fs/load');
-            const state = await resp.json();
-            if (state && state.fs) {
-                // clear out the root in place
-                fsRoot.subfolders = {};
-                fsRoot.files = {};
-                // rebuild the FolderObject tree
-                importFS(fsRoot, state);
-            }
-        } catch (error) {
-            console.log(`Could not load FS from server ${error}`);
-        }
-    })();
 
     // Set Up Current Terminal Core Services
     let currentTerminalCore = null;
@@ -160,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
     document.getElementById('button_to_open_new_terminal_tab').click(); // auto-open window #1
     document.getElementById('button_to_close_current_terminal_tab').onclick = () => {
-
+        alert('no implementation found.');
     };
     document.getElementById('button_to_download_terminal_log').onclick = () => {
         const
@@ -208,11 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         input.click();
     };
     document.getElementById('button_to_save_terminal_fs').onclick = () => {
-        try {
-            supportedCommands['save'].executable();
-        } catch (error) {
-            alert(`[Button:] ${error}`);
-        }
+        alert('no implementation found.');
     };
 
     // Finished
@@ -657,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         currentTerminalCore.printToWindow('Wrong index!', false, true);
                         return;
                     }
-                    if (!cmwr.recoverWindow(cmwrDescriptions[trueKeyIndex])){
+                    if (!cmwr.recoverWindow(cmwrDescriptions[trueKeyIndex])) {
                         currentTerminalCore.printToWindow('Unexpected error, failed to recover the minimized window.', false, true);
                     }
                 }
@@ -670,11 +613,11 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mini -r [number]    to recover the minimized window',
     };
 
-    // supportedCommands['webass'] = {
-    //     executable: (parameters) => {
-    //     },
-    //     description: ''
-    // }
+    supportedCommands['webass'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
 
     // Update Needed
     // supportedCommands['wget'] = {
@@ -713,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: 'Download file from html link.\nUsage: wget [html_link]'
     // };
-    //
+
     // // Update Needed
     // supportedCommands['ping'] = {
     //     executable: (parameters) => {
@@ -740,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: 'Ping a domain or IP address.\nUsage: ping [hostname]'
     // };
-    //
+
     // // Update Needed
     // supportedCommands['curl'] = {
     //     executable: (params) => {
@@ -785,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: 'Fetch a URL via your server proxy and show status, headers & a 1 000-char body snippet'
     // };
-    //
+
     // // Update Needed
     // supportedCommands['files'] = {
     //     executable: (params) => {
@@ -901,43 +844,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // };
 
     // Update Needed
-    supportedCommands['save'] = {
-        description: 'Persist FS to SQLite',
-        executable: () => {
-            const cwd = currentTerminalCore.getCurrentFolderPointer().getFullPath();
-            const state = exportFS(fsRoot, cwd);
-
-            fetch('http://localhost:3000/api/fs/save', {
-                method: 'POST',                            // ← must be POST
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(state),               // ← your JSON payload
-            })
-                .then(res => {
-                    if (!res.ok) throw new Error(res.statusText);
-                    console.log('✅ Saved to SQLite');
-                })
-                .catch(err => {
-                    console.log(`Save failed: ${err}`);
-                });
-        }
-    };
+    // supportedCommands['save'] = {
+    //     description: 'Persist FS to SQLite',
+    //     executable: () => {
+    //         const cwd = currentTerminalCore.getCurrentFolderPointer().getFullPath();
+    //         const state = exportFS(fsRoot, cwd);
+    //
+    //         fetch('http://localhost:3000/api/fs/save', {
+    //             method: 'POST',                            // ← must be POST
+    //             headers: {'Content-Type': 'application/json'},
+    //             body: JSON.stringify(state),               // ← your JSON payload
+    //         })
+    //             .then(res => {
+    //                 if (!res.ok) throw new Error(res.statusText);
+    //                 console.log('✅ Saved to SQLite');
+    //             })
+    //             .catch(err => {
+    //                 console.log(`Save failed: ${err}`);
+    //             });
+    //     }
+    // };
 
     // Update Needed
-    supportedCommands['load'] = {
-        description: 'Load FS from SQLite',
-        executable: () => {
-            fetch('http://localhost:3000/api/fs/load')
-                .then(res => res.json())
-                .then(state => {
-                    importFS(fsRoot, state);                  // you’ll need an importFS to mirror exportFS
-                    // restore working directory
-                    // const cwd = state.cwd.startsWith('/') ? state.cwd.slice(1) : state.cwd;
-                    // if (cwd) currentTerminalCore.getCurrentFolderPointer().gotoPathFromRoot(cwd);
-                    currentTerminalCore.printToWindow('✅ Loaded from SQLite', false, true);
-                })
-                .catch(err => currentTerminalCore.printToWindow(`Load failed: ${err}`, false, true));
-        }
-    };
+    // supportedCommands['load'] = {
+    //     description: 'Load FS from SQLite',
+    //     executable: () => {
+    //         fetch('http://localhost:3000/api/fs/load')
+    //             .then(res => res.json())
+    //             .then(state => {
+    //                 importFS(fsRoot, state);                  // you’ll need an importFS to mirror exportFS
+    //                 // restore working directory
+    //                 // const cwd = state.cwd.startsWith('/') ? state.cwd.slice(1) : state.cwd;
+    //                 // if (cwd) currentTerminalCore.getCurrentFolderPointer().gotoPathFromRoot(cwd);
+    //                 currentTerminalCore.printToWindow('✅ Loaded from SQLite', false, true);
+    //             })
+    //             .catch(err => currentTerminalCore.printToWindow(`Load failed: ${err}`, false, true));
+    //     }
+    // };
 
 });
 

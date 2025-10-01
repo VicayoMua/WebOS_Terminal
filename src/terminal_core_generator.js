@@ -552,11 +552,109 @@ class TerminalFolderPointer {
 
 }
 
+class CommandInputHandler {
+    #supportedCommands;
+    #buffer;
+
+    constructor(supportedCommands) {
+        this.#supportedCommands = supportedCommands;
+        this.#buffer = []; // char[]
+    }
+
+    toString() {
+        return this.#buffer.reduce((acc, char) => `${acc}${char}`, '');
+    }
+
+    clear() {
+        this.#buffer = [];
+    }
+
+    addChar(newChar) { // returns void
+        this.#buffer.push(newChar);
+    }
+
+    removeChar() {
+        if (this.#buffer.length > 0) {
+            this.#buffer.pop();
+            return true;
+        }
+        return false;
+    }
+
+    /*
+    * possible returns:
+    *       [ -1, ''          ] ---> Error: (Empty) Command is not executable.
+    *       [  0, commandName ] ---> Success!
+    *       [  1, commandName ] ---> Error: Command is not supported.
+    *       [  2, commandName ] ---> Error: Command exists but throws exceptions during execution.
+    * */
+    execute() {
+        if (this.#buffer.length === 0) return [-1, '']; // Error: (Empty) Command is not executable.
+
+        let
+            index = 0;
+        const
+            parseNextWord = () => { // returns string
+                let word = '';
+                while (index < this.#buffer.length && this.#buffer[index] === ` `)
+                    index++;
+                if (this.#buffer[index] === `"` || this.#buffer[index] === `'`) { // if quote marks makes a phase
+                    const quoteIndex = index;
+                    index++;
+                    let hasClosingQuote = false;
+                    while (index < this.#buffer.length) {
+                        if (this.#buffer[index] === this.#buffer[quoteIndex]) {
+                            hasClosingQuote = true;
+                            index++;
+                            break;
+                        }
+                        word += this.#buffer[index];
+                        index++;
+                    }
+                    if (!hasClosingQuote) // if no closing quote
+                        word = this.#buffer[quoteIndex] + word; // recover the beginning quote
+                    return word;
+                } else { // if next word is common
+                    while (index < this.#buffer.length) {
+                        if (this.#buffer[index] === ` `) {
+                            index++;
+                            break;
+                        }
+                        word += this.#buffer[index];
+                        index++;
+                    }
+                    return word;
+                }
+            },
+            commandName = parseNextWord();
+
+        if (commandName.length === 0) return [-1, '']; // Error: (Empty) Command is not executable.
+
+        const
+            commandParameters = [];
+
+        while (index < this.#buffer.length) {
+            const param = parseNextWord();
+            if (param.length > 0) commandParameters.push(param);
+        }
+        if (this.#supportedCommands[commandName] === undefined)
+            return [1, commandName]; // Error: Command is not supported.
+        try {
+            this.#supportedCommands[commandName].executable(commandParameters);
+            return [0, commandName]; // Success!
+        } catch (e) {
+            return [2, commandName]; // Error: Command exists but throws exceptions.
+        }
+    }
+}
+
 class MinimizedWindowRecords {
     #records;
 
     constructor() {
-        this.#records = {};
+        this.#records = {
+            // description: windowRecoverCallback
+        };
     }
 
     add(description, windowRecoverCallback) {
@@ -588,39 +686,46 @@ class MinimizedWindowRecords {
 function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, fsRoot, supportedCommands) {
     // Put Terminal Window to Webpage Container
     xtermObj.open(HTMLDivElement_TerminalWindowContainer);
-
-    // const isWebglEnabled = (() => {
-    //     try {
-    //         const webgl = new window.WebglAddon.WebglAddon(); // Load the WebGL Addon
-    //         xtermObj.loadAddon(webgl); // Add the WebGL Addon to xtermObj frame
-    //         return true;
-    //     } catch (e) {
-    //         console.warn('WebGL addon threw an exception during load', e);
-    //         return false;
-    //     }
-    // })();
-
-    // Enabled Fit Addons
-    const fitAddon = (() => { // every fit-addon can be subcribed to exactly ONE XTerm object!!!
-        try {
-            const fitAddon = new window.FitAddon.FitAddon(); // Load the Fit Addon
-            xtermObj.loadAddon(fitAddon); // Add the Fit Addon to xtermObj frame
-            return fitAddon;
-        } catch (error) {
-            alert(`Failed to load the fit-addon (${error})`);
-            return null;
-        }
-    })();
-
-    // Create Terminal Global Folder Pointer Object
-    const currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
-
     // Create Terminal Log Array
     let terminalLog = [];
+    // Initialize Terminal Window Display
+    xtermObj.write(` $ `);
+    terminalLog.push(` $ `);
+
+    // Enabled Webgl Addon
+    // const webglAddon = (() => {
+    //     if ('WebglAddon' in window && 'WebglAddon' in window.WebglAddon) {
+    //         try {
+    //             const webglAddon = new window.WebglAddon.WebglAddon(); // Load the WebGL Addon
+    //             xtermObj.loadAddon(webglAddon); // Add the WebGL Addon to xtermObj frame
+    //             return webglAddon;
+    //         } catch (error) {
+    //             alert(`Failed to load the WebGL-addon (${error})`);
+    //             return null;
+    //         }
+    //     }
+    //     console.warn('window.WebglAddon.WebglAddon does not exist.');
+    //     return null;
+    // })();
+    // Enabled Fit Addon
+    const fitAddon = (() => { // every fit-addon can be subcribed to exactly ONE XTerm object!!!
+        if ('FitAddon' in window && 'FitAddon' in window.FitAddon) {
+            try {
+                const fitAddon = new window.FitAddon.FitAddon(); // Load the Fit Addon
+                xtermObj.loadAddon(fitAddon); // Add the Fit Addon to xtermObj frame
+                return fitAddon;
+            } catch (error) {
+                alert(`Failed to load the fit-addon (${error})`);
+                return null;
+            }
+        }
+        console.warn('window.FitAddon.FitAddon does not exist.');
+        return null;
+    })();
 
     // Initialize Current Keyboard Listener
-    let currentKeyboardListenerCallback = null;
     let currentXTermKeyboardListener = null;
+    let currentKeyboardListenerCallback = null;
 
     // Function to Set New Keyboard Listener
     function setNewTerminalKeyboardListener(keyboard_listening_callback) {
@@ -629,75 +734,8 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         currentXTermKeyboardListener = xtermObj.onData(currentKeyboardListenerCallback = keyboard_listening_callback);
     }
 
-    // Initialize Command Buffer & Handler
-    let commandInputBuffer = []; // command buffer: char[]
-    const commandInputBufferHandler = {
-        addChar: (newChar) => { // returns void
-            commandInputBuffer.push(newChar);
-        },
-        removeChar: () => { // returns whether the last char is successfully removed
-            if (commandInputBuffer.length > 0) {
-                commandInputBuffer.pop();
-                return true;
-            }
-            return false;
-        },
-        execute: () => { // returns [status_code, command_name]
-            if (commandInputBuffer.length === 0) return [-1, '']; // Error: (Empty) Command is not supported.
-
-            let index = 0;
-
-            function parsingHelper() { // returns string
-                let block = '';
-                while (index < commandInputBuffer.length && commandInputBuffer[index] === ` `)
-                    index++;
-                if (commandInputBuffer[index] === `"` || commandInputBuffer[index] === `'`) {
-                    const quoteIndex = index++;
-                    let quoteNotClosed = true;
-                    while (index < commandInputBuffer.length) {
-                        if (commandInputBuffer[index] === commandInputBuffer[quoteIndex]) {
-                            index++;
-                            quoteNotClosed = false;
-                            break;
-                        }
-                        block += commandInputBuffer[index++];
-                    }
-                    if (quoteNotClosed)
-                        block = commandInputBuffer[quoteIndex] + block;
-                } else {
-                    while (index < commandInputBuffer.length) {
-                        if (commandInputBuffer[index] === ` `) {
-                            index++;
-                            break;
-                        }
-                        block += commandInputBuffer[index++];
-                    }
-                }
-                return block;
-            }
-
-            const
-                commandName = parsingHelper(),
-                commandParameters = [];
-            while (index < commandInputBuffer.length) {
-                const param = parsingHelper();
-                if (param.length > 0) commandParameters.push(param);
-            }
-            if (supportedCommands[commandName] === undefined)
-                return [1, commandName]; // Error: Command is not supported.
-            try {
-                supportedCommands[commandName].executable(commandParameters);
-                return [0, commandName]; // Success!
-            } catch (e) { // Error: Command exists but throws exceptions.
-                // alert(`generateTerminalCore: commandInputBufferHandler: ${e}.`);
-                return [2, commandName];
-            }
-        },
-        clear: () => { // returns void
-            commandInputBuffer = [];
-        }
-    };
-
+    // Initialize Command Input Handler
+    const commandInputHandler = new CommandInputHandler(supportedCommands);
     // Function to Initialize Default Terminal Window's Listening to Keyboard Input
     const defaultTerminalKeyboardLinstenerCallback = (keyboardInput) => {
         switch (keyboardInput) {
@@ -714,22 +752,21 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
                 break;
             }
             case '\u0003': { // Ctrl+C
-                commandInputBufferHandler.clear();
+                commandInputHandler.clear();
                 xtermObj.write('^C\n\n\r $ ');
                 terminalLog.push('^C\n\n $ ');
                 break;
             }
             case '\u000C': { // Ctrl+L
-                // commandInputBufferHandler.clear();
+                // commandInputHandler.clear();
                 xtermObj.write(`\x1b[2J\x1b[H $ `);
-                for (const char of commandInputBuffer)
-                    xtermObj.write(char);
+                xtermObj.write(commandInputHandler.toString());
                 break;
             }
             case '\u007F': { // Backspace
-                if (commandInputBufferHandler.removeChar()) { // if the char is successfully removed from the buffer
+                if (commandInputHandler.removeChar()) { // if the char is successfully removed from the buffer
                     xtermObj.write('\b \b');
-                    terminalLog.pop(); // because commandInputBufferHandler.removeChar() is success!!
+                    terminalLog.pop(); // because commandInputHandler.removeChar() is success!!
                 }
                 break;
             }
@@ -737,7 +774,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
                 xtermObj.write('\n\r   ');
                 terminalLog.push('\n   ');
                 {
-                    const [statusCode, commandName] = commandInputBufferHandler.execute();
+                    const [statusCode, commandName] = commandInputHandler.execute();
                     switch (statusCode) {
                         case 0: {
                             // success execution
@@ -757,7 +794,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
                         }
                     }
                 }
-                commandInputBufferHandler.clear();
+                commandInputHandler.clear();
                 xtermObj.write('\n\n\r $ ');
                 terminalLog.push('\n\n $ ');
                 break;
@@ -765,7 +802,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
             default: { // allowing proper copy and paste from the clipboard
                 for (const char of keyboardInput) {
                     if (char >= String.fromCharCode(0x20) && char <= String.fromCharCode(0x7E) || char >= '\u00a0') {
-                        commandInputBufferHandler.addChar(char);
+                        commandInputHandler.addChar(char);
                         xtermObj.write(char);
                         terminalLog.push(char);
                     }
@@ -776,13 +813,12 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
     // Initialize Default Terminal Window's Listening to Keyboard Input
     setNewTerminalKeyboardListener(defaultTerminalKeyboardLinstenerCallback);
 
-    // Initialize Terminal Window Display
-    xtermObj.write(` $ `);
-    terminalLog.push(` $ `);
-
+    // Initialize Terminal Minimized-Window Records
     const terminalMinimizedWindowRecords = new MinimizedWindowRecords();
-
-    const terminalCacheSpace = {};
+    // Initialize Terminal Cache Space
+    const terminalCacheSpace = {/* any additional information */};
+    // Initialize Terminal Global Folder Pointer Object
+    const currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
 
     // Securely Release the Terminal APIs
     return {
@@ -814,11 +850,12 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         /*
         *  Terminal Status/Content Getters
         * */
+        getWebglAddon: () => webglAddon,
         getFitAddon: () => fitAddon,
         getTerminalLogString: () => terminalLog.reduce((acc, elem) => acc + elem, ''),
         getHTMLDivForTerminalWindow: () => HTMLDivElement_TerminalWindowContainer,
-        getCacheSpace: () => terminalCacheSpace,
         getMinimizedWindowRecords: () => terminalMinimizedWindowRecords,
+        getCacheSpace: () => terminalCacheSpace,
 
         /*
         *  Terminal File System Ports
