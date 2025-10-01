@@ -26,7 +26,7 @@ const
         return (x) => reg.test(x);
     })();
 
-// Set Up System Time Object
+// Set Up System Date-and-Time Object
 const date = new Date();
 
 function generateRootDirectory() {
