@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <title>Mini Terminal</title>
+
+    <!-- Style Sheets -->
+    <link rel="stylesheet" href="index.css"/>
+    <link rel="stylesheet" href="lib/xterm.css"/>
+    <link rel="stylesheet" href="src/editor_utils.css"/>
+
+    <!-- Library Scripts -->
+    <!--    <script src="https://unpkg.com/xterm/lib/xterm.js"></script> &lt;!&ndash; Include xterm.js from CDN &ndash;&gt;-->
+    <script src="lib/xterm.js"></script>
+    <!--    <script src="https://unpkg.com/xterm-addon-fit/lib/xterm-addon-fit.js"></script> &lt;!&ndash; Include xterm-addon-fit.js from CDN &ndash;&gt;-->
+    <script src="lib/xterm-addon-fit.js"></script>
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>-->
+    <script src="lib/jszip.min.js"></script>
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>-->
+    <script src="lib/ace.js"></script>
+
+    <!-- Terminal Core Scripts -->
+    <script src="src/terminal_core_generator.js"></script>
+    <script src="src/editor_utils.js"></script>
+    <script src="src/terminal_setup_core_and_commands.js"></script>
+
+</head>
+
+<body>
+
+<div class="main-page">
+
+    <div class="header">
+        <h1>Mini Terminal</h1>
+    </div>
+
+    <input type="button" id="button_to_switch_theme" hidden>
+    <label for="button_to_switch_theme" class="button_to_switch_theme">🌙</label>
+
+    <nav class="view-navigation" id="view-navigation">
+<!--        <button-->
+<!--                type="button"-->
+<!--                onmouseover="this.style.textDecoration='underline'"-->
+<!--                onmouseout="this.style.textDecoration='none'"-->
+<!--                onclick="alert('<Window #1> Button clicked!')"> { Window #1 }-->
+<!--        </button>-->
+    </nav>
+
+    <div class="terminal-container" id="terminal-container">
+<!--        <div class="terminal-window" id="terminal-window-1" style="display:block"></div>-->
+    </div>
+
+    <div class="additional-buttons">
+        <button
+                type="button"
+                id="button_to_open_new_terminal_tab">
+            Open New Terminal Tab
+        </button>
+        <button
+                type="button"
+                id="button_to_close_current_terminal_tab">
+            Close Current Terminal Tab
+        </button>
+        <button
+                type="button"
+                id="button_to_download_terminal_log">
+            Download Terminal Log
+        </button>
+        <button
+                type="button"
+                id="button_to_add_local_file">
+            Add Local File (To Current Directory)
+        </button>
+        <button
+                type="button"
+                id="button_to_save_terminal_fs">
+            Save Terminal File System
+        </button>
+    </div>
+
+    <div class="footer">
+        <p>Authors: Vicayo Zhang, Aryan Ghosh, and Stella Dey</p>
+    </div>
+
+</div>
+
+</body>
+</html>
+
+<!--
+
+    Symbol '*' remarks the finished tasks.
+    Symbol '?' remarks the tasks that we may need to update.
+
+    Built-in Functions:
+        * - add button 'extract terminal log' (outside the terminal object)
+        * - add button 'add file from local',
+        * - hello,
+        * - help,
+        * - man,
+        * - echo,
+        * - ls,
+        * - mkdir,
+        * - pwd,
+        * - touch,
+        * - cd,
+        * - mv,
+        * - cp,
+        * - rm
+        * - download
+        * - print
+        * - edit
+        18 - webass (Web Assembly)
+        19 - wget
+        20 - ping
+
+    Challenging:
+        0 - implement close current terminal tab button
+        0 - window size long-then-short auto-fit issues.
+        1 - make editor window size changeable.
+        2 - solve issues with "add local file button" for PDF files.
+        3 - handle more keyboard inputs: direction arrows, and tab (mute all other inputs...)
+
+-->

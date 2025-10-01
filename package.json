@@ -1,0 +1,24 @@
+{
+  "name": "terminal_demo",
+  "version": "1.0.0",
+  "description": "**Project Team 1 (Online)**",
+  "main": "terminal_setup_window.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "private": true,
+  "dependencies": {
+    "@xterm/xterm": "^5.5.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

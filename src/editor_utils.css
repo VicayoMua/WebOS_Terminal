@@ -1,0 +1,67 @@
+.ace-editor-window {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px 1fr 50px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #1e1e1e;
+    padding: 20px;
+    border: 2px solid #888;
+    border-radius: 8px;
+    z-index: 9999; /* make the window always in the front */
+    width: 60%;
+    height: 60%;
+}
+
+.ace-editor-title { /* row 1 */
+    grid-column: 1/1;
+    grid-row: 1/1;
+    margin-top: 5px;
+    color: #fff;
+}
+
+.ace-editor-container { /* row 2 */
+    grid-column: 1/1;
+    grid-row: 2/2;
+    margin-top: 0;
+}
+
+.ace-editor-exit-buttons-container { /* row 3 */
+    grid-column: 1/1;
+    grid-row: 3/3;
+    margin-top: 20px;
+    text-align: right; /* the position of save and cancel buttons */
+}
+
+.ace-editor-exit-buttons-container button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    transition: transform 0.2s ease;
+}
+
+.ace-editor-exit-buttons-container button:hover {
+    transform: translateY(-1.5px);
+}
+
+.ace-editor-exit-buttons-container button:active {
+    transform: translateY(0);
+}
+
+.ace-editor-minimize-button {
+    background-color: rebeccapurple;
+    margin-right: 20px; /* the gap between minimize and save buttons */
+}
+
+.ace-editor-save-button {
+    background-color: #4CAF50;
+    margin-right: 20px; /* the gap between save and cancel buttons */
+}
+
+.ace-editor-cancel-button {
+    background-color: #f44336;
+}
