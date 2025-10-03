@@ -38,7 +38,7 @@
   Logging in everytime through the terminal followed by verification can become frustrating when you repeatedly want to
   access your files and resume your work after a short break.
 
-## Team Members
+## Team Member(s)
 
 - **Vicayo Zhang** – Project Manager & Core Service Developer
     - First Issue To Work ON: Basic terminal input and output logics
@@ -46,12 +46,3 @@
     - Third Issue To Work ON: file system simulation logics
     - Fourth Issue To Work ON: some demo on-terminal applications/commands (hello, help, man, and echo)
 
-- **Aryan Ghosh** – Software Developer & Admin Monitoring
-    - First Issue To Work ON: Command input screen
-    - Second Issue To Work ON: User Session data
-    - Third Issue To Work ON: Project Documentation
-
-- **Stella Dey** – Debugging & Testing Coordinator
-    - First Issue To Work ON: Customizable Theme - (Light/Dark Mode) #17
-    - Second Issue To Work ON: File System Structure Data #18
-    - Third Issue To Work ON: Project Documentation
