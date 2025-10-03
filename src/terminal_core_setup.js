@@ -30,38 +30,39 @@ document.addEventListener('DOMContentLoaded', () => {
         divNewTerminalHTMLDivElement.style.display = 'none';
         divTerminalContainer.appendChild(divNewTerminalHTMLDivElement);
         terminalHTMLDivElements.push(divNewTerminalHTMLDivElement);
-        const newXtermObject = new window.Terminal({
-            fontFamily: '"Fira Code", monospace',
-            cursorBlink: true,
-            allowProposedApi: true,
-            theme: {
-                foreground: '#f1f1f0',
-                background: 'black',
-                selection: '#97979b33',
-                black: '#282a36',
-                brightBlack: '#686868',
-                red: '#ff5c57',
-                brightRed: '#ff5c57',
-                green: '#5af78e',
-                brightGreen: '#5af78e',
-                yellow: '#f3f99d',
-                brightYellow: '#f3f99d',
-                blue: '#57c7ff',
-                brightBlue: '#57c7ff',
-                magenta: '#ff6ac1',
-                brightMagenta: '#ff6ac1',
-                cyan: '#9aedfe',
-                brightCyan: '#9aedfe',
-                white: '#f1f1f0',
-                brightWhite: '#eff0eb'
-            },
-        });
-        const newTerminalCore = generateTerminalCore(
-            newXtermObject,
-            divNewTerminalHTMLDivElement,
-            fsRoot,
-            supportedCommands
-        );
+        const
+            newXtermObject = new window.Terminal({
+                fontFamily: '"Fira Code", monospace',
+                cursorBlink: true,
+                allowProposedApi: true,
+                theme: {
+                    foreground: '#f1f1f0',
+                    background: 'black',
+                    selection: '#97979b33',
+                    black: '#282a36',
+                    brightBlack: '#686868',
+                    red: '#ff5c57',
+                    brightRed: '#ff5c57',
+                    green: '#5af78e',
+                    brightGreen: '#5af78e',
+                    yellow: '#f3f99d',
+                    brightYellow: '#f3f99d',
+                    blue: '#57c7ff',
+                    brightBlue: '#57c7ff',
+                    magenta: '#ff6ac1',
+                    brightMagenta: '#ff6ac1',
+                    cyan: '#9aedfe',
+                    brightCyan: '#9aedfe',
+                    white: '#f1f1f0',
+                    brightWhite: '#eff0eb'
+                },
+            }),
+            newTerminalCore = generateTerminalCore(
+                newXtermObject,
+                divNewTerminalHTMLDivElement,
+                fsRoot,
+                supportedCommands
+            );
         window.addEventListener('resize', () => {
             if (currentTerminalCore !== newTerminalCore) // if the current terminal core is not on the front
                 return;
