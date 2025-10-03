@@ -3,33 +3,41 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     let
-        tabCount = 0,
+        tabCount = 0, // Initialize the total tab count
         fsRoot = generateRootFolder(), // Initialize File System Root
         supportedCommands = {}, // Initialize Supported Commands
-        currentTerminalCore = null;
+        currentTabRecord = null; // This is an object from <generateTerminalCore>.
     const
         labelThemeIcon = document.querySelector('label[for=\"button_to_switch_theme\"]'),
         divTerminalContainer = document.getElementById('terminal-container'),
         navViewNavigation = document.getElementById('view-navigation'),
-        terminalHTMLDivElements = [],
-        terminalHTMLButtonElements = [];
+        tabRecords = [
+            // {
+            //     divTerminal: ...,
+            //     terminalCore: ...,
+            //     buttonViewSwitch: ...,
+            // }
+        ];
 
     // Set Up Button Functions Links
     document.getElementById('button_to_switch_theme').addEventListener('click', () => {
         labelThemeIcon.innerHTML = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
     });
     document.getElementById('button_to_open_new_terminal_tab').addEventListener('click', () => {
+        // check the tab count limit
         if (tabCount >= 8) {
             alert('You can open at most 8 terminal tabs.');
             return;
         }
+        // Record the total tab count & Use it as current tab number
         tabCount++;
-        const divNewTerminalHTMLDivElement = document.createElement('div');
-        divNewTerminalHTMLDivElement.setAttribute('class', 'terminal-tab');
-        divNewTerminalHTMLDivElement.setAttribute('id', `terminal-tab-${tabCount}`);
-        divNewTerminalHTMLDivElement.style.display = 'none';
-        divTerminalContainer.appendChild(divNewTerminalHTMLDivElement);
-        terminalHTMLDivElements.push(divNewTerminalHTMLDivElement);
+        // Create a new div html element for the new Terminal
+        const divNewTerminal = document.createElement('div');
+        divNewTerminal.setAttribute('class', 'terminal-tab');
+        divNewTerminal.setAttribute('id', `terminal-tab-${tabCount}`);
+        divNewTerminal.style.display = 'none';
+        divTerminalContainer.appendChild(divNewTerminal);
+        // Create a new terminal core on the new div
         const
             newXtermObject = new window.Terminal({
                 fontFamily: '"Fira Code", monospace',
@@ -59,16 +67,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }),
             newTerminalCore = generateTerminalCore(
                 newXtermObject,
-                divNewTerminalHTMLDivElement,
+                divNewTerminal,
                 fsRoot,
                 supportedCommands
             );
         window.addEventListener('resize', () => {
-            if (currentTerminalCore !== newTerminalCore) // if the current terminal core is not on the front
+            if (currentTabRecord === null || currentTabRecord.terminalCore !== newTerminalCore) // if the current terminal core is not in the front
                 return;
+            // resize the terminal window in the front
             const fitAddon = newTerminalCore.getFitAddon();
             if (fitAddon !== null) fitAddon.fit();
         });
+        // Create a new button html element for the view switch for the new terminal core
         const buttonNewTerminalViewNavigation = document.createElement('button');
         buttonNewTerminalViewNavigation.type = 'button';
         buttonNewTerminalViewNavigation.textContent = `{ Tab #${tabCount} }`;
@@ -79,34 +89,37 @@ document.addEventListener('DOMContentLoaded', () => {
         buttonNewTerminalViewNavigation.addEventListener('mouseout', () => {
             buttonNewTerminalViewNavigation.style.textDecoration = 'none';
         });
+        // Create a new tab record
+        const newTerminalTabRecord = {
+            divTerminal: divNewTerminal,
+            terminalCore: newTerminalCore,
+            buttonViewSwitch: buttonNewTerminalViewNavigation,
+        };
         buttonNewTerminalViewNavigation.addEventListener('click', () => {
-            if (currentTerminalCore !== newTerminalCore) { // view switching needed
-                // switch the nav button style
-                for (const button of terminalHTMLButtonElements)
-                    button.style.fontWeight = 'normal';
+            if (currentTabRecord === null || currentTabRecord.terminalCore !== newTerminalCore) { // if view switching needed
+                // switch the nav button style and the terminal tab view
+                tabRecords.forEach((tabRecord) => {
+                    tabRecord.divTerminal.style.display = 'none';
+                    tabRecord.buttonViewSwitch.style.fontWeight = 'normal';
+                });
                 buttonNewTerminalViewNavigation.style.fontWeight = 'bold';
-                // switch the terminal tab view
-                for (const div of terminalHTMLDivElements)
-                    div.style.display = 'none';
-                divNewTerminalHTMLDivElement.style.display = 'block';
-                currentTerminalCore = newTerminalCore;
+                divNewTerminal.style.display = 'block';
+                // switch the terminal tab record
+                currentTabRecord = newTerminalTabRecord;
             }
             setTimeout(() => {
-                const fitAddon = newTerminalCore.getFitAddon(); // has to be newTerminalCore since 10ms waiting race
+                const fitAddon = newTerminalCore.getFitAddon();
                 if (fitAddon !== null) fitAddon.fit();
             }, 50);
         });
         navViewNavigation.appendChild(buttonNewTerminalViewNavigation);
-        terminalHTMLButtonElements.push(buttonNewTerminalViewNavigation);
-        if (currentTerminalCore === null) // if the terminal tab is <Tab #1>
+        tabRecords.push(newTerminalTabRecord);
+        if (currentTabRecord === null) // if the terminal tab is <Tab #1>
             buttonNewTerminalViewNavigation.click();
-    });
-    document.getElementById('button_to_close_current_terminal_tab').addEventListener('click', () => {
-        alert('no implementation found.');
     });
     document.getElementById('button_to_download_terminal_log').addEventListener('click', () => {
         const
-            url = URL.createObjectURL(new Blob([currentTerminalCore.getTerminalLogString()], {type: 'text/plain'})),
+            url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
         link.download = `terminal_log @ ${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}''_${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}.txt`; // the filename the user will get
@@ -127,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`button_to_add_local_file: error reading the file '${file.name}', ${error}.`);
             };
             // set up behaviors on loading
-            const cfp = currentTerminalCore.getCurrentFolderPointer();
+            const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
             let filename = file.name;
             reader.onload = (reader_event) => {
                 const fileContent = reader_event.target.result;
@@ -159,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Finished
     supportedCommands['hello'] = {
         executable: (_) => {
-            currentTerminalCore.printToWindow(`Hello World!`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Hello World!`, false, true);
         },
         description: `Say 'Hello World!'`
     };
@@ -167,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Finished
     supportedCommands['help'] = {
         executable: (_) => {
-            currentTerminalCore.printToWindow(
+            currentTabRecord.terminalCore.printToWindow(
                 `Supported commands are: ${
                     Object.keys(supportedCommands).reduce(
                         (acc, elem, index) => {
@@ -193,13 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         commandName = parameters[0],
                         commandObject = supportedCommands[commandName];
                     if (commandObject === undefined) {
-                        currentTerminalCore.printToWindow(
+                        currentTabRecord.terminalCore.printToWindow(
                             `The command '${commandName}' is not supported!`,
                             true,
                             true
                         );
                     } else {
-                        currentTerminalCore.printToWindow(
+                        currentTabRecord.terminalCore.printToWindow(
                             commandObject.description,
                             false,
                             true
@@ -208,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 }
                 default: {
-                    currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false, true);
                 }
             }
         },
@@ -219,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Finished
     supportedCommands['echo'] = {
         executable: (parameters) => {
-            currentTerminalCore.printToWindow(
+            currentTabRecord.terminalCore.printToWindow(
                 `'${
                     parameters.reduce(
                         (acc, elem, index) => {
@@ -241,22 +254,22 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             switch (parameters.length) {
                 case 0: { // print current folder info
-                    const cfp = currentTerminalCore.getCurrentFolderPointer();
-                    currentTerminalCore.printToWindow(cfp.getContentListAsString(), false, true);
+                    const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
+                    currentTabRecord.terminalCore.printToWindow(cfp.getContentListAsString(), false, true);
                     break;
                 }
                 case 1: { // print the folder info of given path
                     try {
-                        const tfp = currentTerminalCore.getCurrentFolderPointer().duplicate();
+                        const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
                         tfp.gotoPath(parameters[0]);
-                        currentTerminalCore.printToWindow(`${tfp.getContentListAsString()}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${tfp.getContentListAsString()}`, false, true);
                     } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
                     break;
                 }
                 default: {
-                    currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false, true);
                 }
             }
         },
@@ -270,16 +283,16 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (parameters.length) {
                 case 1: {
                     try {
-                        const cfp = currentTerminalCore.getCurrentFolderPointer();
+                        const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                         cfp.createPath(parameters[0]);
-                        currentTerminalCore.printToWindow(`Successfully created a directory (Or the directory is already existing).`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully created a directory (Or the directory is already existing).`, false, true);
                     } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
                     break;
                 }
                 default: {
-                    currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false, true);
                 }
             }
         },
@@ -290,8 +303,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Finished
     supportedCommands['pwd'] = {
         executable: (_) => {
-            currentTerminalCore.printToWindow(
-                currentTerminalCore.getCurrentFolderPointer().getFullPath(),
+            currentTabRecord.terminalCore.printToWindow(
+                currentTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
                 false, true
             );
         },
@@ -304,15 +317,15 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (parameters.length) {
                 case 1: {
                     try {
-                        currentTerminalCore.getCurrentFolderPointer().createNewFile(parameters[0]);
-                        currentTerminalCore.printToWindow(`Successfully create a file.`, false, true);
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().createNewFile(parameters[0]);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
                     } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
                     break;
                 }
                 default: {
-                    currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false, true);
                 }
             }
         },
@@ -326,16 +339,16 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (parameters.length) {
                 case 1: {
                     try {
-                        const cfp = currentTerminalCore.getCurrentFolderPointer();
+                        const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                         cfp.gotoPath(parameters[0]);
-                        currentTerminalCore.printToWindow(`Successfully went to the directory.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false, true);
                     } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
                     break;
                 }
                 default: {
-                    currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false, true);
                 }
             }
         },
@@ -350,11 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 (parameters.length !== 3) ||
                 (parameters[0] !== '-f' && parameters[0] !== '-d')
             ) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: mv -f [old_file_path] [new_file_path]\n       mv -d [old_directory_path] [new_directory_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mv -f [old_file_path] [new_file_path]\n       mv -d [old_directory_path] [new_directory_path]`, false, true);
                 return;
             }
             try {
-                const cfp = currentTerminalCore.getCurrentFolderPointer();
+                const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') { // move a file
                     // const old_file_path = parameters[1], new_file_path = parameters[2];
                     cfp.movePath('file', parameters[1], parameters[2]);
@@ -362,9 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // const old_directory_path = parameters[1], new_directory_path = parameters[2];
                     cfp.movePath('directory', parameters[1], parameters[2]);
                 }
-                currentTerminalCore.printToWindow(`Successfully moved the path.`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Successfully moved the path.`, false, true);
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'mv an existing file or directory.\n' +
@@ -379,19 +392,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 (parameters.length !== 3) ||
                 (parameters[0] !== '-f' && parameters[0] !== '-d')
             ) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: cp -f [original_file_path] [destination_file_path]\n       cp -d [original_directory_path] [destination_directory_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cp -f [original_file_path] [destination_file_path]\n       cp -d [original_directory_path] [destination_directory_path]`, false, true);
                 return;
             }
             try {
-                const cfp = currentTerminalCore.getCurrentFolderPointer();
+                const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') { // move a file
                     cfp.copyPath('file', parameters[1], parameters[2]);
                 } else if (parameters[0] === '-d') { // move a directory
                     cfp.copyPath('directory', parameters[1], parameters[2]);
                 }
-                currentTerminalCore.printToWindow(`Successfully copied the path.`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Successfully copied the path.`, false, true);
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'Copy an existing file or directory.\n' +
@@ -406,11 +419,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 (parameters.length !== 2) ||
                 (parameters[0] !== '-f' && parameters[0] !== '-d')
             ) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: rm -f [file_path]\n       rm -d [directory_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: rm -f [file_path]\n       rm -d [directory_path]`, false, true);
                 return;
             }
             try {
-                const cfp = currentTerminalCore.getCurrentFolderPointer();
+                const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') { // move a file
                     // const old_file_path = parameters[1], new_file_path = parameters[2];
                     cfp.deletePath('file', parameters[1]);
@@ -418,9 +431,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // const old_directory_path = parameters[1], new_directory_path = parameters[2];
                     cfp.deletePath('directory', parameters[1]);
                 }
-                currentTerminalCore.printToWindow(`Successfully removed the path.`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Successfully removed the path.`, false, true);
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'Remove (delete) an existing file or directory.\n' +
@@ -435,11 +448,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 (parameters.length !== 2) ||
                 (parameters[0] !== '-f' && parameters[0] !== '-d')
             ) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: download -f [file_path]\n       download -d [directory_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: download -f [file_path]\n       download -d [directory_path]`, false, true);
                 return;
             }
             try {
-                const tfp = currentTerminalCore.getCurrentFolderPointer().duplicate();
+                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
                 if (parameters[0] === '-f') { // rename a file
                     const file_path = parameters[1];
                     const index = file_path.lastIndexOf('/');
@@ -477,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     })();
                 }
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'Download a single file or a directory (as .zip file) in the terminal file system.\n' +
@@ -489,11 +502,11 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['print'] = {
         executable: (parameters) => {
             if (parameters.length !== 1) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
                 return;
             }
             try {
-                const tfp = currentTerminalCore.getCurrentFolderPointer().duplicate();
+                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
                 const file_path = parameters[0];
                 const index = file_path.lastIndexOf('/');
                 const [fileDir, fileName] = (() => {
@@ -502,9 +515,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     return [file_path.substring(0, index), file_path.slice(index + 1)];
                 })();
                 tfp.gotoPath(fileDir);
-                currentTerminalCore.printToWindow(tfp.getFileContent(fileName), false, true);
+                currentTabRecord.terminalCore.printToWindow(tfp.getFileContent(fileName), false, true);
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'Print an existing file to the terminal window.\n' +
@@ -515,11 +528,11 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['edit'] = {
         executable: (parameters) => {
             if (parameters.length !== 1) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
                 return;
             }
             try {
-                const tfp = currentTerminalCore.getCurrentFolderPointer().duplicate();
+                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
                 const filePath = parameters[0];
                 const index = filePath.lastIndexOf('/');
                 const [fileDir, fileName] = (() => {
@@ -529,39 +542,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 })();
                 tfp.gotoPath(fileDir);
                 const fileContent = tfp.getFileContent(fileName); // need this line to make sure the file is loaded before resetting the keyboard listener
-                currentTerminalCore.setNewKeyboardListener((_) => { // empty keyboard listener
+                currentTabRecord.terminalCore.setNewKeyboardListener((_) => { // empty keyboard listener
                 });
                 openFileEditor(
-                    currentTerminalCore.getHTMLDivForTerminalWindow(),
+                    currentTabRecord.terminalCore.getHTMLDivForTerminalWindow(),
                     fileName,
                     fileContent,
                     (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-                        const cmwr = currentTerminalCore.getMinimizedWindowRecords();
+                        const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
                         cmwr.add(windowDescription, () => {
-                            currentTerminalCore.setNewKeyboardListener((_) => {
+                            currentTabRecord.terminalCore.setNewKeyboardListener((_) => {
                             });
                             divAceEditorWindow.style.display = '';
                             aceEditorObject.focus();
                         });
-                        currentTerminalCore.setDefaultKeyboardListener();
+                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     (newFileContent) => { // save
                         tfp.changeFileContent(fileName, newFileContent);
-                        currentTerminalCore.setDefaultKeyboardListener();
+                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     () => { // cancel
-                        currentTerminalCore.setDefaultKeyboardListener();
+                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     }
                 );
-                currentTerminalCore.printToWindow(`Successfully opened an editor.`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false, true);
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'Edit an existing file.\n' +
             'Usage: edit [file_path]'
     };
 
+    // Finished
     supportedCommands['mini'] = {
         executable: (parameters) => {
             if (
@@ -570,17 +584,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 (parameters[0] !== '-l' && parameters[0] !== '-r') || // check the first parameter component
                 (parameters[0] === '-r' && parameters.length === 1) // check the second parameter component
             ) {
-                currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: mini -l\n       mini -r [number]`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mini -l\n       mini -r [number]`, false, true);
                 return;
             }
             try {
                 if (parameters[0] === '-l') {
                     // 'Folders:' + folderNames.reduce((acc, elem) =>
                     //     `${acc}\n            ${elem}`, '');
-                    const cmwr = currentTerminalCore.getMinimizedWindowRecords();
+                    const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
                     const cmwrDescriptions = cmwr.getDescriptions();
                     if (cmwrDescriptions.length > 0) {
-                        currentTerminalCore.printToWindow(
+                        currentTabRecord.terminalCore.printToWindow(
                             'Minimized Windows:' + cmwrDescriptions.reduce(
                                 (acc, elem, index) => `${acc}\n                    [${index + 1}] ${elem}`, ''
                             ),
@@ -588,22 +602,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             true
                         );
                     } else {
-                        currentTerminalCore.printToWindow('No window minimized...', false, true);
+                        currentTabRecord.terminalCore.printToWindow('No window minimized...', false, true);
                     }
                 } else if (parameters[0] === '-r') {
                     const trueKeyIndex = Number.parseInt(parameters[1]) - 1;
-                    const cmwr = currentTerminalCore.getMinimizedWindowRecords();
+                    const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
                     const cmwrDescriptions = cmwr.getDescriptions();
                     if (Number.isNaN(trueKeyIndex) || trueKeyIndex < 0 || trueKeyIndex >= cmwrDescriptions.length) {
-                        currentTerminalCore.printToWindow('Wrong index!', false, true);
+                        currentTabRecord.terminalCore.printToWindow('Wrong index!', false, true);
                         return;
                     }
                     if (!cmwr.recoverWindow(cmwrDescriptions[trueKeyIndex])) {
-                        currentTerminalCore.printToWindow('Unexpected error, failed to recover the minimized window.', false, true);
+                        currentTabRecord.terminalCore.printToWindow('Unexpected error, failed to recover the minimized window.', false, true);
                     }
                 }
             } catch (error) {
-                currentTerminalCore.printToWindow(`${error}`, false, true);
+                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
         },
         description: 'List all the minimized windows, or Re-open a minimized window.\n' +
@@ -611,347 +625,34 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mini -r [number]    to recover the minimized window',
     };
 
-    supportedCommands['webass'] = {
-        // executable: (parameters) => {
-        //     // 0) Your C source lives in a JS string:
-        //     const c_code = `
-        //         #include <stdint.h>
-        //
-        //         // Exported function we will call from JS
-        //         int add(int a, int b) { return a + b; }
-        //     `;
-        //
-        //     // 1) Load the in-browser C compiler (replace with your actual compiler bundle)
-        //     // For example, a clang/tcc port built with Emscripten that provides FS + callMain.
-        //     import createCompilerModule from './clang.js'; // or './tcc.js'
-        //
-        //     async function compileCtoWasm(source, outName = 'out.wasm') {
-        //         const Compiler = await createCompilerModule(); // loads clang.wasm/tcc.wasm under the hood
-        //
-        //         // 2) Write source file into the virtual FS
-        //         const srcPath = '/tmp/main.c';
-        //         Compiler.FS.mkdir('/tmp');
-        //         Compiler.FS.writeFile(srcPath, source);
-        //
-        //         // 3) Invoke the compiler to produce WebAssembly
-        //         // Adjust flags to your compiler:
-        //         //   - For a clang port: ["-O3", "--target=wasm32", "-nostdlib", "-Wl,--no-entry", "-Wl,--export-all", "-o", "out.wasm", "main.c"]
-        //         //   - For a tcc port that supports wasm: similar idea, producing out.wasm
-        //         const args = [
-        //             '-O3',
-        //             '--target=wasm32',
-        //             '-nostdlib',
-        //             '-Wl,--no-entry',
-        //             '-Wl,--export-all',
-        //             srcPath,
-        //             '-o',
-        //             `/${outName}`,
-        //         ];
-        //
-        //         try {
-        //             Compiler.callMain(args);
-        //         } catch (e) {
-        //             // Some ports throw on nonzero exit; capture stdout/stderr if exposed
-        //             console.error('Compilation failed:', e);
-        //             throw e;
-        //         }
-        //
-        //         // 4) Read the produced wasm bytes from the virtual FS
-        //         const wasmBytes = Compiler.FS.readFile(`/${outName}`);
-        //         return wasmBytes; // Uint8Array
-        //     }
-        //
-        //     async function instantiateAndRun(wasmBytes) {
-        //         // Provide imports as required; for bare functions none may be needed
-        //         const imports = {};
-        //         const {instance} = await WebAssembly.instantiate(wasmBytes, imports);
-        //
-        //         // Inspect exports
-        //         console.log('exports:', Object.keys(instance.exports));
-        //
-        //         // Call the exported function from our C code
-        //         if (typeof instance.exports.add === 'function') {
-        //             console.log('add(2, 3) =', instance.exports.add(2, 3));
-        //         } else {
-        //             console.warn('No export named "add" found.');
-        //         }
-        //
-        //         return instance;
-        //     }
-        //
-        //     // Bring it together:
-        //     try {
-        //         const wasmBytes = await compileCtoWasm(c_code, 'module.wasm');
-        //         await instantiateAndRun(wasmBytes);
-        //     } catch (err) {
-        //         console.error('Error compiling/executing C → WASM in browser:', err);
-        //     }
-        // },
+
+    // Update Needed
+    supportedCommands['ctow'] = {
+        executable: (parameters) => {
+        },
         description: ''
     }
 
-    // Update Needed
-    // supportedCommands['wget'] = {
-    //     executable: (parameters) => {
-    //         switch (parameters.length) {
-    //             case 1: {
-    //                 const url = parameters[0];
-    //                 // Example URL: https://static.vecteezy.com/system/resources/previews/036/333/113/large_2x/monarch-beautiful-butterflygraphy-beautiful-butterfly-on-flower-macrography-beautyful-nature-photo.jpg
-    //                 try {
-    //                     fetch(url)
-    //                         .then((response) => {
-    //                             if (!response.ok) {
-    //                                 throw new Error(`Could not find ${parameters[0]}`);
-    //                             }
-    //                             return response.text();
-    //                         })
-    //                         .then((text) => {
-    //                             const
-    //                                 date = new Date(),
-    //                                 filename = `wget_${date.getHours()}-${date.getMinutes()}'-${date.getSeconds()}''_${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}.txt`;
-    //                             currentTerminalCore.getCurrentFolderPointer().changeFileContent(
-    //                                 filename,
-    //                                 text
-    //                             );
-    //                             currentTerminalCore.printToWindow(`Success!`, false, true);
-    //                         });
-    //                 } catch (error) {
-    //                     currentTerminalCore.printToWindow(`${error}`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //             default: {
-    //                 currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: wget [html_link]`, false, true);
-    //             }
-    //         }
-    //     },
-    //     description: 'Download file from html link.\nUsage: wget [html_link]'
-    // };
 
     // Update Needed
-    // supportedCommands['ping'] = {
-    //     executable: (parameters) => {
-    //         if (parameters.length === 0) {
-    //             currentTerminalCore.printToWindow(`Usage: ping [hostname]`, false, true);
-    //             return;
-    //         }
-    //
-    //         const fullCommand = `ping -c 4 ${parameters.join(' ')}`;
-    //         currentTerminalCore.printToWindow(`Running: ${fullCommand}\n`, false, true);
-    //
-    //         fetch('http://localhost:3000/api/run', {
-    //             method: 'POST',
-    //             headers: {'Content-Type': 'application/json'},
-    //             body: JSON.stringify({command: fullCommand})
-    //         })
-    //             .then(res => res.text())
-    //             .then(output => {
-    //                 currentTerminalCore.printToWindow(output, false, true);
-    //             })
-    //             .catch(err => {
-    //                 currentTerminalCore.printToWindow(`Error executing ping: ${err}`, false, true);
-    //             });
-    //     },
-    //     description: 'Ping a domain or IP address.\nUsage: ping [hostname]'
-    // };
+    supportedCommands['pytow'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
+
 
     // Update Needed
-    // supportedCommands['curl'] = {
-    //     executable: (params) => {
-    //         // Validate
-    //         if (params.length !== 1) {
-    //             currentTerminalCore.printToWindow('Usage: curl [url]\n', false, true);
-    //             return;
-    //         }
-    //         // Pull the URL from params
-    //         const url = params[0];
-    //
-    //         // Print a fetch banner
-    //         currentTerminalCore.printToWindow(`Fetching ${url} …\n`, false, true);
-    //
-    //         fetch(`http://localhost:3000/api/proxy?url=${encodeURIComponent(url)}`)
-    //             .then(res => {
-    //                 // 5) Print status + headers
-    //                 currentTerminalCore.printToWindow(
-    //                     `$ HTTP ${res.status} ${res.statusText}` +
-    //                     [...res.headers.entries()]
-    //                         .map(([k, v]) => `\n${k}: ${v}`)
-    //                         .join('') +
-    //                     `\n\n`,
-    //                     false,
-    //                     true
-    //                 );
-    //                 // Return the body text
-    //                 return res.text();
-    //             })
-    //             .then(body => {
-    //                 // Print the HTML snippet
-    //                 const snippet = body.slice(0, 1000);
-    //                 currentTerminalCore.printToWindow(
-    //                     snippet + (body.length > 1000 ? '\n...[truncated]\n' : '\n'),
-    //                     false,
-    //                     true
-    //                 );
-    //             })
-    //             .catch(err => {
-    //                 currentTerminalCore.printToWindow(`curl failed: ${err.message}\n`, false, true);
-    //             });
-    //     },
-    //     description: 'Fetch a URL via your server proxy and show status, headers & a 1 000-char body snippet'
-    // };
+    supportedCommands['wasm'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
 
-    // Update Needed
-    // supportedCommands['files'] = {
-    //     executable: (params) => {
-    //         const fp = currentTerminalCore.getCurrentFolderPointer();
-    //         const [action, ...rest] = params;
-    //
-    //         switch (action) {
-    //             case 'list': {
-    //                 // show folders and files in current dir
-    //                 const folders = fp.getSubfolderNames();
-    //                 const files = fp.getFileNames();
-    //                 currentTerminalCore.printToWindow(
-    //                     `Folders:\n  ${folders.join('\n  ')}\n\n` +
-    //                     `Files:\n  ${files.join('\n  ')}\n`,
-    //                     false, true
-    //                 );
-    //                 break;
-    //             }
-    //
-    //             case 'read': {
-    //                 // files read <filename>
-    //                 if (rest.length !== 1) {
-    //                     currentTerminalCore.printToWindow('Usage: files read <path>\n', false, true);
-    //                     return;
-    //                 }
-    //                 try {
-    //                     const content = fp.getFileContent(rest[0]);
-    //                     currentTerminalCore.printToWindow(content + '\n', false, true);
-    //                 } catch (e) {
-    //                     currentTerminalCore.printToWindow(`files read failed: ${e.message}\n`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //
-    //             case 'create': {
-    //                 // files create <filename> [initial content...]
-    //                 if (rest.length < 1) {
-    //                     currentTerminalCore.printToWindow('Usage: files create <path> [content]\n', false, true);
-    //                     return;
-    //                 }
-    //                 const [path, ...txt] = rest;
-    //                 try {
-    //                     fp.createNewFile(path);
-    //                     if (txt.length) fp.changeFileContent(path, txt.join(' '));
-    //                     currentTerminalCore.printToWindow(`Created ${path}\n`, false, true);
-    //                 } catch (e) {
-    //                     currentTerminalCore.printToWindow(`files create failed: ${e.message}\n`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //
-    //             case 'update': {
-    //                 // files update <filename> <new content...>
-    //                 if (rest.length < 2) {
-    //                     currentTerminalCore.printToWindow('Usage: files update <path> <content>\n', false, true);
-    //                     return;
-    //                 }
-    //                 const [path, ...txt] = rest;
-    //                 try {
-    //                     fp.changeFileContent(path, txt.join(' '));
-    //                     currentTerminalCore.printToWindow(`Updated ${path}\n`, false, true);
-    //                 } catch (e) {
-    //                     currentTerminalCore.printToWindow(`files update failed: ${e.message}\n`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //
-    //             case 'delete': {
-    //                 // files delete <filename>
-    //                 if (rest.length !== 1) {
-    //                     currentTerminalCore.printToWindow('Usage: files delete <path>\n', false, true);
-    //                     return;
-    //                 }
-    //                 try {
-    //                     fp.deleteFile(rest[0]);
-    //                     currentTerminalCore.printToWindow(`Deleted ${rest[0]}\n`, false, true);
-    //                 } catch (e) {
-    //                     currentTerminalCore.printToWindow(`files delete failed: ${e.message}\n`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //
-    //             case 'rename': {
-    //                 // files rename <oldName> <newName>
-    //                 if (rest.length !== 2) {
-    //                     currentTerminalCore.printToWindow('Usage: files rename <old> <new>\n', false, true);
-    //                     return;
-    //                 }
-    //                 try {
-    //                     fp.renameExistingFile(rest[0], rest[1]);
-    //                     currentTerminalCore.printToWindow(`Renamed ${rest[0]} → ${rest[1]}\n`, false, true);
-    //                 } catch (e) {
-    //                     currentTerminalCore.printToWindow(`files rename failed: ${e.message}\n`, false, true);
-    //                 }
-    //                 break;
-    //             }
-    //
-    //             default:
-    //                 currentTerminalCore.printToWindow(
-    //                     'Usage: files <list|read|create|update|delete|rename> [args]\n',
-    //                     false, true
-    //                 );
-    //         }
-    //     },
-    //     description:
-    //         'Virtual-FS CRUD operations:\n' +
-    //         '  files list\n' +
-    //         '  files read <path>\n' +
-    //         '  files create <path> [content]\n' +
-    //         '  files update <path> <content>\n' +
-    //         '  files delete <path>\n' +
-    //         '  files rename <old> <new>'
-    // };
-
-    // Update Needed
-    // supportedCommands['save'] = {
-    //     description: 'Persist FS to SQLite',
-    //     executable: () => {
-    //         const cwd = currentTerminalCore.getCurrentFolderPointer().getFullPath();
-    //         const state = exportFS(fsRoot, cwd);
-    //
-    //         fetch('http://localhost:3000/api/fs/save', {
-    //             method: 'POST',                            // ← must be POST
-    //             headers: {'Content-Type': 'application/json'},
-    //             body: JSON.stringify(state),               // ← your JSON payload
-    //         })
-    //             .then(res => {
-    //                 if (!res.ok) throw new Error(res.statusText);
-    //                 console.log('✅ Saved to SQLite');
-    //             })
-    //             .catch(err => {
-    //                 console.log(`Save failed: ${err}`);
-    //             });
-    //     }
-    // };
-
-    // Update Needed
-    // supportedCommands['load'] = {
-    //     description: 'Load FS from SQLite',
-    //     executable: () => {
-    //         fetch('http://localhost:3000/api/fs/load')
-    //             .then(res => res.json())
-    //             .then(state => {
-    //                 importFS(fsRoot, state);                  // you’ll need an importFS to mirror exportFS
-    //                 // restore working directory
-    //                 // const cwd = state.cwd.startsWith('/') ? state.cwd.slice(1) : state.cwd;
-    //                 // if (cwd) currentTerminalCore.getCurrentFolderPointer().gotoPathFromRoot(cwd);
-    //                 currentTerminalCore.printToWindow('✅ Loaded from SQLite', false, true);
-    //             })
-    //             .catch(err => currentTerminalCore.printToWindow(`Load failed: ${err}`, false, true));
-    //     }
-    // };
+    // supportedCommands[''] = {
+    //     executable: (parameters) => {},
+    //     description: ''
+    // }
 
 });
 
