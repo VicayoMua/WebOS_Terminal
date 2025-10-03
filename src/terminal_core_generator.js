@@ -20,16 +20,15 @@
 //     );
 // }
 
-const
-    isLegalKeyNameInFileSystem = (() => {
-        const reg = /^(?!\.{1,2}$)[^\/\0]{1,255}$/;
-        return (x) => reg.test(x);
-    })();
+/*
+* This is the system Date-and-Time object.
+* */
+const sysdate = new Date();
 
-// Set Up System Date-and-Time Object
-const date = new Date();
-
-function generateRootDirectory() {
+/*
+* This function generates the folder representing the root folder.
+* */
+function generateRootFolder() {
     const fsRoot = { // FolderObject
         keyCheck: "TERMINAL FS ROOT",
         parentFolder: null, // FolderObject
@@ -40,6 +39,9 @@ function generateRootDirectory() {
     return fsRoot;
 }
 
+/*
+* This function generates the folder dictionary but _does_not_ append it to its parent.
+* */
 function generateSubfolderOf(currentFolderObject) {
     return {
         parentFolder: currentFolderObject,
@@ -53,18 +55,26 @@ function shallowCombineFolderObjects(destDir, srcDir) {
         if (destDir.files[fileName] === undefined) {
             destDir.files[fileName] = srcDir.files[fileName];
         } else {
-            destDir.files[`${date.getHours()}-${date.getMinutes()}'-${date.getSeconds()}'' ${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}_${fileName}`] = srcDir.files[fileName];
+            destDir.files[`${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}'' ${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}_${fileName}`] = srcDir.files[fileName];
         }
     }
     for (const folderName of Object.keys(srcDir.subfolders)) {
         if (destDir.subfolders[folderName] === undefined) {
             destDir.subfolders[folderName] = srcDir.subfolders[folderName];
-            destDir.subfolders[folderName].parentFolder = destDir; // reset parent folder directory
+            destDir.subfolders[folderName].parentFolder = destDir; // reset parent folder
         } else {
             shallowCombineFolderObjects(destDir.subfolders[folderName], srcDir.subfolders[folderName]);
         }
     }
 }
+
+/*
+* This function checks whether a string is a legal key-name in the file system.
+* */
+const isLegalKeyNameInFileSystem = (() => {
+    const reg = /^(?!\.{1,2}$)[^\/\0]{1,255}$/;
+    return (name) => reg.test(name);
+})();
 
 class TerminalFolderPointer {
     #fsRoot;
@@ -321,7 +331,8 @@ class TerminalFolderPointer {
     movePath(type, oldPath, newPath) {
         /*
         *  When moving a single file, if the destination is already existing, then the copy will stop.
-        *  When moving a directory, if a destination folder is already existing, then the folders will be merged;
+        *
+        *  When moving a folder, if a destination folder is already existing, then the folders will be merged;
         *                            if a destination file is already existing, then the file will be renamed and copied.
         * */
         switch (type) {
@@ -410,7 +421,7 @@ class TerminalFolderPointer {
     copyPath(type, oldPath, newPath) {
         /*
         *  When copying a single file, if the destination is already existing, then the copy will stop.
-        *  When copying a directory, if a destination folder is already existing, then the folders will be merged;
+        *  When copying a folder, if a destination folder is already existing, then the folders will be merged;
         *                            if a destination file is already existing, then the file will be renamed and copied.
         * */
         switch (type) {

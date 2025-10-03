@@ -2,123 +2,117 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    let
+        tabCount = 0,
+        fsRoot = generateRootFolder(), // Initialize File System Root
+        supportedCommands = {}, // Initialize Supported Commands
+        currentTerminalCore = null;
     const
-        fsRoot = generateRootDirectory(), // Initialize File System Root
-        supportedCommands = {}; // Initialize Supported Commands
-
-    // Set Up Current Terminal Core Services
-    let currentTerminalCore = null;
+        labelThemeIcon = document.querySelector('label[for=\"button_to_switch_theme\"]'),
+        divTerminalContainer = document.getElementById('terminal-container'),
+        navViewNavigation = document.getElementById('view-navigation'),
+        terminalHTMLDivElements = [],
+        terminalHTMLButtonElements = [];
 
     // Set Up Button Functions Links
-    document.getElementById('button_to_switch_theme').onclick = (() => {
-        const theme_icon = document.querySelector('label[for=\"button_to_switch_theme\"]');
-        return () => {
-            theme_icon.innerHTML = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
-        };
-    })();
-    document.getElementById('button_to_open_new_terminal_tab').onclick = (() => {
-        const divTerminalContainer = document.getElementById('terminal-container');
-        const navViewNavigation = document.getElementById('view-navigation');
-        const terminalHTMLDivElements = [];
-        const terminalHTMLButtonElements = [];
-        let tabCount = 0;
-        return () => {
-            if (tabCount === 8) {
-                alert('You can open at most 8 terminal tabs.');
+    document.getElementById('button_to_switch_theme').addEventListener('click', () => {
+        labelThemeIcon.innerHTML = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+    });
+    document.getElementById('button_to_open_new_terminal_tab').addEventListener('click', () => {
+        if (tabCount >= 8) {
+            alert('You can open at most 8 terminal tabs.');
+            return;
+        }
+        tabCount++;
+        const divNewTerminalHTMLDivElement = document.createElement('div');
+        divNewTerminalHTMLDivElement.setAttribute('class', 'terminal-tab');
+        divNewTerminalHTMLDivElement.setAttribute('id', `terminal-tab-${tabCount}`);
+        divNewTerminalHTMLDivElement.style.display = 'none';
+        divTerminalContainer.appendChild(divNewTerminalHTMLDivElement);
+        terminalHTMLDivElements.push(divNewTerminalHTMLDivElement);
+        const newXtermObject = new window.Terminal({
+            fontFamily: '"Fira Code", monospace',
+            cursorBlink: true,
+            allowProposedApi: true,
+            theme: {
+                foreground: '#f1f1f0',
+                background: 'black',
+                selection: '#97979b33',
+                black: '#282a36',
+                brightBlack: '#686868',
+                red: '#ff5c57',
+                brightRed: '#ff5c57',
+                green: '#5af78e',
+                brightGreen: '#5af78e',
+                yellow: '#f3f99d',
+                brightYellow: '#f3f99d',
+                blue: '#57c7ff',
+                brightBlue: '#57c7ff',
+                magenta: '#ff6ac1',
+                brightMagenta: '#ff6ac1',
+                cyan: '#9aedfe',
+                brightCyan: '#9aedfe',
+                white: '#f1f1f0',
+                brightWhite: '#eff0eb'
+            },
+        });
+        const newTerminalCore = generateTerminalCore(
+            newXtermObject,
+            divNewTerminalHTMLDivElement,
+            fsRoot,
+            supportedCommands
+        );
+        window.addEventListener('resize', () => {
+            if (currentTerminalCore !== newTerminalCore) // if the current terminal core is not on the front
                 return;
+            const fitAddon = newTerminalCore.getFitAddon();
+            if (fitAddon !== null) fitAddon.fit();
+        });
+        const buttonNewTerminalViewNavigation = document.createElement('button');
+        buttonNewTerminalViewNavigation.type = 'button';
+        buttonNewTerminalViewNavigation.textContent = `{ Tab #${tabCount} }`;
+        buttonNewTerminalViewNavigation.style.fontWeight = 'normal';
+        buttonNewTerminalViewNavigation.addEventListener('mouseover', () => {
+            buttonNewTerminalViewNavigation.style.textDecoration = 'underline';
+        });
+        buttonNewTerminalViewNavigation.addEventListener('mouseout', () => {
+            buttonNewTerminalViewNavigation.style.textDecoration = 'none';
+        });
+        buttonNewTerminalViewNavigation.addEventListener('click', () => {
+            if (currentTerminalCore !== newTerminalCore) { // view switching needed
+                // switch the nav button style
+                for (const button of terminalHTMLButtonElements)
+                    button.style.fontWeight = 'normal';
+                buttonNewTerminalViewNavigation.style.fontWeight = 'bold';
+                // switch the terminal tab view
+                for (const div of terminalHTMLDivElements)
+                    div.style.display = 'none';
+                divNewTerminalHTMLDivElement.style.display = 'block';
+                currentTerminalCore = newTerminalCore;
             }
-            tabCount++;
-            const divNewTerminalHTMLDivElement = document.createElement('div');
-            divNewTerminalHTMLDivElement.setAttribute('class', 'terminal-tab');
-            divNewTerminalHTMLDivElement.setAttribute('id', `terminal-tab-${tabCount}`);
-            divNewTerminalHTMLDivElement.style.display = 'none';
-            divTerminalContainer.appendChild(divNewTerminalHTMLDivElement);
-            terminalHTMLDivElements.push(divNewTerminalHTMLDivElement);
-            const newXtermObject = new window.Terminal({
-                fontFamily: '"Fira Code", monospace',
-                cursorBlink: true,
-                allowProposedApi: true,
-                theme: {
-                    foreground: '#f1f1f0',
-                    background: 'black',
-                    selection: '#97979b33',
-                    black: '#282a36',
-                    brightBlack: '#686868',
-                    red: '#ff5c57',
-                    brightRed: '#ff5c57',
-                    green: '#5af78e',
-                    brightGreen: '#5af78e',
-                    yellow: '#f3f99d',
-                    brightYellow: '#f3f99d',
-                    blue: '#57c7ff',
-                    brightBlue: '#57c7ff',
-                    magenta: '#ff6ac1',
-                    brightMagenta: '#ff6ac1',
-                    cyan: '#9aedfe',
-                    brightCyan: '#9aedfe',
-                    white: '#f1f1f0',
-                    brightWhite: '#eff0eb'
-                },
-            });
-            const newTerminalCore = generateTerminalCore(
-                newXtermObject,
-                divNewTerminalHTMLDivElement,
-                fsRoot,
-                supportedCommands
-            );
-            window.addEventListener('resize', () => {
-                if (currentTerminalCore !== newTerminalCore) // if the current terminal core is not on the front
-                    return;
-                const fitAddon = newTerminalCore.getFitAddon();
+            setTimeout(() => {
+                const fitAddon = newTerminalCore.getFitAddon(); // has to be newTerminalCore since 10ms waiting race
                 if (fitAddon !== null) fitAddon.fit();
-            });
-            const buttonNewTerminalViewNavigation = document.createElement('button');
-            buttonNewTerminalViewNavigation.type = 'button';
-            buttonNewTerminalViewNavigation.textContent = `{ Tab #${tabCount} }`;
-            buttonNewTerminalViewNavigation.style.fontWeight = 'normal';
-            buttonNewTerminalViewNavigation.addEventListener('mouseover', () => {
-                buttonNewTerminalViewNavigation.style.textDecoration = 'underline';
-            });
-            buttonNewTerminalViewNavigation.addEventListener('mouseout', () => {
-                buttonNewTerminalViewNavigation.style.textDecoration = 'none';
-            });
-            buttonNewTerminalViewNavigation.addEventListener('click', () => {
-                if (currentTerminalCore !== newTerminalCore) { // view switching needed
-                    // switch the nav button style
-                    for (const button of terminalHTMLButtonElements)
-                        button.style.fontWeight = 'normal';
-                    buttonNewTerminalViewNavigation.style.fontWeight = 'bold';
-                    // switch the terminal tab view
-                    for (const div of terminalHTMLDivElements)
-                        div.style.display = 'none';
-                    divNewTerminalHTMLDivElement.style.display = 'block';
-                    currentTerminalCore = newTerminalCore;
-                }
-                setTimeout(() => {
-                    const fitAddon = newTerminalCore.getFitAddon(); // has to be newTerminalCore since 10ms waiting race
-                    if (fitAddon !== null) fitAddon.fit();
-                }, 50);
-            });
-            navViewNavigation.appendChild(buttonNewTerminalViewNavigation);
-            terminalHTMLButtonElements.push(buttonNewTerminalViewNavigation);
-            if (currentTerminalCore === null) // if the terminal tab is <Tab #1>
-                buttonNewTerminalViewNavigation.click();
-        };
-    })();
-    document.getElementById('button_to_open_new_terminal_tab').click(); // auto-open window #1
-    document.getElementById('button_to_close_current_terminal_tab').onclick = () => {
+            }, 50);
+        });
+        navViewNavigation.appendChild(buttonNewTerminalViewNavigation);
+        terminalHTMLButtonElements.push(buttonNewTerminalViewNavigation);
+        if (currentTerminalCore === null) // if the terminal tab is <Tab #1>
+            buttonNewTerminalViewNavigation.click();
+    });
+    document.getElementById('button_to_close_current_terminal_tab').addEventListener('click', () => {
         alert('no implementation found.');
-    };
-    document.getElementById('button_to_download_terminal_log').onclick = () => {
+    });
+    document.getElementById('button_to_download_terminal_log').addEventListener('click', () => {
         const
             url = URL.createObjectURL(new Blob([currentTerminalCore.getTerminalLogString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
-        link.download = `terminal_log @ ${date.getHours()}-${date.getMinutes()}'-${date.getSeconds()}''_${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}.txt`; // the filename the user will get
+        link.download = `terminal_log @ ${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}''_${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}.txt`; // the filename the user will get
         link.click();
         URL.revokeObjectURL(url);
-    };
-    document.getElementById('button_to_add_local_file').onclick = () => {
+    });
+    document.getElementById('button_to_add_local_file').addEventListener('click', () => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '';
@@ -153,10 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         input.click();
-    };
-    document.getElementById('button_to_save_terminal_fs').onclick = () => {
+    });
+    document.getElementById('button_to_save_terminal_fs').addEventListener('click', () => {
         alert('no implementation found.');
-    };
+    });
+
+    // Automatically Open Window #1
+    document.getElementById('button_to_open_new_terminal_tab').click();
 
     // Finished
     supportedCommands['hello'] = {
@@ -614,8 +611,81 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     supportedCommands['webass'] = {
-        executable: (parameters) => {
-        },
+        // executable: (parameters) => {
+        //     // 0) Your C source lives in a JS string:
+        //     const c_code = `
+        //         #include <stdint.h>
+        //
+        //         // Exported function we will call from JS
+        //         int add(int a, int b) { return a + b; }
+        //     `;
+        //
+        //     // 1) Load the in-browser C compiler (replace with your actual compiler bundle)
+        //     // For example, a clang/tcc port built with Emscripten that provides FS + callMain.
+        //     import createCompilerModule from './clang.js'; // or './tcc.js'
+        //
+        //     async function compileCtoWasm(source, outName = 'out.wasm') {
+        //         const Compiler = await createCompilerModule(); // loads clang.wasm/tcc.wasm under the hood
+        //
+        //         // 2) Write source file into the virtual FS
+        //         const srcPath = '/tmp/main.c';
+        //         Compiler.FS.mkdir('/tmp');
+        //         Compiler.FS.writeFile(srcPath, source);
+        //
+        //         // 3) Invoke the compiler to produce WebAssembly
+        //         // Adjust flags to your compiler:
+        //         //   - For a clang port: ["-O3", "--target=wasm32", "-nostdlib", "-Wl,--no-entry", "-Wl,--export-all", "-o", "out.wasm", "main.c"]
+        //         //   - For a tcc port that supports wasm: similar idea, producing out.wasm
+        //         const args = [
+        //             '-O3',
+        //             '--target=wasm32',
+        //             '-nostdlib',
+        //             '-Wl,--no-entry',
+        //             '-Wl,--export-all',
+        //             srcPath,
+        //             '-o',
+        //             `/${outName}`,
+        //         ];
+        //
+        //         try {
+        //             Compiler.callMain(args);
+        //         } catch (e) {
+        //             // Some ports throw on nonzero exit; capture stdout/stderr if exposed
+        //             console.error('Compilation failed:', e);
+        //             throw e;
+        //         }
+        //
+        //         // 4) Read the produced wasm bytes from the virtual FS
+        //         const wasmBytes = Compiler.FS.readFile(`/${outName}`);
+        //         return wasmBytes; // Uint8Array
+        //     }
+        //
+        //     async function instantiateAndRun(wasmBytes) {
+        //         // Provide imports as required; for bare functions none may be needed
+        //         const imports = {};
+        //         const {instance} = await WebAssembly.instantiate(wasmBytes, imports);
+        //
+        //         // Inspect exports
+        //         console.log('exports:', Object.keys(instance.exports));
+        //
+        //         // Call the exported function from our C code
+        //         if (typeof instance.exports.add === 'function') {
+        //             console.log('add(2, 3) =', instance.exports.add(2, 3));
+        //         } else {
+        //             console.warn('No export named "add" found.');
+        //         }
+        //
+        //         return instance;
+        //     }
+        //
+        //     // Bring it together:
+        //     try {
+        //         const wasmBytes = await compileCtoWasm(c_code, 'module.wasm');
+        //         await instantiateAndRun(wasmBytes);
+        //     } catch (err) {
+        //         console.error('Error compiling/executing C → WASM in browser:', err);
+        //     }
+        // },
         description: ''
     }
 
@@ -657,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     description: 'Download file from html link.\nUsage: wget [html_link]'
     // };
 
-    // // Update Needed
+    // Update Needed
     // supportedCommands['ping'] = {
     //     executable: (parameters) => {
     //         if (parameters.length === 0) {
@@ -684,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     description: 'Ping a domain or IP address.\nUsage: ping [hostname]'
     // };
 
-    // // Update Needed
+    // Update Needed
     // supportedCommands['curl'] = {
     //     executable: (params) => {
     //         // Validate
@@ -729,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     description: 'Fetch a URL via your server proxy and show status, headers & a 1 000-char body snippet'
     // };
 
-    // // Update Needed
+    // Update Needed
     // supportedCommands['files'] = {
     //     executable: (params) => {
     //         const fp = currentTerminalCore.getCurrentFolderPointer();
