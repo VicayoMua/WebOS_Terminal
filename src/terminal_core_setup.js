@@ -1,7 +1,6 @@
 // let _root = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-
     let
         tabCount = 0, // Initialize the total tab count
         fsRoot = generateRootFolder(), // Initialize File System Root
