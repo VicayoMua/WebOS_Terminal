@@ -161,9 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         input.click();
     });
-    document.getElementById('button_to_save_terminal_fs').addEventListener('click', () => {
-        alert('no implementation found.');
-    });
 
     // Automatically Open Window #1
     document.getElementById('button_to_open_new_terminal_tab').click();
