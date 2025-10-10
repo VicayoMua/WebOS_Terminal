@@ -5,10 +5,12 @@
   "main": "terminal_setup_window.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src_server/create_server.js"
+    "start": "node src_server/create_server.cjs"
   },
   "private": true,
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "sqlite3": "^5.1.7"
   },
   "directories": {
