@@ -1,10 +1,14 @@
 const sqlite3 = require('sqlite3').verbose();
 
 // connect to database
-const db = new sqlite3.Database('./MyCloud.db', sqlite3.OPEN_READWRITE, (error) => {
-    if (error !== null)
-        return console.error(error.message);
-});
+const db = new sqlite3.Database(
+    './MyCloud.db',
+    sqlite3.OPEN_READWRITE,
+    (error) => {
+        if (error !== null)
+            return console.error(error.message);
+    }
+);
 
 // create a table
 db.run(`-- CREATE TABLE users(id INTEGER PRIMARY KEY, first_name, last_name, username, password, email)`);
@@ -37,7 +41,9 @@ db.run(
 
 // delete data
 db.run(
-    `DELETE FROM users WHERE id = ?`,
+    `DELETE
+     FROM users
+     WHERE id = ?`,
     [1],
     (error) => {
         if (error !== null)
