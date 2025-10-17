@@ -8,65 +8,13 @@
 * **************************************************************************************************************
 * */
 
-// function printObj(obj) {
-//     console.log(
-//         `{${
-//             Object.keys(obj).reduce((acc, key, index) => {
-//                 acc += `    ${key}: ${obj[key]}`;
-//                 if (index < Object.keys(obj).length - 1) acc += ',\n';
-//                 return acc;
-//             }, '')
-//         }}`
-//     );
-// }
-
 /*
-* This is the system Date-and-Time object.
+* This is the system Date-and-Time utils.
 * */
-const sysdate = new Date();
-
-/*
-* This function generates the folder representing the root folder.
-* */
-function generateRootFolder() {
-    const fsRoot = { // FolderObject
-        // keyCheck: "TERMINAL FS ROOT",
-        parentFolder: null, // FolderObject
-        subfolders: {}, // subfolderName : folderObject
-        files: {} // fileName : fileContents
-    };
-    fsRoot.parentFolder = fsRoot;
-    return fsRoot;
-}
-
-/*
-* This function generates the folder dictionary but __does_not__ append it to its parent.
-* */
-function generateSubfolderOf(currentFolderObject) {
-    return {
-        parentFolder: currentFolderObject,
-        subfolders: {},
-        files: {}
-    };
-}
-
-function shallowCombineFolderObjects(destDir, srcDir) {
-    for (const fileName of Object.keys(srcDir.files)) {
-        if (destDir.files[fileName] === undefined) {
-            destDir.files[fileName] = srcDir.files[fileName];
-        } else {
-            destDir.files[`${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}'' ${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}_${fileName}`] = srcDir.files[fileName];
-        }
-    }
-    for (const folderName of Object.keys(srcDir.subfolders)) {
-        if (destDir.subfolders[folderName] === undefined) {
-            destDir.subfolders[folderName] = srcDir.subfolders[folderName];
-            destDir.subfolders[folderName].parentFolder = destDir; // reset parent folder
-        } else {
-            shallowCombineFolderObjects(destDir.subfolders[folderName], srcDir.subfolders[folderName]);
-        }
-    }
-}
+const
+    sysdate = new Date(),
+    getTimeNumber = () => sysdate.getTime(),
+    getHumanReadableTime = () => `${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}'' ${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}`;
 
 /*
 * This function checks whether a string is a legal key-name in the file system.
@@ -76,50 +24,270 @@ const isLegalKeyNameInFileSystem = (() => {
     return (name) => reg.test(name);
 })();
 
-class TerminalFolderPointer {
-    #fsRoot;
-    #currentFolderObject;
-    #currentFullPathStack;
+class SerialLake {
+    #serialSet; // Set<string>
 
-    constructor(fsRoot, currentFolderObject = fsRoot, currentFullPathStack = []) {
-        this.#fsRoot = fsRoot;
-        this.#currentFolderObject = currentFolderObject;
-        this.#currentFullPathStack = currentFullPathStack;
+    constructor() {
+        this.#serialSet = new Set();
     }
 
-    /*
-    *  Duplication
-    * */
+    generateNext() {
+        let s;
+        do {
+            s = Math.random();
+        } while (this.#serialSet.has(`${s}`));
+        this.#serialSet.add(`${s}`);
+        return `${s}`;
+    }
+}
+
+const serialLake = new SerialLake();
+
+/*
+* This structure represents a single file in the file system.
+* Each instance is submitted to the file server.
+* */
+class File {
+    #serial;      // string
+    #content;     // string
+    #created_at;  // number (datetime)
+    #updated_at;  // number (datetime)
+
+    // JSON(){
+    //     throw new Error('Not implemented');
+    // }
+
+    constructor(serial, content) {
+        if (typeof serial !== 'string' || typeof content !== 'string')
+            throw new TypeError('Parameters must have correct data types');
+        this.#serial = serial;
+        this.#content = content;
+        this.#created_at = getTimeNumber();
+        this.#updated_at = getTimeNumber();
+    }
+
+    copy(serial) {
+        return new File(serial, this.#content);
+    }
+
+    getContent() {
+        return this.#content;
+    }
+
+    setContent(newContent) {
+        this.#content = newContent;
+        this.#updated_at = getTimeNumber();
+    }
+}
+
+/*
+* This structure represents a single folder in the file system.
+* The root folder is submitted to the file server as a JSON file.
+* */
+class Folder {
+    parentFolder;  // Folder                  NOT IN JSON, BUILT DURING RECOVERY
+    subfolders;    // { string : Folder }     IN JSON
+    files;         // { string : File }       IN JSON
+    #created_at;   // number (datetime)       IN JSON
+    folderLinks;   // { string : string }     IN JSON
+    fileLinks;     // { string : string }     IN JSON
+
+    JSON(){
+        throw new Error('Not implemented');
+    }
+
+    constructor(is_root, parentFolder) {
+        // parameter check
+        if (typeof is_root !== 'boolean')
+            throw new TypeError('Parameters must have correct data types');
+        if (is_root && parentFolder !== undefined) {
+            throw new Error('The parent folder cannot be specified when creating a root');
+        }
+        if (!is_root && parentFolder !== null && !(parentFolder instanceof Folder)) {
+            throw new Error('The parent folder must be specified when creating a regular folder');
+        }
+        // process data
+        this.parentFolder = is_root ? this : parentFolder;
+        this.subfolders = {};
+        this.files = {};
+        this.#created_at = getTimeNumber();
+        this.folderLinks = {};
+        this.fileLinks = {};
+    }
+
+    deepCopyTo(parentFolder) {
+        const dcFolder = new Folder(false, parentFolder);
+        for (const fileKey in this.files)
+            dcFolder.files[fileKey] = this.files[fileKey];
+        dcFolder.#created_at = getTimeNumber();
+        for (const folderLinkKey in this.folderLinks)
+            dcFolder.folderLinks[folderLinkKey] = this.folderLinks[folderLinkKey];
+        for (const fileLinkKey in this.fileLinks)
+            dcFolder.fileLinks[fileLinkKey] = this.fileLinks[fileLinkKey];
+        for (const subfolderKey in this.subfolders)
+            dcFolder.subfolders[subfolderKey] = this.subfolders[subfolderKey].deepCopyTo(dcFolder);
+        return dcFolder;
+    }
+
+    getSubfolderNames() {
+        return Object.keys(this.subfolders);
+    }
+
+    getFileNames() {
+        return Object.keys(this.files);
+    }
+
+    hasFile(fileName) {
+        return (isLegalKeyNameInFileSystem(fileName) && this.files[fileName] instanceof File);
+    }
+
+    hasSubfolder(subfolderName) {
+        return (isLegalKeyNameInFileSystem(subfolderName) && this.subfolders[subfolderName] instanceof Folder);
+    }
+
+    getFile(fileName) {
+        if (!isLegalKeyNameInFileSystem(fileName))
+            throw new Error(`File name is illegal`);
+        const file = this.files[fileName];
+        if (file instanceof File)
+            return file;
+        throw new Error(`File ${fileName} not found`);
+    }
+
+    createNewFile(fileName, fileSerial) {
+        if (!isLegalKeyNameInFileSystem(fileName))
+            throw new Error(`File name is illegal`);
+        if (this.files[fileName] instanceof File)
+            throw new Error(`File ${fileName} is already existing`);
+        this.files[fileName] = new File(fileSerial, '');
+    }
+
+    renameExistingFile(oldFileName, newFileName) {
+        if (!isLegalKeyNameInFileSystem(oldFileName) || !isLegalKeyNameInFileSystem(newFileName))
+            throw new Error(`File name is illegal`);
+        if (!(this.files[oldFileName] instanceof File))
+            throw new Error(`File ${oldFileName} not found`);
+        if (this.files[newFileName] instanceof File)
+            throw new Error(`File ${newFileName} already exists`);
+        this.files[newFileName] = this.files[oldFileName];
+        delete this.files[oldFileName];
+    }
+
+    deleteFile(fileName) {
+        if (!isLegalKeyNameInFileSystem(fileName))
+            throw new Error(`File name is illegal`);
+        if (!(this.files[fileName] instanceof File))
+            throw new Error(`File ${fileName} not found.`);
+        delete this.files[fileName];
+    }
+
+    createSubfolder(subfolderName) {
+        this.subfolders[subfolderName] = new Folder(false, this);
+    }
+}
+
+/*
+* This function shallow-moves <.files> and <.subfolders> from <srcFolder> to <destFolder>.
+* Before the movement, <destFolder> should be set up.
+* After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
+* */
+function shallowMoveFolders(destFolder, srcFolder) {
+    // check the data type
+    if (!(destFolder instanceof Folder) || !(srcFolder instanceof Folder))
+        throw new TypeError('Parameters must have correct data types');
+    // process the data
+    for (const fileKey in srcFolder.files) {
+        if (!(destFolder.files[fileKey] instanceof File)) {
+            destFolder.files[fileKey] = srcFolder.files[fileKey];
+        } else {
+            destFolder.files[`${getHumanReadableTime()}_${fileKey}`] = srcFolder.files[fileKey];
+        }
+    }
+    for (const folderLinkKey in srcFolder.folderLinks) {
+        if (typeof destFolder.folderLinks[folderLinkKey] !== 'string') {
+            destFolder.folderLinks[folderLinkKey] = srcFolder.folderLinks[folderLinkKey];
+        } else {
+            destFolder.folderLinks[`${getHumanReadableTime()}_${folderLinkKey}`] = srcFolder.folderLinks[folderLinkKey];
+        }
+    }
+    for (const fileLinkKey in srcFolder.fileLinks) {
+        if (typeof destFolder.fileLinks[fileLinkKey] !== 'string') {
+            destFolder.fileLinks[fileLinkKey] = srcFolder.fileLinks[fileLinkKey];
+        } else {
+            destFolder.fileLinks[`${getHumanReadableTime()}_${fileLinkKey}`] = srcFolder.fileLinks[fileLinkKey];
+        }
+    }
+    for (const folderKey in destFolder.subfolders) {
+        if (!(destFolder.subfolders[folderKey] instanceof Folder)) {
+            destFolder.subfolders[folderKey] = srcFolder.subfolders[folderKey];
+            destFolder.subfolders[folderKey].parentFolder = destFolder; // reset parent folder
+        } else {
+            shallowMoveFolders(destFolder.subfolders[folderKey], srcFolder.subfolders[folderKey]);
+        }
+    }
+}
+
+class TerminalFolderPointer {
+    #fsRoot;
+    #currentFolder;
+    #currentFolderTrackingStack;
+
+    constructor(fsRoot, currentFolder = fsRoot, currentFullPathStack = []) {
+        if (!(fsRoot instanceof Folder) || !(currentFolder instanceof Folder) || !(currentFullPathStack instanceof Array))
+            throw new TypeError('Parameters must have correct data types');
+        this.#fsRoot = fsRoot;
+        this.#currentFolder = currentFolder;
+        this.#currentFolderTrackingStack = currentFullPathStack;
+    }
+
     duplicate() {
         return new TerminalFolderPointer(
             this.#fsRoot, // shallow copy of pointer
-            this.#currentFolderObject, // shallow copy of pointer
-            this.#currentFullPathStack.map(x => x) // deep copy of array of strings
+            this.#currentFolder, // shallow copy of pointer
+            this.#currentFolderTrackingStack.map(x => x) // deep copy of array of strings
         )
     }
 
     /*
     *  Directory Information Getters
     * */
+    getCurrentFolder() {
+        return this.#currentFolder;
+    }
+
     getContentListAsString() {
         let contents = '';
         const
-            folderNames = Object.keys(this.#currentFolderObject.subfolders),
-            fileNames = Object.keys(this.#currentFolderObject.files);
-        if (folderNames.length > 0) {
+            folderNames = Object.keys(this.#currentFolder.subfolders),
+            fileNames = Object.keys(this.#currentFolder.files),
+            folderLinkNames = Object.keys(this.#currentFolder.folderLinks),
+            fileLinkNames = Object.keys(this.#currentFolder.fileLinks);
+        if (folderNames.length > 0)
             contents += 'Folders:' + folderNames.reduce(
                 (acc, elem) => `${acc}\n            ${elem}`,
                 ''
             );
-        }
-        if (folderNames.length > 0 && fileNames.length > 0)
+        if (contents.length > 0 && fileNames.length > 0)
             contents += '\n';
-        if (fileNames.length > 0) {
+        if (fileNames.length > 0)
             contents += 'Files:' + fileNames.reduce(
                 (acc, elem) => `${acc}\n            ${elem}`,
                 ''
             );
-        }
+        if (contents.length > 0 && folderLinkNames.length > 0)
+            contents += '\n';
+        if (folderLinkNames.length > 0)
+            contents += 'Folder Links:' + folderLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && fileLinkNames.length > 0)
+            contents += '\n';
+        if (fileLinkNames.length > 0)
+            contents += 'File Links:' + fileLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
         return contents.length === 0 ? 'No file or folder existing here...' : contents;
     }
 
@@ -135,155 +303,94 @@ class TerminalFolderPointer {
         // Create a new JSZip instance to generate the .zip file
         const zip = new JSZip();
         // Start the process from the current folder
-        addFolderToZip(this.#currentFolderObject, zip); // '' means root of the zip
+        addFolderToZip(this.#currentFolder, zip); // '' means root of the zip
         // Generate the zip file as a Blob
         return zip.generateAsync({type: 'blob'});
     }
 
     getFullPath() {
-        return this.#currentFullPathStack.length === 0 ? '/' :
-            this.#currentFullPathStack.reduce((acc, elem) => `${acc}/${elem}`, '');
-    }
-
-    getSubfolderNames() {
-        return Object.keys(this.#currentFolderObject.subfolders);
-    }
-
-    getFileNames() {
-        return Object.keys(this.#currentFolderObject.files);
-    }
-
-    haveFile(fileName) {
-        return (isLegalKeyNameInFileSystem(fileName) && this.#currentFolderObject.files[fileName] !== undefined);
-    }
-
-    haveSubfolder(subfolderName) {
-        return (isLegalKeyNameInFileSystem(subfolderName) && this.#currentFolderObject.subfolders[subfolderName] !== undefined);
+        return this.#currentFolderTrackingStack.length === 0 ? '/' :
+            this.#currentFolderTrackingStack.reduce((acc, elem) => `${acc}/${elem}`, '');
     }
 
     /*
     *  Directory Pointer Controllers
     * */
     gotoRoot() {
-        this.#currentFolderObject = this.#fsRoot;
-        this.#currentFullPathStack = [];
-    }
-
-    gotoSubfolder(subfolderName) {
-        if (!isLegalKeyNameInFileSystem(subfolderName))
-            throw new Error(`Subfolder name is illegal`);
-        if (this.#currentFolderObject.subfolders[subfolderName] === undefined)
-            throw new Error(`Folder ${subfolderName} not found`);
-        this.#currentFolderObject = this.#currentFolderObject.subfolders[subfolderName];
-        this.#currentFullPathStack.push(subfolderName);
+        this.#currentFolder = this.#fsRoot;
+        this.#currentFolderTrackingStack = [];
+        return this.#fsRoot;
     }
 
     gotoParentFolder() {
-        this.#currentFolderObject = this.#currentFolderObject.parentFolder;
-        if (this.#currentFullPathStack.length > 0)
-            this.#currentFullPathStack.pop();
+        if (this.#currentFolderTrackingStack.length > 0)
+            this.#currentFolderTrackingStack.pop()
+        return (this.#currentFolder = this.#currentFolder.parentFolder);
+    }
+
+    gotoSubfolder(include_link, subfolderName) {
+        if (!isLegalKeyNameInFileSystem(subfolderName))
+            throw new Error(`Subfolder name is illegal`);
+        const nextFolder = this.#currentFolder.subfolders[subfolderName];
+        if (nextFolder instanceof Folder) {
+            this.#currentFolderTrackingStack.push(subfolderName);
+            this.#currentFolder = nextFolder;
+            return nextFolder;
+        }
+        const nextFolderLink = this.#currentFolder.folderLinks[subfolderName];
+        if (include_link && typeof nextFolderLink === 'string') {
+            const pointer2 = this.duplicate();
+            pointer2.gotoPath(nextFolderLink);
+            this.#currentFolderTrackingStack = pointer2.#currentFolderTrackingStack;
+            this.#currentFolder = pointer2.#currentFolder;
+        }
+        throw new Error(`Folder ${subfolderName} not found`);
     }
 
     gotoPath(path) {
-        if (path.length === 0) return;
-        if (!path.startsWith('/') && !path.startsWith('./') && !path.startsWith('../'))
-            path = './' + path;
-        const pathStack = path.split('/');
-        if (pathStack[pathStack.length - 1] === '') pathStack.pop();
-        let firstEmptyFolderName = true;
-        const tempFolderPointer = this.duplicate();
+        if (path.length === 0)
+            throw new Error('Path cannot be empty');
+        const
+            pathStack = path.split('/').filter((s) => s.length > 0),
+            tfp = this.duplicate();
+        if (path.startsWith('/')) {
+            tfp.gotoRoot();
+        }
         for (const folderName of pathStack) {
             switch (folderName) {
-                case '': {
-                    if (!firstEmptyFolderName)
-                        throw new Error(`Path name is illegal`);
-                    tempFolderPointer.gotoRoot();
-                    firstEmptyFolderName = false;
-                    break;
-                }
                 case '.': {
                     // do nothing (goto the current folder)
                     break;
                 }
                 case '..': {
-                    tempFolderPointer.gotoParentFolder();
+                    tfp.gotoParentFolder();
                     break;
                 }
                 default: {
-                    tempFolderPointer.gotoSubfolder(folderName);
+                    tfp.gotoSubfolder(false, folderName);
                     break;
                 }
             }
         }
-        this.#currentFolderObject = tempFolderPointer.#currentFolderObject;
-        this.#currentFullPathStack = tempFolderPointer.#currentFullPathStack;
-    }
-
-    /*
-    *  Directory File Controllers
-    * */
-    getFileContent(fileName) {
-        if (!isLegalKeyNameInFileSystem(fileName))
-            throw new Error(`File name is illegal`);
-        const fileContent = this.#currentFolderObject.files[fileName];
-        if (fileContent === undefined)
-            throw new Error(`File ${fileName} not found`);
-        return fileContent;
-    }
-
-    changeFileContent(fileName, newContent) {
-        if (!isLegalKeyNameInFileSystem(fileName))
-            throw new Error(`File name is illegal`);
-        this.#currentFolderObject.files[fileName] = newContent;
-    }
-
-    createNewFile(fileName) {
-        if (!isLegalKeyNameInFileSystem(fileName))
-            throw new Error(`File name is illegal`);
-        if (this.#currentFolderObject.files[fileName] !== undefined)
-            throw new Error(`File ${fileName} is already existing`);
-        this.#currentFolderObject.files[fileName] = "";
-    }
-
-    renameExistingFile(oldFileName, newFileName) {
-        if (!isLegalKeyNameInFileSystem(oldFileName) || !isLegalKeyNameInFileSystem(newFileName))
-            throw new Error(`File name is illegal`);
-        if (this.#currentFolderObject.files[oldFileName] === undefined)
-            throw new Error(`File ${oldFileName} not found`);
-        if (this.#currentFolderObject.files[newFileName] !== undefined)
-            throw new Error(`File ${newFileName} already exists`);
-        this.#currentFolderObject.files[newFileName] = this.#currentFolderObject.files[oldFileName];
-        delete this.#currentFolderObject.files[oldFileName];
-    }
-
-    deleteFile(fileName) {
-        if (!isLegalKeyNameInFileSystem(fileName))
-            throw new Error(`File name is illegal`);
-        if (this.#currentFolderObject.files[fileName] === undefined)
-            throw new Error(`File ${fileName} not found.`);
-        delete this.#currentFolderObject.files[fileName];
+        this.#currentFolder = tfp.#currentFolder;
+        this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
     }
 
     /*
     *  Unified Path Controllers
     * */
-
     createPath(path, gotoNewFolder = false) {
-        if (path.length === 0) return;
-        if (!path.startsWith('/') && !path.startsWith('./') && !path.startsWith('../'))
-            path = './' + path;
-        const pathStack = path.split('/');
-        if (pathStack[pathStack.length - 1] === '') pathStack.pop();
-        let firstEmptyFolderName = true;
+        if (path.length === 0)
+            throw new Error('Path cannot be empty');
+        const
+            pathStack = path.split('/').filter((s) => s.length > 0),
+            tfp = this.duplicate();
+        if (path.startsWith('/')) {
+            tfp.gotoRoot();
+        }
         // check the availability of path for creation
         for (const folderName of pathStack) {
             switch (folderName) {
-                case '': {
-                    if (!firstEmptyFolderName)
-                        throw new Error(`Path name is illegal`);
-                    firstEmptyFolderName = false;
-                    break;
-                }
                 case '.': {
                     break;
                 }
@@ -298,33 +405,28 @@ class TerminalFolderPointer {
             }
         }
         // do the creation of path
-        const tempFolderPointer = this.duplicate();
         for (const folderName of pathStack) {
             switch (folderName) {
-                case '': {
-                    tempFolderPointer.gotoRoot();
-                    break;
-                }
                 case '.': {
                     // do nothing (goto the current folder)
                     break;
                 }
                 case '..': {
-                    tempFolderPointer.gotoParentFolder();
+                    tfp.gotoParentFolder();
                     break;
                 }
                 default: {
-                    if (tempFolderPointer.#currentFolderObject.subfolders[folderName] === undefined)
-                        tempFolderPointer.#currentFolderObject.subfolders[folderName] = generateSubfolderOf(tempFolderPointer.#currentFolderObject);
-                    tempFolderPointer.#currentFolderObject = tempFolderPointer.#currentFolderObject.subfolders[folderName];
-                    tempFolderPointer.#currentFullPathStack.push(folderName);
+                    if (!(tfp.#currentFolder.subfolders[folderName] instanceof Folder))
+                        tfp.#currentFolder.createSubfolder(folderName);
+                    tfp.#currentFolder = tfp.#currentFolder.subfolders[folderName];
+                    tfp.#currentFolderTrackingStack.push(folderName);
                     break;
                 }
             }
         }
         if (gotoNewFolder === true) {
-            this.#currentFolderObject = tempFolderPointer.#currentFolderObject;
-            this.#currentFullPathStack = tempFolderPointer.#currentFullPathStack;
+            this.#currentFolder = tfp.#currentFolder;
+            this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
         }
     }
 
@@ -358,17 +460,17 @@ class TerminalFolderPointer {
                 // check the old file status
                 const fp_old = this.duplicate();
                 fp_old.gotoPath(oldFileDir);
-                const oldFile = fp_old.#currentFolderObject.files[oldFileName];
-                if (oldFile === undefined)
+                const oldFile = fp_old.#currentFolder.files[oldFileName];
+                if (!(oldFile instanceof File))
                     throw new Error(`The old file is not found`);
                 // check the new file status
                 const fp_new = this.duplicate();
                 fp_new.createPath(newFileDir, true);
-                if (fp_new.#currentFolderObject.files[newFileName] !== undefined)
+                if (fp_new.#currentFolder.files[newFileName] instanceof File)
                     throw new Error(`The new file is already existing`);
                 // do the movement
-                delete fp_old.#currentFolderObject.files[oldFileName];
-                fp_new.#currentFolderObject.files[newFileName] = oldFile;
+                delete fp_old.#currentFolder.files[oldFileName];
+                fp_new.#currentFolder.files[newFileName] = oldFile;
                 break;
             }
             case 'directory': {
@@ -393,23 +495,23 @@ class TerminalFolderPointer {
                 // check the old dir status
                 const fp_old = this.duplicate();
                 fp_old.gotoPath(oldDirParent);
-                const oldDir = fp_old.#currentFolderObject.subfolders[oldDirName];
-                if (oldDir === undefined)
+                const oldDir = fp_old.#currentFolder.subfolders[oldDirName];
+                if (!(oldDir instanceof Folder))
                     throw new Error(`The old directory is not found`);
                 // check the new dir status
                 const fp_new = this.duplicate();
                 fp_new.createPath(newDirParent, true);
                 // do the movement
-                if (fp_new.#currentFolderObject.subfolders[newDirName] === undefined) {
+                if (!(fp_new.#currentFolder.subfolders[newDirName] instanceof Folder)) {
                     // directly deposit the folder directory
-                    fp_new.#currentFolderObject.subfolders[newDirName] = oldDir;
-                    oldDir.parentFolder = fp_new.#currentFolderObject;
+                    fp_new.#currentFolder.subfolders[newDirName] = oldDir;
+                    oldDir.parentFolder = fp_new.#currentFolder;
                 } else {
                     // combine two folder directories (shallow copying)
-                    shallowCombineFolderObjects(fp_new.#currentFolderObject.subfolders[newDirName], oldDir);
+                    shallowMoveFolders(fp_new.#currentFolder.subfolders[newDirName], oldDir);
                 }
                 // delete the moved folder directory
-                delete fp_old.#currentFolderObject.subfolders[oldDirName];
+                delete fp_old.#currentFolder.subfolders[oldDirName];
                 break;
             }
             default: {
@@ -447,16 +549,16 @@ class TerminalFolderPointer {
                 // check the old file status
                 const fp_old = this.duplicate();
                 fp_old.gotoPath(oldFileDir);
-                const oldFile = fp_old.#currentFolderObject.files[oldFileName];
-                if (oldFile === undefined)
+                const oldFile = fp_old.#currentFolder.files[oldFileName];
+                if (!(oldFile instanceof File))
                     throw new Error(`The old file is not found`);
                 // check the new file status
                 const fp_new = this.duplicate();
                 fp_new.createPath(newFileDir, true);
-                if (fp_new.#currentFolderObject.files[newFileName] !== undefined)
+                if (fp_new.#currentFolder.files[newFileName] instanceof File)
                     throw new Error(`The new file is already existing`);
                 // deep-copy the file
-                fp_new.#currentFolderObject.files[newFileName] = `${oldFile}`; // deep copy of the string
+                fp_new.#currentFolder.files[newFileName] = oldFile.copy(serialLake.generateNext()); // deep copy of the string
                 break;
             }
             case 'directory': {
@@ -481,31 +583,16 @@ class TerminalFolderPointer {
                 // check the old dir status
                 const fp_old = this.duplicate();
                 fp_old.gotoPath(oldDirParent);
-                const oldDir = fp_old.#currentFolderObject.subfolders[oldDirName];
-                if (oldDir === undefined)
+                const oldDir = fp_old.#currentFolder.subfolders[oldDirName];
+                if (!(oldDir instanceof Folder))
                     throw new Error(`The old directory is not found`);
                 // check the new dir status
                 const fp_new = this.duplicate();
                 fp_new.createPath(newDirParent, true);
-
-                // make a deep-copy of oldDri (named oldDirName), and append it to newParentOfOldDir
-                function deepCopyOfFolderObject(oldFolderObject, newFolderName, newParentOfOldFolderObject) {
-                    // create a new dir with the same name as the old dir
-                    const newDir = generateSubfolderOf(newParentOfOldFolderObject);
-                    for (const fileName of Object.keys(oldFolderObject.files))
-                        newDir.files[fileName] = `${oldFolderObject.files[fileName]}`;
-                    for (const subfolderName of Object.keys(oldFolderObject.subfolders))
-                        deepCopyOfFolderObject(oldFolderObject.subfolders[subfolderName], subfolderName, newDir);
-                    newParentOfOldFolderObject.subfolders[newFolderName] = newDir;
-                }
-
-                if (fp_new.#currentFolderObject.subfolders[newDirName] === undefined) {
-                    // deep-copy the directory
-                    deepCopyOfFolderObject(oldDir, newDirName, fp_new.#currentFolderObject);
+                if (!(fp_new.#currentFolder.subfolders[newDirName] instanceof Folder)) {
+                    fp_new.#currentFolder.subfolders[newDirName] = oldDir.deepCopyTo(fp_new.#currentFolder);
                 } else {
-                    const emptyFolderObject = generateSubfolderOf(null);
-                    deepCopyOfFolderObject(oldDir, newDirName, emptyFolderObject);
-                    shallowCombineFolderObjects(fp_new.#currentFolderObject.subfolders[newDirName], emptyFolderObject.subfolders[newDirName]);
+                    shallowMoveFolders(fp_new.#currentFolder.subfolders[newDirName], oldDir.deepCopyTo(null));
                 }
                 break;
             }
@@ -531,9 +618,9 @@ class TerminalFolderPointer {
                 const fp = this.duplicate();
                 fp.gotoPath(fileDir);
                 // delete the file
-                if (fp.#currentFolderObject.files[fileName] === undefined)
+                if (fp.#currentFolder.files[fileName] === undefined)
                     throw new Error(`The file is not found`);
-                delete fp.#currentFolderObject.files[fileName];
+                delete fp.#currentFolder.files[fileName];
                 break;
             }
             case 'directory': {
@@ -550,9 +637,9 @@ class TerminalFolderPointer {
                 const fp = this.duplicate();
                 fp.gotoPath(dirParent);
                 // delete the file
-                if (fp.#currentFolderObject.subfolders[dirName] === undefined)
+                if (fp.#currentFolder.subfolders[dirName] === undefined)
                     throw new Error(`The directory is not found`);
-                delete fp.#currentFolderObject.subfolders[dirName];
+                delete fp.#currentFolder.subfolders[dirName];
                 break;
             }
             default: {

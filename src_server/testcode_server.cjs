@@ -1,66 +1,28 @@
-const sqlite3 = require('sqlite3').verbose();
+// post.js
+// Node 18+ has global fetch. If you're on Node 16, run: npm i node-fetch && import it.
 
-// connect to database
-const db = new sqlite3.Database(
-    './MyCloud.db',
-    sqlite3.OPEN_READWRITE,
-    (error) => {
-        if (error !== null)
-            return console.error(error.message);
-    }
-);
+const BASE_URL = "http://127.0.0.1:80"; // match your server port
+const SERIAL   = "demo-file-1";
 
-// create a table
-db.run(`-- CREATE TABLE users(id INTEGER PRIMARY KEY, first_name, last_name, username, password, email)`);
+async function main() {
+  // Example payload: "Hello, World!"
+  const contentBase64 = Buffer.from("Hello, World!").toString("base64");
 
-// drop table
-db.run(`DROP TABLE users`);
+  const res = await fetch(`${BASE_URL}/api/files/${encodeURIComponent(SERIAL)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      encoding: "base64",
+      content: contentBase64,
+    }),
+  });
 
-// insert data into table
-db.run(
-    `INSERT INTO users(first_name, last_name, username, password, email)
-     VALUES (?, ?, ?, ?, ?)`,
-    ['Lexie', 'King', 'lele', 'll2002', 'lele@gmail.com'],
-    (error) => {
-        if (error !== null)
-            return console.error(error.message);
-    }
-);
+  const text = await res.text(); // handle non-JSON errors too
+  console.log("Status:", res.status);
+  try { console.log(JSON.parse(text)); } catch { console.log(text); }
+}
 
-// update data
-db.run(
-    `UPDATE users
-     SET first_name = ?
-     WHERE id = ?`,
-    ['Pipi', 3],
-    (error) => {
-        if (error !== null)
-            return console.error(error.message);
-    }
-);
-
-// delete data
-db.run(
-    `DELETE
-     FROM users
-     WHERE id = ?`,
-    [1],
-    (error) => {
-        if (error !== null)
-            return console.error(error.message);
-    }
-);
-
-// query the database
-db.all(
-    `SELECT *
-     FROM users`,
-    [],
-    (error, rows) => {
-        if (error !== null)
-            return console.error(error.message);
-        rows.forEach((row) => {
-            console.log(row);
-        });
-    }
-);
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

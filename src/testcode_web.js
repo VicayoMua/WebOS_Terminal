@@ -38,3 +38,6 @@
 *       serial: string
 * */
 // app.delete
+
+const ser = 'fgsfd';
+console.log(ser[1]);

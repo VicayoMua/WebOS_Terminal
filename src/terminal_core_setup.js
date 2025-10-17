@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     let
         tabCount = 0, // Initialize the total tab count
-        fsRoot = generateRootFolder(), // Initialize File System Root
+        fsRoot = new Folder(true), // Initialize File System Root
         supportedCommands = {}, // Initialize Supported Commands
         currentTabRecord = null; // This is an object from <generateTerminalCore>.
     const
@@ -141,11 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
             let filename = file.name;
             reader.onload = (reader_event) => {
                 const fileContent = reader_event.target.result;
-                if (cfp.haveFile(filename)) {
+                if (cfp.getCurrentFolder().hasFile(filename)) {
                     const date = new Date();
-                    filename = `${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}_${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}_${filename}`;
+                    filename = `${getHumanReadableTime()}_${filename}`;
                 }
-                cfp.changeFileContent(filename, fileContent);
+                cfp.getCurrentFolder().getFile(filename).setContent(fileContent);
                 alert(`Successfully added file '${filename}' to the current directory (${cfp.getFullPath()}).`);
             };
             // Check the file type to determine HOW to read it
@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['hello'] = {
+        is_async: false,
         executable: (_) => {
             currentTabRecord.terminalCore.printToWindow(`Hello World!`, false, true);
         },
@@ -173,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['help'] = {
+        is_async: false,
         executable: (_) => {
             currentTabRecord.terminalCore.printToWindow(
                 `Supported commands are: ${
@@ -193,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['man'] = {
+        is_async: false,
         executable: (parameters) => {
             switch (parameters.length) {
                 case 1: {
@@ -225,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['echo'] = {
+        is_async: false,
         executable: (parameters) => {
             currentTabRecord.terminalCore.printToWindow(
                 `'${
@@ -245,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['ls'] = {
+        is_async: false,
         executable: (parameters) => {
             switch (parameters.length) {
                 case 0: { // print current folder info
@@ -273,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['mkdir'] = {
+        is_async: false,
         executable: (parameters) => {
             switch (parameters.length) {
                 case 1: {
@@ -296,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['pwd'] = {
+        is_async: false,
         executable: (_) => {
             currentTabRecord.terminalCore.printToWindow(
                 currentTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
@@ -307,11 +314,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['touch'] = {
+        is_async: false,
         executable: (parameters) => {
             switch (parameters.length) {
                 case 1: {
                     try {
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().createNewFile(parameters[0]);
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(parameters[0], serialLake.generateNext());
                         currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
@@ -329,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['cd'] = {
+        is_async: false,
         executable: (parameters) => {
             switch (parameters.length) {
                 case 1: {
@@ -352,6 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['mv'] = {
+        is_async: false,
         executable: (parameters) => {
             if (
                 (parameters.length !== 3) ||
@@ -381,6 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['cp'] = {
+        is_async: false,
         executable: (parameters) => {
             if (
                 (parameters.length !== 3) ||
@@ -408,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['rm'] = {
+        is_async: false,
         executable: (parameters) => {
             if (
                 (parameters.length !== 2) ||
@@ -435,8 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
             '       rm -d [directory_path]'
     };
 
-    // Finished
+    // Update!!!
     supportedCommands['download'] = {
+        is_async: false,
         executable: (parameters) => {
             if (
                 (parameters.length !== 2) ||
@@ -457,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     })();
                     tfp.gotoPath(fileDir);
                     const
-                        url = URL.createObjectURL(new Blob([tfp.getFileContent(fileName)], {type: 'application/octet-stream'})),
+                        url = URL.createObjectURL(new Blob([tfp.getCurrentFolder().getFile(fileName).getContent()], {type: 'application/octet-stream'})),
                         link = document.createElement('a');
                     link.href = url;
                     link.download = fileName; // the filename the user will get
@@ -494,6 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['print'] = {
+        is_async: false,
         executable: (parameters) => {
             if (parameters.length !== 1) {
                 currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
@@ -509,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return [file_path.substring(0, index), file_path.slice(index + 1)];
                 })();
                 tfp.gotoPath(fileDir);
-                currentTabRecord.terminalCore.printToWindow(tfp.getFileContent(fileName), false, true);
+                currentTabRecord.terminalCore.printToWindow(tfp.getCurrentFolder().getFile(fileName).getContent(), false, true);
             } catch (error) {
                 currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
             }
@@ -520,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['edit'] = {
+        is_async: false,
         executable: (parameters) => {
             if (parameters.length !== 1) {
                 currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
@@ -535,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return [filePath.substring(0, index), filePath.slice(index + 1)];
                 })();
                 tfp.gotoPath(fileDir);
-                const fileContent = tfp.getFileContent(fileName); // need this line to make sure the file is loaded before resetting the keyboard listener
+                const fileContent = tfp.getCurrentFolder().getFile(fileName).getContent(); // need this line to make sure the file is loaded before resetting the keyboard listener
                 currentTabRecord.terminalCore.setNewKeyboardListener((_) => { // empty keyboard listener
                 });
                 openFileEditor(
@@ -553,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     (newFileContent) => { // save
-                        tfp.changeFileContent(fileName, newFileContent);
+                        tfp.getCurrentFolder().getFile(fileName).setContent(newFileContent);
                         currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     () => { // cancel
@@ -571,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     supportedCommands['mini'] = {
+        is_async: false,
         executable: (parameters) => {
             if (
                 (parameters.length <= 0) ||
@@ -583,8 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             try {
                 if (parameters[0] === '-l') {
-                    // 'Folders:' + folderNames.reduce((acc, elem) =>
-                    //     `${acc}\n            ${elem}`, '');
                     const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
                     const cmwrDescriptions = cmwr.getDescriptions();
                     if (cmwrDescriptions.length > 0) {
