@@ -292,19 +292,26 @@ class Folder {
     }
 
     /**
+     * @param {boolean} fix_duplicated_filename
      * @param {string} fileName
      * @param {string} fileSerial
-     * @returns {File}
+     * @returns {[File, string]}
      * @throws {Error}
      * */
-    createNewFile(fileName, fileSerial) {
+    createNewFile(fix_duplicated_filename, fileName, fileSerial) {
         if (!legalKeyNameInFileSystem.test(fileName))
             throw new Error(`File name is illegal`);
-        if (this.files[fileName] instanceof File)
-            throw new Error(`File ${fileName} is already existing`);
         if (typeof fileSerial !== 'string' || fileSerial.length === 0)
             throw new Error(`File Serial is illegal`);
-        return (this.files[fileName] = new File(fileSerial, ''));
+        if (this.files[fileName] instanceof File) {
+            if (!fix_duplicated_filename)
+                throw new Error(`File ${fileName} is already existing`);
+            let i = 2;
+            while (this.files[`${fileName} ${i}`] instanceof File)
+                i++;
+            fileName = `${fileName} ${i}`;
+        }
+        return [(this.files[fileName] = new File(fileSerial, '')), fileName];
     }
 
     /**
@@ -334,7 +341,7 @@ class Folder {
         if (!legalKeyNameInFileSystem.test(fileName))
             throw new Error(`File name is illegal`);
         if (!(this.files[fileName] instanceof File))
-            throw new Error(`File ${fileName} not found.`);
+            throw new Error(`File ${fileName} not found`);
         delete this.files[fileName];
     }
 

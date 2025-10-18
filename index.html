@@ -35,10 +35,8 @@
 
     <div class="header">
         <h1>Mini Terminal</h1>
+        <button type="button" id="button_to_switch_theme">🌙</button>
     </div>
-
-    <input type="button" id="button_to_switch_theme" hidden>
-    <label for="button_to_switch_theme" class="button_to_switch_theme">🌙</label>
 
     <nav class="view-navigation" id="view-navigation">
         <!--        <button-->
@@ -50,14 +48,16 @@
     </nav>
 
     <div class="terminal-container" id="terminal-container">
-        <!--        <div class="terminal-window" id="terminal-window-1" style="display:block"></div>-->
+        <!--        <div class="terminal-tab" id="terminal-tab-1" style="display: block;">-->
+        <!--            <div dir="ltr" class="terminal xterm xterm-dom-renderer-owner-1"> ...</div>-->
+        <!--        </div>-->
     </div>
 
     <div class="additional-buttons">
         <button
                 type="button"
                 id="button_to_open_new_terminal_tab">
-            Open New Terminal Tab
+            New Terminal Tab
         </button>
         <button
                 type="button"
@@ -66,13 +66,13 @@
         </button>
         <button
                 type="button"
-                id="button_to_add_local_file">
-            Add Local File
+                id="button_to_add_files_to_terminal">
+            Add Files To Terminal
         </button>
     </div>
 
     <div class="footer">
-        <p>Authors: Vicayo Zhang</p>
+        <p>Author(s): Vicayo Zhang</p>
     </div>
 
 </div>

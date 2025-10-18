@@ -39,17 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
         supportedCommands = {}; // Initialize Supported Commands
 
     const
-        label_theme_icon = document.querySelector('label[for=\"button_to_switch_theme\"]'),
+        button_to_switch_theme = document.getElementById('button_to_switch_theme'),
         div_terminal_container = document.getElementById('terminal-container'),
         nav_view_navigation = document.getElementById('view-navigation'),
-        button_to_switch_theme = document.getElementById('button_to_switch_theme'),
         button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
         button_to_download_terminal_log = document.getElementById('button_to_download_terminal_log'),
-        button_to_add_local_file = document.getElementById('button_to_add_local_file');
+        button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal');
 
     // Set Up Button Functions Links
     button_to_switch_theme.addEventListener('click', () => {
-        label_theme_icon.innerHTML = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+        button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
     });
     button_to_open_new_terminal_tab.addEventListener('click', () => {
         // check the tab count limit
@@ -129,40 +128,48 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
         URL.revokeObjectURL(url);
     });
-    button_to_add_local_file.addEventListener('click', () => {
+    button_to_add_files_to_terminal.addEventListener('click', () => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '';
-        input.onchange = (input_event) => {
-            const file = input_event.target.files[0];
-            if (!file) return;   // user hit “cancel”
-            // set up a reader for the file
-            const reader = new FileReader();
-            // set up behaviors on errors
-            reader.onerror = (error) => {
-                alert(`button_to_add_local_file: error reading the file '${file.name}', ${error}.`);
-            };
-            // set up behaviors on loading
-            const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
-            let filename = file.name;
-            reader.onload = (reader_event) => {
-                const fileContent = reader_event.target.result;
-                if (cfp.getCurrentFolder().hasFile(filename)) {
-                    const date = new Date();
-                    filename = `${getHumanReadableTime()}_${filename}`;
+        // set up a reader for __every__ file
+        const reader = new FileReader();
+        // set up the file input element
+        input.onchange = (input_event) =>
+            Object.values(input_event.target.files).forEach((file) => {
+                if (!file) { // user hit "cancel"
+                    alert('button_to_add_files_to_terminal: no file is added.');
+                    return;
                 }
-                cfp.getCurrentFolder().getFile(filename).setContent(fileContent);
-                alert(`Successfully added file '${filename}' to the current directory (${cfp.getFullPath()}).`);
-            };
-            // Check the file type to determine HOW to read it
-            if (file.type.startsWith('text/')) {
-                // Read as text if the file is a text-based file
-                reader.readAsText(file);
-            } else {
-                // Read as binary (ArrayBuffer) for non-text files (e.g., images)
-                reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
-            }
-        };
+                if (typeof file.name !== 'string') { // filename is illegal
+                    alert('button_to_add_files_to_terminal: file name must be a string.');
+                    return;
+                }
+                // set up behaviors on errors
+                reader.onerror = (error) => {
+                    alert(`button_to_add_files_to_terminal: error reading the file '${file.name}', ${error}.`);
+                };
+                // set up behaviors on loading
+                reader.onload = (reader_event) => {
+                    const
+                        fileContent = reader_event.target.result,
+                        [newFile, newFileName] = currentTabRecord.terminalCore
+                            .getCurrentFolderPointer()
+                            .getCurrentFolder()
+                            .createNewFile(true, file.name, serialLake.generateNext());
+                    newFile.setContent(fileContent);
+                    alert(`Successfully added file "${newFileName}" to the current directory.`);
+                };
+                // Check the file type to determine HOW to read it
+                if (typeof file.type === 'string' && file.type.startsWith('text/')) {
+                    // Read as text if the file is a text-based file
+                    reader.readAsText(file);
+                } else {
+                    // Read as binary (ArrayBuffer) for non-text files (e.g., images)
+                    reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
+                }
+            });
+        // activate the file input element
         input.click();
     });
 
@@ -259,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (parameters.length) {
                 case 1: {
                     try {
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(parameters[0], serialLake.generateNext());
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(false, parameters[0], serialLake.generateNext());
                         currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
