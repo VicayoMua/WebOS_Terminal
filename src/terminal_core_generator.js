@@ -16,21 +16,25 @@ const
     getTimeNumber = () => sysdate.getTime(),
     getHumanReadableTime = () => `${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}'' ${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}`;
 
-/*
-* This function checks whether a string is a legal key-name in the file system.
-* */
-const isLegalKeyNameInFileSystem = (() => {
-    const reg = /^(?!\.{1,2}$)[^\/\0]{1,255}$/;
-    return (name) => reg.test(name);
-})();
+/**
+ * This regular expression checks whether a string is a legal key-name in the file system.
+ * */
+const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
 
 class SerialLake {
-    #serialSet; // Set<string>
+    /** @type {Set<string>} */
+    #serialSet;
 
-    constructor() {
-        this.#serialSet = new Set();
+    /**
+     * @param {string[]} init
+     * */
+    constructor(init) {
+        this.#serialSet = new Set(init);
     }
 
+    /**
+     * @returns {string}
+     * */
     generateNext() {
         let s;
         do {
@@ -41,22 +45,29 @@ class SerialLake {
     }
 }
 
-const serialLake = new SerialLake();
-
 /*
 * This structure represents a single file in the file system.
 * Each instance is submitted to the file server.
 * */
 class File {
-    #serial;      // string
-    #content;     // string
-    #created_at;  // number (datetime)
-    #updated_at;  // number (datetime)
+    /** @type {string} */
+    #serial;
+    /** @type {string} */
+    #content;
+    /** @type {number} */
+    #created_at;
+    /** @type {number} */
+    #updated_at;
 
     // JSON(){
     //     throw new Error('Not implemented');
     // }
 
+    /**
+     * @param {string} serial
+     * @param {string} content
+     * @throws {TypeError}
+     * */
     constructor(serial, content) {
         if (typeof serial !== 'string' || typeof content !== 'string')
             throw new TypeError('Parameters must have correct data types');
@@ -66,14 +77,32 @@ class File {
         this.#updated_at = getTimeNumber();
     }
 
+    /**
+     * @param {string} serial
+     * @returns {File}
+     * */
     copy(serial) {
         return new File(serial, this.#content);
     }
 
+    /**
+     * @returns {string}
+     * */
+    getSerial() {
+        return this.#serial;
+    }
+
+    /**
+     * @returns {string}
+     * */
     getContent() {
         return this.#content;
     }
 
+    /**
+     * @param {string} newContent
+     * @returns {void}
+     * */
     setContent(newContent) {
         this.#content = newContent;
         this.#updated_at = getTimeNumber();
@@ -85,17 +114,70 @@ class File {
 * The root folder is submitted to the file server as a JSON file.
 * */
 class Folder {
-    parentFolder;  // Folder                  NOT IN JSON, BUILT DURING RECOVERY
-    subfolders;    // { string : Folder }     IN JSON
-    files;         // { string : File }       IN JSON
-    #created_at;   // number (datetime)       IN JSON
-    folderLinks;   // { string : string }     IN JSON
-    fileLinks;     // { string : string }     IN JSON
+    /** @type {Folder} */
+    parentFolder;                    // NOT IN JSON, BUILT DURING RECOVERY
+    /** @type {Record<string, Folder>} */
+    subfolders;          // IN JSON
+    /** @type {Record<string, File>} */
+    files;                 // IN JSON, name <--> serial
+    /** @type {number} */
+    #created_at;                    // IN JSON
+    /** @type {Record<string, string>} */
+    folderLinks;         // IN JSON
+    /** @type {Record<string, string>} */
+    fileLinks;           // IN JSON
 
-    JSON(){
-        throw new Error('Not implemented');
+    /**
+     * @returns {string}
+     * This function converts the current Folder object to a JSON string
+     * */
+    JSON() {
+        /**
+         * @param {Folder} folder
+         * @returns {{subfolder, files, created_at, folderLinks, fileLinks}}
+         * */
+        function toPlainObject(folder) {
+            return {
+                subfolder: Object.entries(folder.subfolders).reduce(
+                    (acc, [name, subfolder]) => {
+                        acc[name] = toPlainObject(subfolder);
+                        return acc;
+                    },
+                    {}
+                ),
+                files: Object.entries(folder.files).reduce(
+                    (acc, [name, file]) => {
+                        acc[name] = file.getSerial();
+                        return acc;
+                    },
+                    {}
+                ),
+                created_at: folder.getCreatedAt(),
+                folderLinks: Object.entries(folder.folderLinks).reduce(
+                    (acc, [name, folderLink]) => {
+                        acc[name] = folderLink;
+                        return acc;
+                    },
+                    {}
+                ),
+                fileLinks: Object.entries(folder.fileLinks).reduce(
+                    (acc, [name, fileLink]) => {
+                        acc[name] = fileLink;
+                        return acc;
+                    },
+                    {}
+                )
+            };
+        }
+
+        return JSON.stringify(toPlainObject(this));
     }
 
+    /**
+     * @param {boolean} is_root
+     * @param {Folder} parentFolder
+     * @throws {TypeError | Error}
+     * */
     constructor(is_root, parentFolder) {
         // parameter check
         if (typeof is_root !== 'boolean')
@@ -115,6 +197,10 @@ class Folder {
         this.fileLinks = {};
     }
 
+    /**
+     * @param {Folder} parentFolder
+     * @returns {Folder}
+     * */
     deepCopyTo(parentFolder) {
         const dcFolder = new Folder(false, parentFolder);
         for (const fileKey in this.files)
@@ -129,24 +215,75 @@ class Folder {
         return dcFolder;
     }
 
-    getSubfolderNames() {
-        return Object.keys(this.subfolders);
+    /**
+     * @returns {number}
+     * */
+    getCreatedAt() {
+        return this.#created_at;
     }
 
-    getFileNames() {
-        return Object.keys(this.files);
+    /**
+     * @returns {string}
+     * */
+    getContentListAsString() {
+        let contents = '';
+        const
+            folderNames = Object.keys(this.subfolders),
+            fileNames = Object.keys(this.files),
+            folderLinkNames = Object.keys(this.folderLinks),
+            fileLinkNames = Object.keys(this.fileLinks);
+        if (folderNames.length > 0)
+            contents += 'Folders:' + folderNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && fileNames.length > 0)
+            contents += '\n';
+        if (fileNames.length > 0)
+            contents += 'Files:' + fileNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && folderLinkNames.length > 0)
+            contents += '\n';
+        if (folderLinkNames.length > 0)
+            contents += 'Folder Links:' + folderLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && fileLinkNames.length > 0)
+            contents += '\n';
+        if (fileLinkNames.length > 0)
+            contents += 'File Links:' + fileLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        return contents.length === 0 ? 'No file or folder existing here...' : contents;
     }
 
+    /**
+     * @param {string} fileName
+     * @returns {boolean}
+     * */
     hasFile(fileName) {
-        return (isLegalKeyNameInFileSystem(fileName) && this.files[fileName] instanceof File);
+        return (legalKeyNameInFileSystem.test(fileName) && this.files[fileName] instanceof File);
     }
 
+    /**
+     * @param {string} subfolderName
+     * @returns {boolean}
+     * */
     hasSubfolder(subfolderName) {
-        return (isLegalKeyNameInFileSystem(subfolderName) && this.subfolders[subfolderName] instanceof Folder);
+        return (legalKeyNameInFileSystem.test(subfolderName) && this.subfolders[subfolderName] instanceof Folder);
     }
 
+    /**
+     * @param {string} fileName
+     * @returns {File}
+     * @throws {Error}
+     * */
     getFile(fileName) {
-        if (!isLegalKeyNameInFileSystem(fileName))
+        if (!legalKeyNameInFileSystem.test(fileName))
             throw new Error(`File name is illegal`);
         const file = this.files[fileName];
         if (file instanceof File)
@@ -154,16 +291,30 @@ class Folder {
         throw new Error(`File ${fileName} not found`);
     }
 
+    /**
+     * @param {string} fileName
+     * @param {string} fileSerial
+     * @returns {File}
+     * @throws {Error}
+     * */
     createNewFile(fileName, fileSerial) {
-        if (!isLegalKeyNameInFileSystem(fileName))
+        if (!legalKeyNameInFileSystem.test(fileName))
             throw new Error(`File name is illegal`);
         if (this.files[fileName] instanceof File)
             throw new Error(`File ${fileName} is already existing`);
-        this.files[fileName] = new File(fileSerial, '');
+        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
+            throw new Error(`File Serial is illegal`);
+        return (this.files[fileName] = new File(fileSerial, ''));
     }
 
+    /**
+     * @param {string} oldFileName
+     * @param {string} newFileName
+     * @returns {File}
+     * @throws {Error}
+     * */
     renameExistingFile(oldFileName, newFileName) {
-        if (!isLegalKeyNameInFileSystem(oldFileName) || !isLegalKeyNameInFileSystem(newFileName))
+        if (!legalKeyNameInFileSystem.test(oldFileName) || !legalKeyNameInFileSystem.test(newFileName))
             throw new Error(`File name is illegal`);
         if (!(this.files[oldFileName] instanceof File))
             throw new Error(`File ${oldFileName} not found`);
@@ -171,26 +322,70 @@ class Folder {
             throw new Error(`File ${newFileName} already exists`);
         this.files[newFileName] = this.files[oldFileName];
         delete this.files[oldFileName];
+        return this.files[newFileName];
     }
 
+    /**
+     * @param {string} fileName
+     * @returns {void}
+     * @throws {Error}
+     * */
     deleteFile(fileName) {
-        if (!isLegalKeyNameInFileSystem(fileName))
+        if (!legalKeyNameInFileSystem.test(fileName))
             throw new Error(`File name is illegal`);
         if (!(this.files[fileName] instanceof File))
             throw new Error(`File ${fileName} not found.`);
         delete this.files[fileName];
     }
 
+    /**
+     * @param {string} subfolderName
+     * @returns {Folder}
+     * @throws {Error}
+     * */
     createSubfolder(subfolderName) {
-        this.subfolders[subfolderName] = new Folder(false, this);
+        if (!legalKeyNameInFileSystem.test(subfolderName))
+            throw new Error(`Subfolder name is illegal`);
+        if (this.subfolders[subfolderName] instanceof Folder)
+            throw new Error(`Subfolder ${subfolderName} is already existing`);
+        return (this.subfolders[subfolderName] = new Folder(false, this));
+    }
+
+    /**
+     * @returns {Object}
+     * */
+    getZipBlob() {
+        /**
+         * This function helps recursively add folder content to the zip file
+         * @param {Folder} folderObject
+         * @param {Object} zipObject
+         * @returns {void}
+         * */
+        function addFolderToZip(folderObject, zipObject) {
+            for (const [fileName, file] of Object.entries(folderObject.files))
+                zipObject.file(fileName, file.getContent(), {binary: true});
+            for (const [subfolderName, subfolderObject] of Object.entries(folderObject.subfolders))
+                addFolderToZip(subfolderObject, zipObject.folder(subfolderName));
+        }
+
+        // Create a new JSZip instance to generate the .zip file
+        const zip = new JSZip();
+        // Start the process from the current folder
+        addFolderToZip(this, zip); // '' means root of the zip
+        // Generate the zip file as a Blob
+        return zip.generateAsync({type: 'blob'});
     }
 }
 
-/*
-* This function shallow-moves <.files> and <.subfolders> from <srcFolder> to <destFolder>.
-* Before the movement, <destFolder> should be set up.
-* After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
-* */
+/**
+ * This function shallow-moves <.files> and <.subfolders> from <srcFolder> to <destFolder>.
+ * Before the movement, <destFolder> should be set up.
+ * After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
+ * @param {Folder} destFolder
+ * @param {Folder} srcFolder
+ * @returns {void}
+ * @throws {TypeError}
+ * */
 function shallowMoveFolders(destFolder, srcFolder) {
     // check the data type
     if (!(destFolder instanceof Folder) || !(srcFolder instanceof Folder))
@@ -228,10 +423,19 @@ function shallowMoveFolders(destFolder, srcFolder) {
 }
 
 class TerminalFolderPointer {
+    /** @type {Folder} */
     #fsRoot;
+    /** @type {Folder} */
     #currentFolder;
+    /** @type {string[]} */
     #currentFolderTrackingStack;
 
+    /**
+     * @param {Folder} fsRoot
+     * @param {Folder} currentFolder
+     * @param {string[]} currentFullPathStack
+     * @throws {TypeError}
+     * */
     constructor(fsRoot, currentFolder = fsRoot, currentFullPathStack = []) {
         if (!(fsRoot instanceof Folder) || !(currentFolder instanceof Folder) || !(currentFullPathStack instanceof Array))
             throw new TypeError('Parameters must have correct data types');
@@ -240,113 +444,80 @@ class TerminalFolderPointer {
         this.#currentFolderTrackingStack = currentFullPathStack;
     }
 
+    /**
+     * @returns {TerminalFolderPointer}
+     * @throws {TypeError}
+     * */
     duplicate() {
         return new TerminalFolderPointer(
-            this.#fsRoot, // shallow copy of pointer
-            this.#currentFolder, // shallow copy of pointer
-            this.#currentFolderTrackingStack.map(x => x) // deep copy of array of strings
+            this.#fsRoot, // shallow copy
+            this.#currentFolder, // shallow copy
+            this.#currentFolderTrackingStack.map(x => x) // deep copy
         )
     }
 
-    /*
-    *  Directory Information Getters
-    * */
+    /**
+     * @returns {Folder}
+     * */
     getCurrentFolder() {
         return this.#currentFolder;
     }
 
-    getContentListAsString() {
-        let contents = '';
-        const
-            folderNames = Object.keys(this.#currentFolder.subfolders),
-            fileNames = Object.keys(this.#currentFolder.files),
-            folderLinkNames = Object.keys(this.#currentFolder.folderLinks),
-            fileLinkNames = Object.keys(this.#currentFolder.fileLinks);
-        if (folderNames.length > 0)
-            contents += 'Folders:' + folderNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && fileNames.length > 0)
-            contents += '\n';
-        if (fileNames.length > 0)
-            contents += 'Files:' + fileNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && folderLinkNames.length > 0)
-            contents += '\n';
-        if (folderLinkNames.length > 0)
-            contents += 'Folder Links:' + folderLinkNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && fileLinkNames.length > 0)
-            contents += '\n';
-        if (fileLinkNames.length > 0)
-            contents += 'File Links:' + fileLinkNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        return contents.length === 0 ? 'No file or folder existing here...' : contents;
-    }
-
-    getZipBlobOfFolder() {
-        // Helper function to recursively add folder content to the zip file
-        function addFolderToZip(folderObject, zipObject) {
-            for (const [fileName, fileContent] of Object.entries(folderObject.files))
-                zipObject.file(fileName, fileContent, {binary: true});
-            for (const [subfolderName, subfolderObject] of Object.entries(folderObject.subfolders))
-                addFolderToZip(subfolderObject, zipObject.folder(subfolderName));
-        }
-
-        // Create a new JSZip instance to generate the .zip file
-        const zip = new JSZip();
-        // Start the process from the current folder
-        addFolderToZip(this.#currentFolder, zip); // '' means root of the zip
-        // Generate the zip file as a Blob
-        return zip.generateAsync({type: 'blob'});
-    }
-
+    /**
+     * @returns {string}
+     * */
     getFullPath() {
         return this.#currentFolderTrackingStack.length === 0 ? '/' :
             this.#currentFolderTrackingStack.reduce((acc, elem) => `${acc}/${elem}`, '');
     }
 
-    /*
-    *  Directory Pointer Controllers
-    * */
+    /**
+     * @returns {Folder}
+     * */
     gotoRoot() {
         this.#currentFolder = this.#fsRoot;
         this.#currentFolderTrackingStack = [];
         return this.#fsRoot;
     }
 
+    /**
+     * @returns {Folder}
+     * */
     gotoParentFolder() {
         if (this.#currentFolderTrackingStack.length > 0)
             this.#currentFolderTrackingStack.pop()
         return (this.#currentFolder = this.#currentFolder.parentFolder);
     }
 
+    /**
+     * @param {boolean} include_link
+     * @param {string} subfolderName
+     * @returns {Folder}
+     * @throws {Error}
+     * */
     gotoSubfolder(include_link, subfolderName) {
-        if (!isLegalKeyNameInFileSystem(subfolderName))
+        if (!legalKeyNameInFileSystem.test(subfolderName))
             throw new Error(`Subfolder name is illegal`);
         const nextFolder = this.#currentFolder.subfolders[subfolderName];
         if (nextFolder instanceof Folder) {
             this.#currentFolderTrackingStack.push(subfolderName);
-            this.#currentFolder = nextFolder;
-            return nextFolder;
+            return (this.#currentFolder = nextFolder);
         }
         const nextFolderLink = this.#currentFolder.folderLinks[subfolderName];
         if (include_link && typeof nextFolderLink === 'string') {
             const pointer2 = this.duplicate();
             pointer2.gotoPath(nextFolderLink);
             this.#currentFolderTrackingStack = pointer2.#currentFolderTrackingStack;
-            this.#currentFolder = pointer2.#currentFolder;
+            return (this.#currentFolder = pointer2.#currentFolder);
         }
         throw new Error(`Folder ${subfolderName} not found`);
     }
 
+    /**
+     * @param {string} path
+     * @returns {Folder}
+     * @throws {Error}
+     * */
     gotoPath(path) {
         if (path.length === 0)
             throw new Error('Path cannot be empty');
@@ -372,14 +543,17 @@ class TerminalFolderPointer {
                 }
             }
         }
-        this.#currentFolder = tfp.#currentFolder;
         this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
+        return (this.#currentFolder = tfp.#currentFolder);
     }
 
-    /*
-    *  Unified Path Controllers
-    * */
-    createPath(path, gotoNewFolder = false) {
+    /**
+     * @param {string} path
+     * @param {boolean} goto_new_folder
+     * @returns {TerminalFolderPointer}
+     * @throws {Error}
+     * */
+    createPath(path, goto_new_folder = false) {
         if (path.length === 0)
             throw new Error('Path cannot be empty');
         const
@@ -398,7 +572,7 @@ class TerminalFolderPointer {
                     break;
                 }
                 default: {
-                    if (!isLegalKeyNameInFileSystem(folderName))
+                    if (!legalKeyNameInFileSystem.test(folderName))
                         throw new Error(`Path name is illegal`);
                     break;
                 }
@@ -424,12 +598,20 @@ class TerminalFolderPointer {
                 }
             }
         }
-        if (gotoNewFolder === true) {
+        if (goto_new_folder) {
             this.#currentFolder = tfp.#currentFolder;
             this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
         }
+        return this;
     }
 
+    /**
+     * @param {'file' | 'directory'} type
+     * @param {string} oldPath
+     * @param {string} newPath
+     * @returns {TerminalFolderPointer}
+     * @throws {Error}
+     * */
     movePath(type, oldPath, newPath) {
         /*
         *  When moving a single file, if the destination is already existing, then the copy will stop.
@@ -446,7 +628,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', oldPath.slice(1)];
                     return [oldPath.substring(0, index), oldPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(oldFileName))
+                if (!legalKeyNameInFileSystem.test(oldFileName))
                     throw new Error(`The old file name is illegal`);
                 // analyze the new file path
                 index = newPath.lastIndexOf('/');
@@ -455,7 +637,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', newPath.slice(1)];
                     return [newPath.substring(0, index), newPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(newFileName))
+                if (!legalKeyNameInFileSystem.test(newFileName))
                     throw new Error(`The new file name is illegal`);
                 // check the old file status
                 const fp_old = this.duplicate();
@@ -481,7 +663,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', oldPath.slice(1)];
                     return [oldPath.substring(0, index), oldPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(oldDirName))
+                if (!legalKeyNameInFileSystem.test(oldDirName))
                     throw new Error(`The old directory name is illegal`);
                 // analyze the new dir path
                 index = newPath.lastIndexOf('/');
@@ -490,7 +672,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', newPath.slice(1)];
                     return [newPath.substring(0, index), newPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(newDirName))
+                if (!legalKeyNameInFileSystem.test(newDirName))
                     throw new Error(`The new directory name is illegal`);
                 // check the old dir status
                 const fp_old = this.duplicate();
@@ -518,9 +700,18 @@ class TerminalFolderPointer {
                 throw new Error(`Path type is illegal`);
             }
         }
+        return this;
     }
 
-    copyPath(type, oldPath, newPath) {
+    /**
+     * @param {'file' | 'directory'} type
+     * @param {string} oldPath
+     * @param {string} newPath
+     * @param {string} serial
+     * @returns {TerminalFolderPointer}
+     * @throws {Error}
+     * */
+    copyPath(type, oldPath, newPath, serial) {
         /*
         *  When copying a single file, if the destination is already existing, then the copy will stop.
         *  When copying a folder, if a destination folder is already existing, then the folders will be merged;
@@ -528,6 +719,8 @@ class TerminalFolderPointer {
         * */
         switch (type) {
             case 'file': {
+                if (typeof fileSerial !== 'string' || fileSerial.length === 0)
+                    throw new Error(`File Serial is illegal`);
                 // analyze the old file path
                 let index = oldPath.lastIndexOf('/');
                 const [oldFileDir, oldFileName] = (() => {
@@ -535,7 +728,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', oldPath.slice(1)];
                     return [oldPath.substring(0, index), oldPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(oldFileName))
+                if (!legalKeyNameInFileSystem.test(oldFileName))
                     throw new Error(`The old file name is illegal`);
                 // analyze the new file path
                 index = newPath.lastIndexOf('/');
@@ -544,7 +737,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', newPath.slice(1)];
                     return [newPath.substring(0, index), newPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(newFileName))
+                if (!legalKeyNameInFileSystem.test(newFileName))
                     throw new Error(`The new file name is illegal`);
                 // check the old file status
                 const fp_old = this.duplicate();
@@ -558,10 +751,12 @@ class TerminalFolderPointer {
                 if (fp_new.#currentFolder.files[newFileName] instanceof File)
                     throw new Error(`The new file is already existing`);
                 // deep-copy the file
-                fp_new.#currentFolder.files[newFileName] = oldFile.copy(serialLake.generateNext()); // deep copy of the string
+                fp_new.#currentFolder.files[newFileName] = oldFile.copy(serial); // deep copy of the string
                 break;
             }
             case 'directory': {
+                if (serial !== undefined)
+                    throw new Error(`Serial should not be specified when copying a directory`);
                 // analyze the old dir path
                 let index = oldPath.lastIndexOf('/');
                 const [oldDirParent, oldDirName] = (() => {
@@ -569,7 +764,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', oldPath.slice(1)];
                     return [oldPath.substring(0, index), oldPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(oldDirName))
+                if (!legalKeyNameInFileSystem.test(oldDirName))
                     throw new Error(`The old directory name is illegal`);
                 // analyze the new dir path
                 index = newPath.lastIndexOf('/');
@@ -578,7 +773,7 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', newPath.slice(1)];
                     return [newPath.substring(0, index), newPath.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(newDirName))
+                if (!legalKeyNameInFileSystem.test(newDirName))
                     throw new Error(`The new directory name is illegal`);
                 // check the old dir status
                 const fp_old = this.duplicate();
@@ -600,8 +795,15 @@ class TerminalFolderPointer {
                 throw new Error(`Path type is illegal`);
             }
         }
+        return this;
     }
 
+    /**
+     * @param {'file' | 'directory'} type
+     * @param {string} path
+     * @returns {TerminalFolderPointer}
+     * @throws {Error}
+     * */
     deletePath(type, path) {
         switch (type) {
             case 'file': {
@@ -612,15 +814,15 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', path.slice(1)];
                     return [path.substring(0, index), path.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(fileName))
+                if (!legalKeyNameInFileSystem.test(fileName))
                     throw new Error(`The file name is illegal`);
                 // check the file status
-                const fp = this.duplicate();
-                fp.gotoPath(fileDir);
+                const tfp = this.duplicate();
+                tfp.gotoPath(fileDir);
                 // delete the file
-                if (fp.#currentFolder.files[fileName] === undefined)
+                if (!(tfp.#currentFolder.files[fileName] instanceof File))
                     throw new Error(`The file is not found`);
-                delete fp.#currentFolder.files[fileName];
+                delete tfp.#currentFolder.files[fileName];
                 break;
             }
             case 'directory': {
@@ -631,13 +833,13 @@ class TerminalFolderPointer {
                     if (index === 0) return ['/', path.slice(1)];
                     return [path.substring(0, index), path.slice(index + 1)];
                 })();
-                if (!isLegalKeyNameInFileSystem(dirName))
+                if (!legalKeyNameInFileSystem.test(dirName))
                     throw new Error(`The directory name is illegal`);
                 // check the dir status
                 const fp = this.duplicate();
                 fp.gotoPath(dirParent);
                 // delete the file
-                if (fp.#currentFolder.subfolders[dirName] === undefined)
+                if (!(fp.#currentFolder.subfolders[dirName] instanceof Folder))
                     throw new Error(`The directory is not found`);
                 delete fp.#currentFolder.subfolders[dirName];
                 break;
@@ -646,31 +848,49 @@ class TerminalFolderPointer {
                 throw new Error(`Path type is illegal`);
             }
         }
+        return this;
     }
-
 }
 
 class CommandInputHandler {
+    /** @type {Record<string, {is_async: boolean, executable: function, description: string}>} */
     #supportedCommands;
+    /** @type {string[]} */
     #buffer;
 
+    /**
+     * @param {Record<string, {is_async: boolean, executable: function, description: string}>} supportedCommands
+     * */
     constructor(supportedCommands) {
         this.#supportedCommands = supportedCommands;
-        this.#buffer = []; // char[]
+        this.#buffer = [];
     }
 
+    /**
+     * @returns {string}
+     * */
     toString() {
         return this.#buffer.reduce((acc, char) => `${acc}${char}`, '');
     }
 
+    /**
+     * @returns {void}
+     * */
     clear() {
         this.#buffer = [];
     }
 
+    /**
+     * @param {string} newChar
+     * @returns {void}
+     * */
     addChar(newChar) { // returns void
         this.#buffer.push(newChar);
     }
 
+    /**
+     * @returns {boolean}
+     * */
     removeChar() {
         if (this.#buffer.length > 0) {
             this.#buffer.pop();
@@ -679,82 +899,94 @@ class CommandInputHandler {
         return false;
     }
 
-    /*
-    * possible returns:
-    *       [ -1, ''          ] ---> Error: (Empty) Command is not executable.
-    *       [  0, commandName ] ---> Success!
-    *       [  1, commandName ] ---> Error: Command is not supported.
-    *       [  2, commandName ] ---> Error: Command exists but throws exceptions during execution.
-    * */
-    execute() {
-        if (this.#buffer.length === 0) return [-1, '']; // Error: (Empty) Command is not executable.
-
-        let
-            index = 0;
-        const
-            parseNextWord = () => { // returns string
-                let word = '';
-                while (index < this.#buffer.length && this.#buffer[index] === ` `)
-                    index++;
-                if (this.#buffer[index] === `"` || this.#buffer[index] === `'`) { // if quote marks makes a phase
-                    const quoteIndex = index;
-                    index++;
-                    let hasClosingQuote = false;
-                    while (index < this.#buffer.length) {
-                        if (this.#buffer[index] === this.#buffer[quoteIndex]) {
-                            hasClosingQuote = true;
-                            index++;
-                            break;
-                        }
-                        word += this.#buffer[index];
+    /**
+     * possible returns:
+     *       [ -1, ''          ] ---> Error: (Empty) Command is not executable.
+     *       [  0, commandName ] ---> Success!
+     *       [  1, commandName ] ---> Error: Command is not supported.
+     *       [  2, commandName ] ---> Error: Command exists but throws exceptions during execution.
+     * @returns {Promise<[number, string]>}
+     * */
+    async execute() {
+        // check the buffer length
+        if (this.#buffer.length === 0)
+            return [-1, '']; // Error: (Empty) Command is not executable.
+        let index = 0;
+        /**
+         * @returns {string}
+         * */
+        const parseNextWord = () => { // returns string
+            let word = '';
+            while (index < this.#buffer.length && this.#buffer[index] === ` `)
+                index++;
+            if (this.#buffer[index] === `"` || this.#buffer[index] === `'`) { // if quote marks makes a phase
+                const quoteIndex = index;
+                index++;
+                let hasClosingQuote = false;
+                while (index < this.#buffer.length) {
+                    if (this.#buffer[index] === this.#buffer[quoteIndex]) {
+                        hasClosingQuote = true;
                         index++;
+                        break;
                     }
-                    if (!hasClosingQuote) // if no closing quote
-                        word = this.#buffer[quoteIndex] + word; // recover the beginning quote
-                    return word;
-                } else { // if next word is common
-                    while (index < this.#buffer.length) {
-                        if (this.#buffer[index] === ` `) {
-                            index++;
-                            break;
-                        }
-                        word += this.#buffer[index];
-                        index++;
-                    }
-                    return word;
+                    word += this.#buffer[index];
+                    index++;
                 }
-            },
-            commandName = parseNextWord();
-
-        if (commandName.length === 0) return [-1, '']; // Error: (Empty) Command is not executable.
-
-        const
-            commandParameters = [];
-
+                if (!hasClosingQuote) // if no closing quote
+                    word = this.#buffer[quoteIndex] + word; // recover the beginning quote
+                return word;
+            } else { // if the next word is common
+                while (index < this.#buffer.length) {
+                    if (this.#buffer[index] === ` `) {
+                        index++;
+                        break;
+                    }
+                    word += this.#buffer[index];
+                    index++;
+                }
+                return word;
+            }
+        };
+        // get command name
+        const commandName = parseNextWord();
+        if (commandName.length === 0)
+            return [-1, '']; // Error: (Empty) Command is not executable.
+        // get command parameters
+        const commandParameters = [];
         while (index < this.#buffer.length) {
             const param = parseNextWord();
             if (param.length > 0) commandParameters.push(param);
         }
-        if (this.#supportedCommands[commandName] === undefined)
+        // try to execute the command
+        const commandObject = this.#supportedCommands[commandName];
+        if (commandObject === undefined)
             return [1, commandName]; // Error: Command is not supported.
         try {
-            this.#supportedCommands[commandName].executable(commandParameters);
+            if (commandObject.is_async === true) {
+                await commandObject.executable(commandParameters);
+            } else {
+                commandObject.executable(commandParameters);
+            }
             return [0, commandName]; // Success!
-        } catch (e) {
+        } catch (_) {
             return [2, commandName]; // Error: Command exists but throws exceptions.
         }
     }
 }
 
 class MinimizedWindowRecords {
-    #records;
+    /** @type {Record<string, function():void>} */
+    #records; // description: windowRecoverCallback
 
     constructor() {
-        this.#records = {
-            // description: windowRecoverCallback
-        };
+        this.#records = {};
     }
 
+    /**
+     * @param {string} description
+     * @param {function():void} windowRecoverCallback
+     * @returns {void}
+     * */
     add(description, windowRecoverCallback) {
         if (this.#records[description] === undefined) {
             this.#records[description] = windowRecoverCallback;
@@ -767,10 +999,17 @@ class MinimizedWindowRecords {
         }
     }
 
+    /**
+     * @returns {string[]}
+     * */
     getDescriptions() {
         return Object.keys(this.#records);
     }
 
+    /**
+     * @param {string} description
+     * @returns {boolean}
+     * */
     recoverWindow(description) {
         if (this.#records[description] !== undefined) {
             this.#records[description]();
@@ -781,17 +1020,25 @@ class MinimizedWindowRecords {
     }
 }
 
-function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, fsRoot, supportedCommands) {
+/**
+ * This function generates a unified terminal interface.
+ * @param {window.Terminal} xtermObj
+ * @param {HTMLDivElement} terminalWindowContainer
+ * @param {Folder} fsRoot
+ * @param {Record<string, {is_async: boolean, executable: function, description: string}>} supportedCommands
+ * @returns {Object}
+ * */
+function generateTerminalCore(xtermObj, terminalWindowContainer, fsRoot, supportedCommands) {
     // Put Terminal Window to Webpage Container
-    xtermObj.open(HTMLDivElement_TerminalWindowContainer);
+    xtermObj.open(terminalWindowContainer);
     // Create Terminal Log Array
-    let terminalLog = [];
+    const terminalLog = [];
     // Initialize Terminal Window Display
     xtermObj.write(` $ `);
     terminalLog.push(` $ `);
 
     // Enabled Fit Addon
-    const fitAddon = (() => { // every fit-addon can be subcribed to exactly ONE XTerm object!!!
+    const fitAddon = (() => { // every fit-addon can be subscribed to exactly ONE XTerm object!!!
         if ('FitAddon' in window && 'FitAddon' in window.FitAddon) {
             try {
                 const fitAddon = new window.FitAddon.FitAddon(); // Load the Fit Addon
@@ -820,7 +1067,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
     // Initialize Command Input Handler
     const commandInputHandler = new CommandInputHandler(supportedCommands);
     // Function to Initialize Default Terminal Window's Listening to Keyboard Input
-    const defaultTerminalKeyboardLinstenerCallback = (keyboardInput) => {
+    const defaultTerminalKeyboardListenerCallback = async (keyboardInput) => {
         switch (keyboardInput) {
             case '\x1b[A': { // Up arrow
                 break;
@@ -857,7 +1104,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
                 xtermObj.write('\n\r   ');
                 terminalLog.push('\n   ');
                 {
-                    const [statusCode, commandName] = commandInputHandler.execute();
+                    const [statusCode, commandName] = await commandInputHandler.execute();
                     switch (statusCode) {
                         case 0: {
                             // success execution
@@ -869,8 +1116,8 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
                             break;
                         }
                         case 2: {
-                            xtermObj.write(`${commandName}: command failed due to uncaught errors`);
-                            terminalLog.push(`${commandName}: command failed due to uncaught errors`);
+                            xtermObj.write(`${commandName}: command failed due to uncaught errors in the command implementation`);
+                            terminalLog.push(`${commandName}: command failed due to uncaught errors in the command implementation`);
                             break;
                         }
                         default: {
@@ -894,7 +1141,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         }
     };
     // Initialize Default Terminal Window's Listening to Keyboard Input
-    setNewTerminalKeyboardListener(defaultTerminalKeyboardLinstenerCallback);
+    setNewTerminalKeyboardListener(defaultTerminalKeyboardListenerCallback);
 
     // Initialize Terminal Minimized-Window Records
     const terminalMinimizedWindowRecords = new MinimizedWindowRecords();
@@ -923,7 +1170,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         *  Terminal Keyboard Listener Controllers
         * */
         setDefaultKeyboardListener: () => { // returns void
-            setNewTerminalKeyboardListener(defaultTerminalKeyboardLinstenerCallback);
+            setNewTerminalKeyboardListener(defaultTerminalKeyboardListenerCallback);
         },
         setNewKeyboardListener: (keyboard_listener_callback) => { // returns void
             setNewTerminalKeyboardListener(keyboard_listener_callback);
@@ -935,7 +1182,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         * */
         getFitAddon: () => fitAddon,
         getTerminalLogString: () => terminalLog.reduce((acc, elem) => acc + elem, ''),
-        getHTMLDivForTerminalWindow: () => HTMLDivElement_TerminalWindowContainer,
+        getHTMLDivForTerminalWindow: () => terminalWindowContainer,
         getMinimizedWindowRecords: () => terminalMinimizedWindowRecords,
         getCacheSpace: () => terminalCacheSpace,
 
