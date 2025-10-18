@@ -12,9 +12,8 @@
 * This is the system Date-and-Time utils.
 * */
 const
-    sysdate = new Date(),
-    getTimeNumber = () => sysdate.getTime(),
-    getHumanReadableTime = () => `${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}'' ${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}`;
+    getTimeNumber = () => new Date().getTime(),
+    getHumanReadableTime = () => new Date().toISOString();
 
 /**
  * This regular expression checks whether a string is a legal key-name in the file system.

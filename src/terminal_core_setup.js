@@ -40,15 +40,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const
         button_to_switch_theme = document.getElementById('button_to_switch_theme'),
+        button_to_recover_fs_from_server = document.getElementById('button_to_recover_fs_from_server'),
+        button_to_backup_fs_to_server = document.getElementById('button_to_backup_fs_to_server'),
         div_terminal_container = document.getElementById('terminal-container'),
         nav_view_navigation = document.getElementById('view-navigation'),
         button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
-        button_to_download_terminal_log = document.getElementById('button_to_download_terminal_log'),
+        button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
         button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal');
 
     // Set Up Button Functions Links
     button_to_switch_theme.addEventListener('click', () => {
         button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+    });
+    button_to_recover_fs_from_server.addEventListener('click', () => {
+
+    });
+    button_to_backup_fs_to_server.addEventListener('click', () => {
+
     });
     button_to_open_new_terminal_tab.addEventListener('click', () => {
         // check the tab count limit
@@ -119,12 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentTabRecord === null) // if the terminal tab is <Tab #1>
             buttonNewTerminalViewNavigation.click();
     });
-    button_to_download_terminal_log.addEventListener('click', () => {
+    button_to_save_terminal_log.addEventListener('click', () => {
         const
             url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
-        link.download = `terminal_log @ ${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}''_${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}.txt`; // the filename the user will get
+        link.download = `terminal_log @ ${getHumanReadableTime()}.txt`; // the filename the user will get
         link.click();
         URL.revokeObjectURL(url);
     });
