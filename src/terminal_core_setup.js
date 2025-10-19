@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTabRecord = null; // This is an object from <generateTerminalCore>.
     const
         fsRoot = new Folder(true), // Initialize File System Root
+        serialLake = new SerialLake(undefined),
         /** @type {{divTerminal: HTMLDivElement, terminalCore: Object, buttonViewSwitch: HTMLButtonElement}[]} */
         tabRecords = [],
-        serialLake = new SerialLake(undefined),
         /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
         supportedCommands = {}; // Initialize Supported Commands
 
