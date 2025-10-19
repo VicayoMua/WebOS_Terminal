@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /** @type {{divTerminal: HTMLDivElement, terminalCore: Object, buttonViewSwitch: HTMLButtonElement}[]} */
         tabRecords = [],
         serialLake = new SerialLake(undefined),
-        /** @type {Record<string, {is_async: boolean, executable: function, description: string}>} */
+        /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
         supportedCommands = {}; // Initialize Supported Commands
 
     const
@@ -210,30 +210,26 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['man'] = {
         is_async: false,
         executable: (parameters) => {
-            switch (parameters.length) {
-                case 1: {
-                    const
-                        commandName = parameters[0],
-                        commandObject = supportedCommands[commandName];
-                    if (commandObject === undefined) {
-                        currentTabRecord.terminalCore.printToWindow(
-                            `The command '${commandName}' is not supported!`,
-                            true,
-                            true
-                        );
-                    } else {
-                        currentTabRecord.terminalCore.printToWindow(
-                            commandObject.description,
-                            false,
-                            true
-                        );
-                    }
-                    break;
+            if (parameters.length === 1) {
+                const
+                    commandName = parameters[0],
+                    commandObject = supportedCommands[commandName];
+                if (commandObject === undefined) {
+                    currentTabRecord.terminalCore.printToWindow(
+                        `The command '${commandName}' is not supported!`,
+                        true,
+                        true
+                    );
+                } else {
+                    currentTabRecord.terminalCore.printToWindow(
+                        commandObject.description,
+                        false,
+                        true
+                    );
                 }
-                default: {
-                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false, true);
-                }
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false, true);
         },
         description: 'A detailed manual of the terminal simulator.\n' +
             'Usage: man [command_name]',
@@ -263,20 +259,16 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['touch'] = {
         is_async: false,
         executable: (parameters) => {
-            switch (parameters.length) {
-                case 1: {
-                    try {
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(false, parameters[0], serialLake.generateNext());
-                        currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
-                    } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-                    }
-                    break;
+            if (parameters.length === 1) {
+                try {
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(false, parameters[0], serialLake.generateNext());
+                    currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                 }
-                default: {
-                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false, true);
-                }
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false, true);
         },
         description: 'Make a new file in the current directory.\n' +
             'Usage: touch [file_name]'
@@ -286,23 +278,19 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['mkdir'] = {
         is_async: false,
         executable: (parameters) => {
-            switch (parameters.length) {
-                case 1: {
-                    try {
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0]);
-                        currentTabRecord.terminalCore.printToWindow(
-                            `Successfully created a directory. (Note that the directory may be already existing!)`,
-                            false, true
-                        );
-                    } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-                    }
-                    break;
+            if (parameters.length === 1) {
+                try {
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0]);
+                    currentTabRecord.terminalCore.printToWindow(
+                        `Successfully created a directory. (Note that the directory may be already existing!)`,
+                        false, true
+                    );
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                 }
-                default: {
-                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false, true);
-                }
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false, true);
         },
         description: 'Make a new directory.\n' +
             'Usage: mkdir [folder_path]'
@@ -312,29 +300,25 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['ls'] = {
         is_async: false,
         executable: (parameters) => {
-            switch (parameters.length) {
-                case 0: { // print current folder info
+            if (parameters.length === 0) {
+                currentTabRecord.terminalCore.printToWindow(
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().getContentListAsString(),
+                    false, true
+                );
+                return;
+            }
+            if (parameters.length === 1) {
+                try {
                     currentTabRecord.terminalCore.printToWindow(
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().getContentListAsString(),
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(parameters[0]).getContentListAsString(),
                         false, true
                     );
-                    break;
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                 }
-                case 1: { // print the folder info of given path
-                    try {
-                        currentTabRecord.terminalCore.printToWindow(
-                            currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(parameters[0]).getContentListAsString(),
-                            false, true
-                        );
-                    } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-                    }
-                    break;
-                }
-                default: {
-                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false, true);
-                }
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false, true);
         },
         description: 'List all the folders and files.\n' +
             'Usage: ls [folder_path]'
@@ -344,20 +328,16 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['cd'] = {
         is_async: false,
         executable: (parameters) => {
-            switch (parameters.length) {
-                case 1: {
-                    try {
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().gotoPath(parameters[0]);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false, true);
-                    } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-                    }
-                    break;
+            if (parameters.length === 1) {
+                try {
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().gotoPath(parameters[0]);
+                    currentTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false, true);
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                 }
-                default: {
-                    currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false, true);
-                }
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false, true);
         },
         description: 'Goto the given folder.\n' +
             'Usage: cd [folder_path]'
@@ -376,80 +356,36 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['download'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            if (
-                (parameters.length !== 2) ||
-                (parameters[0] !== '-f' && parameters[0] !== '-d')
-            ) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: download -f [file_path]\n       download -d [directory_path]`, false, true);
-                return;
-            }
-            try {
-                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
-                if (parameters[0] === '-f') { // rename a file
-                    const
-                        [fileDir, fileName] = extractFileDirAndName(parameters[1]),
-                        url = URL.createObjectURL(
-                            new Blob(
-                                [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
-                                {type: 'application/octet-stream'}
-                            )
-                        ),
-                        link = document.createElement('a');
-                    link.href = url;
-                    link.download = fileName; // the filename the user sees
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    currentTabRecord.terminalCore.printToWindow(
-                        'Successfully downloaded the file.',
-                        false, true
-                    );
-                } else if (parameters[0] === '-d') { // rename a directory
-                    const
-                        url = URL.createObjectURL(
-                            await tfp.gotoPath(parameters[1]).getZipBlob()
-                        ),
-                        link = document.createElement('a'),
-                        zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
-                    link.href = url;
-                    link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    currentTabRecord.terminalCore.printToWindow('Successfully downloaded the directory.', false, true);
-                }
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-            }
-        },
-        description: 'Download a single file or a directory (as .zip file) in the terminal file system.\n' +
-            'Usage: download -f [file_path]\n' +
-            '       download -d [directory_path]'
-    };
-
-    // Finished
     supportedCommands['mv'] = {
         is_async: false,
         executable: (parameters) => {
-            if (
-                (parameters.length !== 3) ||
-                (parameters[0] !== '-f' && parameters[0] !== '-d')
-            ) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mv -f [old_file_path] [new_file_path]\n       mv -d [old_directory_path] [new_directory_path]`, false, true);
-                return;
-            }
-            try {
+            if (parameters.length === 3) {
                 const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
-                if (parameters[0] === '-f') { // move a file
-                    cfp.movePath('file', parameters[1], parameters[2]);
-                } else if (parameters[0] === '-d') { // move a directory
-                    cfp.movePath('directory', parameters[1], parameters[2]);
+                if (parameters[0] === '-f') {
+                    try {
+                        cfp.movePath('file', parameters[1], parameters[2]);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the file.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
                 }
-                currentTabRecord.terminalCore.printToWindow(`Successfully moved the path.`, false, true);
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                if (parameters[0] === '-d') {
+                    try {
+                        cfp.movePath('directory', parameters[1], parameters[2]);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the directory.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
             }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: mv -f [old_file_path] [new_file_path]\n' +
+                '       mv -d [old_directory_path] [new_directory_path]',
+                false, true
+            );
         },
         description: 'mv an existing file or directory.\n' +
             'Usage: mv -f [old_file_path] [new_file_path]\n' +
@@ -460,24 +396,33 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['cp'] = {
         is_async: false,
         executable: (parameters) => {
-            if (
-                (parameters.length !== 3) ||
-                (parameters[0] !== '-f' && parameters[0] !== '-d')
-            ) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cp -f [original_file_path] [destination_file_path]\n       cp -d [original_directory_path] [destination_directory_path]`, false, true);
-                return;
-            }
-            try {
+            if (parameters.length === 3) {
                 const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
-                if (parameters[0] === '-f') { // move a file
-                    cfp.copyPath('file', parameters[1], parameters[2], serialLake.generateNext());
-                } else if (parameters[0] === '-d') { // move a directory
-                    cfp.copyPath('directory', parameters[1], parameters[2], undefined);
+                if (parameters[0] === '-f') {
+                    try {
+                        cfp.copyPath('file', parameters[1], parameters[2], serialLake.generateNext());
+                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
                 }
-                currentTabRecord.terminalCore.printToWindow(`Successfully copied the path.`, false, true);
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                if (parameters[0] === '-d') {
+                    try {
+                        cfp.copyPath('directory', parameters[1], parameters[2], undefined);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
             }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: cp -f [original_file_path] [destination_file_path]\n' +
+                '       cp -d [original_directory_path] [destination_directory_path]',
+                false, true
+            );
         },
         description: 'Copy an existing file or directory.\n' +
             'Usage: cp -f [original_file_path] [destination_file_path]\n' +
@@ -488,24 +433,33 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['rm'] = {
         is_async: false,
         executable: (parameters) => {
-            if (
-                (parameters.length !== 2) ||
-                (parameters[0] !== '-f' && parameters[0] !== '-d')
-            ) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: rm -f [file_path]\n       rm -d [directory_path]`, false, true);
-                return;
-            }
-            try {
+            if (parameters.length === 2) {
                 const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
-                if (parameters[0] === '-f') { // move a file
-                    cfp.deletePath('file', parameters[1]);
-                } else if (parameters[0] === '-d') { // move a directory
-                    cfp.deletePath('directory', parameters[1]);
+                if (parameters[0] === '-f') {
+                    try {
+                        cfp.deletePath('file', parameters[1]);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the file.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
                 }
-                currentTabRecord.terminalCore.printToWindow(`Successfully removed the path.`, false, true);
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                if (parameters[0] === '-d') {
+                    try {
+                        cfp.deletePath('directory', parameters[1]);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the directory.`, false, true);
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
             }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: rm -f [file_path]\n' +
+                '       rm -d [directory_path]',
+                false, true
+            );
         },
         description: 'Remove (delete) an existing file or directory.\n' +
             'Usage: rm -f [file_path]\n' +
@@ -516,19 +470,19 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['print'] = {
         is_async: false,
         executable: (parameters) => {
-            if (parameters.length !== 1) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
+            if (parameters.length === 1) {
+                try {
+                    const [fileDir, fileName] = extractFileDirAndName(parameters[0]);
+                    currentTabRecord.terminalCore.printToWindow(
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
+                        false, true
+                    );
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                }
                 return;
             }
-            try {
-                const [fileDir, fileName] = extractFileDirAndName(parameters[0]);
-                currentTabRecord.terminalCore.printToWindow(
-                    currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
-                    false, true
-                );
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-            }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
         },
         description: 'Print an existing file to the terminal window.\n' +
             'Usage: print [file_path]'
@@ -610,45 +564,45 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['edit'] = {
         is_async: false,
         executable: (parameters) => {
-            if (parameters.length !== 1) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
+            if (parameters.length === 1) {
+                const emptyKBL = (_) => undefined; // empty keyboard listener
+                try {
+                    const
+                        [fileDir, fileName] = extractFileDirAndName(parameters[0]),
+                        file = currentTabRecord.terminalCore
+                            .getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(fileDir)
+                            .getFile(fileName);
+                    currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
+                    openFileEditor(
+                        currentTabRecord.terminalCore.getHTMLDivForTerminalWindow(),
+                        fileName,
+                        file.getContent(),
+                        (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
+                            const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
+                            cmwr.add(windowDescription, () => {
+                                currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
+                                divAceEditorWindow.style.display = '';
+                                aceEditorObject.focus();
+                            });
+                            currentTabRecord.terminalCore.setDefaultKeyboardListener();
+                        },
+                        (newFileContent) => { // save
+                            file.setContent(newFileContent);
+                            currentTabRecord.terminalCore.setDefaultKeyboardListener();
+                        },
+                        () => { // cancel
+                            currentTabRecord.terminalCore.setDefaultKeyboardListener();
+                        }
+                    );
+                    currentTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false, true);
+                } catch (error) {
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                }
                 return;
             }
-            const emptyKBL = (_) => undefined; // empty keyboard listener
-            try {
-                const
-                    [fileDir, fileName] = extractFileDirAndName(parameters[0]),
-                    file = currentTabRecord.terminalCore
-                        .getCurrentFolderPointer()
-                        .duplicate()
-                        .gotoPath(fileDir)
-                        .getFile(fileName);
-                currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
-                openFileEditor(
-                    currentTabRecord.terminalCore.getHTMLDivForTerminalWindow(),
-                    fileName,
-                    file.getContent(),
-                    (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-                        const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
-                        cmwr.add(windowDescription, () => {
-                            currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
-                            divAceEditorWindow.style.display = '';
-                            aceEditorObject.focus();
-                        });
-                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
-                    },
-                    (newFileContent) => { // save
-                        file.setContent(newFileContent);
-                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
-                    },
-                    () => { // cancel
-                        currentTabRecord.terminalCore.setDefaultKeyboardListener();
-                    }
-                );
-                currentTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false, true);
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
-            }
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
         },
         description: 'Edit an existing file.\n' +
             'Usage: edit [file_path]'
@@ -658,49 +612,112 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['mini'] = {
         is_async: false,
         executable: (parameters) => {
-            if (
-                (parameters.length <= 0) ||
-                (parameters.length >= 3) || // length can only be 1 or 2
-                (parameters[0] !== '-l' && parameters[0] !== '-r') || // check the first parameter component
-                (parameters[0] === '-r' && parameters.length === 1) // check the second parameter component
-            ) {
-                currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mini -l\n       mini -r [number]`, false, true);
+            if (parameters.length === 1 && parameters[0] === '-l') { // Command: "mini -l"
+                const cmwrList = currentTabRecord.terminalCore.getMinimizedWindowRecords().getList();
+                if (cmwrList.length === 0) {
+                    currentTabRecord.terminalCore.printToWindow('No window minimized...', false, true);
+                } else {
+                    currentTabRecord.terminalCore.printToWindow(
+                        'Minimized Windows:' + cmwrList.reduce(
+                            (acc, [index, description]) =>
+                                `${acc}\n                    [${index}] ${description}`,
+                            ''
+                        ),
+                        false,
+                        true
+                    );
+                }
                 return;
             }
-            try {
-                if (parameters[0] === '-l') {
-                    const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
-                    const cmwrDescriptions = cmwr.getDescriptions();
-                    if (cmwrDescriptions.length > 0) {
-                        currentTabRecord.terminalCore.printToWindow(
-                            'Minimized Windows:' + cmwrDescriptions.reduce(
-                                (acc, elem, index) => `${acc}\n                    [${index + 1}] ${elem}`, ''
-                            ),
-                            false,
-                            true
-                        );
-                    } else {
-                        currentTabRecord.terminalCore.printToWindow('No window minimized...', false, true);
-                    }
-                } else if (parameters[0] === '-r') {
-                    const trueKeyIndex = Number.parseInt(parameters[1]) - 1;
-                    const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
-                    const cmwrDescriptions = cmwr.getDescriptions();
-                    if (Number.isNaN(trueKeyIndex) || trueKeyIndex < 0 || trueKeyIndex >= cmwrDescriptions.length) {
-                        currentTabRecord.terminalCore.printToWindow('Wrong index!', false, true);
-                        return;
-                    }
-                    if (!cmwr.recoverWindow(cmwrDescriptions[trueKeyIndex])) {
-                        currentTabRecord.terminalCore.printToWindow('Unexpected error, failed to recover the minimized window.', false, true);
-                    }
+            if (parameters.length === 2 && parameters[0] === '-r') { // Command: "mini -r [number]"
+                const
+                    cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords(),
+                    result = cmwr.recoverWindow(Number.parseInt(parameters[1], 10));
+                if (result === null) {
+                    currentTabRecord.terminalCore.printToWindow('Wrong index!', false, true);
+                } else if (result === true) {
+                    currentTabRecord.terminalCore.printToWindow(
+                        'Successfully recovered the window.\n' +
+                        'Note: Window indices are refrshed after this operation!',
+                        false, true
+                    );
                 }
-            } catch (error) {
-                currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                return;
             }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: mini -l\n' +
+                '       mini -r [number]',
+                false, true
+            );
         },
         description: 'List all the minimized windows, or Re-open a minimized window.\n' +
             'Usage: mini -l             to list all the minimized windows\n' +
             '       mini -r [number]    to recover the minimized window',
+    };
+
+    // Finished
+    supportedCommands['download'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            if (parameters.length === 2) {
+                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
+                if (parameters[0] === '-f') {
+                    try {
+                        const
+                            [fileDir, fileName] = extractFileDirAndName(parameters[1]),
+                            url = URL.createObjectURL(
+                                new Blob(
+                                    [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
+                                    {type: 'application/octet-stream'}
+                                )
+                            ),
+                            link = document.createElement('a');
+                        link.href = url;
+                        link.download = fileName; // the filename the user sees
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        currentTabRecord.terminalCore.printToWindow(
+                            'Successfully downloaded the file.',
+                            false, true
+                        );
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
+                if (parameters[0] === '-d') {
+                    try {
+                        const
+                            url = URL.createObjectURL(
+                                await tfp.gotoPath(parameters[1]).getZipBlob()
+                            ),
+                            link = document.createElement('a'),
+                            zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
+                        link.href = url;
+                        link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        currentTabRecord.terminalCore.printToWindow(
+                            'Successfully downloaded the directory.',
+                            false, true
+                        );
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
+            }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: download -f [file_path]\n' +
+                '       download -d [directory_path]',
+                false, true
+            );
+        },
+        description: 'Download a single file or a directory (as .zip file) in the terminal file system.\n' +
+            'Usage: download -f [file_path]\n' +
+            '       download -d [directory_path]'
     };
 
     supportedCommands['mycloud'] = {

@@ -884,13 +884,13 @@ class TerminalFolderPointer {
 }
 
 class CommandInputHandler {
-    /** @type {Record<string, {is_async: boolean, executable: function, description: string}>} */
+    /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
     #supportedCommands;
     /** @type {string[]} */
     #buffer;
 
     /**
-     * @param {Record<string, {is_async: boolean, executable: function, description: string}>} supportedCommands
+     * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
      * */
     constructor(supportedCommands) {
         this.#supportedCommands = supportedCommands;
@@ -1006,11 +1006,17 @@ class CommandInputHandler {
 }
 
 class MinimizedWindowRecords {
-    /** @type {Record<string, function():void>} */
+    /** @type {Record<number, [string, function():void]>} */
     #records; // description: windowRecoverCallback
+    /** @type {number} */
+    #addCount;
+    /** @type {number} */
+    #deleteCount;
 
     constructor() {
         this.#records = {};
+        this.#addCount = 0;
+        this.#deleteCount = 0;
     }
 
     /**
@@ -1019,35 +1025,47 @@ class MinimizedWindowRecords {
      * @returns {void}
      * */
     add(description, windowRecoverCallback) {
-        if (this.#records[description] === undefined) {
-            this.#records[description] = windowRecoverCallback;
-        } else {
-            let index = 2;
-            let newDescription = null;
-            while (this.#records[newDescription = `${description} (${index})`] !== undefined)
-                index++;
-            this.#records[newDescription] = windowRecoverCallback;
-        }
+        this.#addCount++;
+        this.#records[this.#addCount] = [description, windowRecoverCallback];
     }
 
     /**
-     * @returns {string[]}
+     * @param {number} index
+     * @returns {null | boolean} whether records are re-factored.
      * */
-    getDescriptions() {
-        return Object.keys(this.#records);
-    }
-
-    /**
-     * @param {string} description
-     * @returns {boolean}
-     * */
-    recoverWindow(description) {
-        if (this.#records[description] !== undefined) {
-            this.#records[description]();
-            delete this.#records[description];
+    recoverWindow(index) {
+        if (this.#records[index] === undefined)
+            return null;
+        const [_, windowRecoverCallback] = this.#records[index];
+        windowRecoverCallback();
+        this.#deleteCount++;
+        delete this.#records[index];
+        if (this.#deleteCount > 100000) {
+            const
+                oldEntries = Object.entries(this.#records),
+                newRecords = {};
+            for (this.#addCount = 0; this.#addCount < oldEntries.length; this.#addCount++) {
+                const [_, [description, windowRecoverCallback]] = oldEntries[this.#addCount];
+                newRecords[this.#addCount+1] = [description, windowRecoverCallback];
+            }
+            this.#deleteCount = 0;
+            this.#records = newRecords;
             return true;
         }
         return false;
+    }
+
+    /**
+     * @returns {[number, string][]}
+     * */
+    getList() {
+        return Object.entries(this.#records).reduce(
+            (acc, [index, [description, _]]) => {
+                acc.push([index, description]);
+                return acc;
+            },
+            []
+        );
     }
 }
 
@@ -1056,7 +1074,7 @@ class MinimizedWindowRecords {
  * @param {window.Terminal} xtermObj
  * @param {HTMLDivElement} terminalWindowContainer
  * @param {Folder} fsRoot
- * @param {Record<string, {is_async: boolean, executable: function, description: string}>} supportedCommands
+ * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
  * @returns {Object}
  * */
 function generateTerminalCore(xtermObj, terminalWindowContainer, fsRoot, supportedCommands) {

@@ -34,3 +34,6 @@
 //     process.exit(1);
 // });
 
+const o = {};
+o[1] = 6566;
+console.log();
