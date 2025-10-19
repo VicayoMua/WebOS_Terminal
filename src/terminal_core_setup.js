@@ -40,8 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const
         button_to_switch_theme = document.getElementById('button_to_switch_theme'),
-        // button_to_recover_fs_from_server = document.getElementById('button_to_recover_fs_from_server'),
-        // button_to_backup_fs_to_server = document.getElementById('button_to_backup_fs_to_server'),
         div_terminal_container = document.getElementById('terminal-container'),
         nav_view_navigation = document.getElementById('view-navigation'),
         button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
@@ -52,12 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     button_to_switch_theme.addEventListener('click', () => {
         button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
     });
-    // button_to_recover_fs_from_server.addEventListener('click', () => {
-    //
-    // });
-    // button_to_backup_fs_to_server.addEventListener('click', () => {
-    //
-    // });
     button_to_open_new_terminal_tab.addEventListener('click', () => {
         // check the tab count limit
         if (tabCount >= 8) {
@@ -529,13 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             try {
-                const file_path = parameters[0];
-                const index = file_path.lastIndexOf('/');
-                const [fileDir, fileName] = (() => {
-                    if (index === -1) return ['.', file_path];
-                    if (index === 0) return ['/', file_path.slice(1)];
-                    return [file_path.substring(0, index), file_path.slice(index + 1)];
-                })();
+                const [fileDir, fileName] = extractFileDirAndName(parameters[0]);
                 currentTabRecord.terminalCore.printToWindow(
                     currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
                     false, true
@@ -628,37 +614,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
                 return;
             }
+            const emptyKBL = (_) => undefined; // empty keyboard listener
             try {
-                const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
-                const filePath = parameters[0];
-                const index = filePath.lastIndexOf('/');
-                const [fileDir, fileName] = (() => {
-                    if (index === -1) return ['.', filePath];
-                    if (index === 0) return ['/', filePath.slice(1)];
-                    return [filePath.substring(0, index), filePath.slice(index + 1)];
-                })();
-                tfp.gotoPath(fileDir);
-                const fileContent = tfp.getCurrentFolder().getFile(fileName).getContent(); // need this line to make sure the file is loaded before resetting the keyboard listener
-                currentTabRecord.terminalCore.setNewKeyboardListener((_) => {
-                    // empty keyboard listener
-                });
+                const
+                    [fileDir, fileName] = extractFileDirAndName(parameters[0]),
+                    file = currentTabRecord.terminalCore
+                        .getCurrentFolderPointer()
+                        .duplicate()
+                        .gotoPath(fileDir)
+                        .getFile(fileName);
+                currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                 openFileEditor(
                     currentTabRecord.terminalCore.getHTMLDivForTerminalWindow(),
                     fileName,
-                    fileContent,
+                    file.getContent(),
                     (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
                         const cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords();
                         cmwr.add(windowDescription, () => {
-                            currentTabRecord.terminalCore.setNewKeyboardListener((_) => {
-                                // empty keyboard listener
-                            });
+                            currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                             divAceEditorWindow.style.display = '';
                             aceEditorObject.focus();
                         });
                         currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     (newFileContent) => { // save
-                        tfp.getCurrentFolder().getFile(fileName).setContent(newFileContent);
+                        file.setContent(newFileContent);
                         currentTabRecord.terminalCore.setDefaultKeyboardListener();
                     },
                     () => { // cancel

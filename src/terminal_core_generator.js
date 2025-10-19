@@ -80,7 +80,7 @@ class File {
      * @param {string} serial
      * @returns {File}
      * */
-    copy(serial) {
+    duplicate(serial) {
         return new File(serial, this.#content);
     }
 
@@ -100,11 +100,12 @@ class File {
 
     /**
      * @param {string} newContent
-     * @returns {void}
+     * @returns {File}
      * */
     setContent(newContent) {
         this.#content = newContent;
         this.#updated_at = getTimeNumber();
+        return this;
     }
 }
 
@@ -345,15 +346,22 @@ class Folder {
     }
 
     /**
+     * @param {boolean} fix_duplicated_subfolderName
      * @param {string} subfolderName
      * @returns {Folder}
      * @throws {Error}
      * */
-    createSubfolder(subfolderName) {
+    createSubfolder(fix_duplicated_subfolderName, subfolderName) {
         if (!legalKeyNameInFileSystem.test(subfolderName))
             throw new Error(`Subfolder name is illegal`);
-        if (this.subfolders[subfolderName] instanceof Folder)
-            throw new Error(`Subfolder ${subfolderName} is already existing`);
+        if (this.subfolders[subfolderName] instanceof Folder) {
+            if (!fix_duplicated_subfolderName)
+                throw new Error(`Subfolder ${subfolderName} is already existing`);
+            let i = 2;
+            while (this.subfolders[`${subfolderName} ${i}`] instanceof Folder)
+                i++;
+            subfolderName = `${subfolderName} ${i}`;
+        }
         return (this.subfolders[subfolderName] = new Folder(false, this));
     }
 
@@ -404,42 +412,46 @@ function extractFileDirAndName(filePath) {
  * @param {Folder} destFolder
  * @param {Folder} srcFolder
  * @returns {void}
- * @throws {TypeError}
+ * @throws {TypeError} same as <destFolder>
  * */
 function shallowMoveFolders(destFolder, srcFolder) {
-    // check the data type
-    if (!(destFolder instanceof Folder) || !(srcFolder instanceof Folder))
-        throw new TypeError('Parameters must have correct data types');
     // process the data
-    for (const fileKey in srcFolder.files) {
-        if (!(destFolder.files[fileKey] instanceof File)) {
-            destFolder.files[fileKey] = srcFolder.files[fileKey];
-        } else {
-            destFolder.files[`${getISOTimeString()}_${fileKey}`] = srcFolder.files[fileKey];
+    Object.entries(srcFolder.files).forEach(([fileName, file]) => {
+        if (destFolder.files[fileName] instanceof File) {
+            let i = 2;
+            while (destFolder.files[`${fileName} ${i}`] instanceof File)
+                i++;
+            fileName = `${fileName} ${i}`;
         }
-    }
-    for (const folderLinkKey in srcFolder.folderLinks) {
-        if (typeof destFolder.folderLinks[folderLinkKey] !== 'string') {
-            destFolder.folderLinks[folderLinkKey] = srcFolder.folderLinks[folderLinkKey];
-        } else {
-            destFolder.folderLinks[`${getISOTimeString()}_${folderLinkKey}`] = srcFolder.folderLinks[folderLinkKey];
+        destFolder.files[fileName] = file;
+    });
+    Object.entries(srcFolder.fileLinks).forEach(([fileLinkName, fileLink]) => {
+        if (typeof destFolder.fileLinks[fileLinkName] === 'string') {
+            let i = 2;
+            while (typeof destFolder.fileLinks[`${fileLinkName} ${i}`] === 'string')
+                i++;
+            fileLinkName = `${fileLinkName} ${i}`;
         }
-    }
-    for (const fileLinkKey in srcFolder.fileLinks) {
-        if (typeof destFolder.fileLinks[fileLinkKey] !== 'string') {
-            destFolder.fileLinks[fileLinkKey] = srcFolder.fileLinks[fileLinkKey];
+        destFolder.fileLinks[fileLinkName] = fileLink;
+    });
+    Object.entries(srcFolder.subfolders).forEach(([subfolderName, subfolder]) => {
+        if (destFolder.subfolders[subfolderName] instanceof Folder) {
+            shallowMoveFolders(destFolder.subfolders[subfolderName], subfolder);
         } else {
-            destFolder.fileLinks[`${getISOTimeString()}_${fileLinkKey}`] = srcFolder.fileLinks[fileLinkKey];
+            destFolder.subfolders[subfolderName] = subfolder;
+            subfolder.parentFolder = destFolder; // reset parent folder
         }
-    }
-    for (const folderKey in destFolder.subfolders) {
-        if (!(destFolder.subfolders[folderKey] instanceof Folder)) {
-            destFolder.subfolders[folderKey] = srcFolder.subfolders[folderKey];
-            destFolder.subfolders[folderKey].parentFolder = destFolder; // reset parent folder
-        } else {
-            shallowMoveFolders(destFolder.subfolders[folderKey], srcFolder.subfolders[folderKey]);
+    });
+    Object.entries(srcFolder.folderLinks).forEach(([folderLinkName, folderLink]) => {
+        if (typeof destFolder.folderLinks[folderLinkName] === 'string') {
+            let i = 2;
+            while (typeof destFolder.folderLinks[`${folderLinkName} ${i}`] === 'string')
+                i++;
+            folderLinkName = `${folderLinkName} ${i}`;
         }
-    }
+        destFolder.folderLinks[folderLinkName] = folderLink;
+    });
+    return destFolder;
 }
 
 class TerminalFolderPointer {
@@ -579,9 +591,8 @@ class TerminalFolderPointer {
         const
             pathStack = path.split('/').filter((s) => s.length > 0),
             tfp = this.duplicate();
-        if (path.startsWith('/')) {
+        if (path.startsWith('/'))
             tfp.gotoRoot();
-        }
         // check the availability of path for creation
         for (const folderName of pathStack) {
             switch (folderName) {
@@ -611,7 +622,7 @@ class TerminalFolderPointer {
                 }
                 default: {
                     if (!(tfp.#currentFolder.subfolders[folderName] instanceof Folder))
-                        tfp.#currentFolder.createSubfolder(folderName);
+                        tfp.#currentFolder.createSubfolder(false, folderName);
                     tfp.#currentFolder = tfp.#currentFolder.subfolders[folderName];
                     tfp.#currentFolderTrackingStack.push(folderName);
                     break;
@@ -771,7 +782,7 @@ class TerminalFolderPointer {
                 if (fp_new.#currentFolder.files[newFileName] instanceof File)
                     throw new Error(`The new file is already existing`);
                 // deep-copy the file
-                fp_new.#currentFolder.files[newFileName] = oldFile.copy(serial); // deep copy of the string
+                fp_new.#currentFolder.files[newFileName] = oldFile.duplicate(serial); // deep copy of the string
                 break;
             }
             case 'directory': {
