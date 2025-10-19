@@ -720,7 +720,49 @@ document.addEventListener('DOMContentLoaded', () => {
             '       download -d [directory_path]'
     };
 
+    // Update Needed
     supportedCommands['mycloud'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            if (parameters.length === 2 && parameters[0] === '-new' && parameters[1].startsWith('-id=')) { // Command: mycloud -new -id=[user_id]
+                const userId = parameters[1].substring(4);
+                // ...
+                return;
+            }
+            if (parameters.length === 2 && parameters[0] === '-conf' && parameters[1].startsWith('-id=')) { // Command: mycloud -conf -id=[user_id]
+                const userId = parameters[1].substring(4);
+                // ...
+                return;
+            }
+            if (parameters.length === 1) {
+                if (parameters[0] === '-b') { // Command: mycloud -b
+                    // ...
+                    return;
+                }
+                if (parameters[0] === '-r') { // Command: mycloud -r
+                    // ...
+                    return;
+                }
+            }
+            currentTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: mycloud -new -id=[user_id]     to register a new user ID on MyCloud server\n' +
+                '       mycloud -conf -id=[user_id]    to configure MyCloud client (creating file "/mycloud.conf")\n' +
+                '       mycloud -b                     to backup the current file system to MyCloud server\n' +
+                '       mycloud -r                     to recover the file system to MyCloud server\n',
+                false, true
+            );
+        },
+        description: 'Backup and recover the terminal file system to MyCloud server.\n' +
+            'Usage: mycloud -new -id=[user_id]     to register a new user ID on MyCloud server\n' +
+            '       mycloud -conf -id=[user_id]    to configure MyCloud client, creating configuration file "/mycloud.conf"\n' +
+            '       mycloud -b                     to backup the current file system to MyCloud server\n' +
+            '       mycloud -r                     to recover the file system to MyCloud server\n'
+    }
+
+    // Update Needed
+    supportedCommands['sh'] = {
+        is_async: false,
         executable: (parameters) => {
 
         },
@@ -728,6 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     supportedCommands['ttt'] = {
+        // is_async: true,
         executable: (_) => {
             console.log(currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().JSON());
         },
