@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const
         button_to_switch_theme = document.getElementById('button_to_switch_theme'),
-        button_to_recover_fs_from_server = document.getElementById('button_to_recover_fs_from_server'),
-        button_to_backup_fs_to_server = document.getElementById('button_to_backup_fs_to_server'),
+        // button_to_recover_fs_from_server = document.getElementById('button_to_recover_fs_from_server'),
+        // button_to_backup_fs_to_server = document.getElementById('button_to_backup_fs_to_server'),
         div_terminal_container = document.getElementById('terminal-container'),
         nav_view_navigation = document.getElementById('view-navigation'),
         button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
@@ -52,12 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     button_to_switch_theme.addEventListener('click', () => {
         button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
     });
-    button_to_recover_fs_from_server.addEventListener('click', () => {
-
-    });
-    button_to_backup_fs_to_server.addEventListener('click', () => {
-
-    });
+    // button_to_recover_fs_from_server.addEventListener('click', () => {
+    //
+    // });
+    // button_to_backup_fs_to_server.addEventListener('click', () => {
+    //
+    // });
     button_to_open_new_terminal_tab.addEventListener('click', () => {
         // check the tab count limit
         if (tabCount >= 8) {
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
-        link.download = `terminal_log @ ${getHumanReadableTime()}.txt`; // the filename the user will get
+        link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
         link.click();
         URL.revokeObjectURL(url);
     });
@@ -198,15 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTabRecord.terminalCore.printToWindow(
-                `Supported commands are: ${
+                `This terminal supports: ${
                     Object.keys(supportedCommands).reduce(
                         (acc, elem, index) => {
-                            if (index === 0) return `${elem}`;
-                            return `${acc}, ${elem}`;
+                            if (index === 0) return `\n     ${elem}`;
+                            return (index % 6 === 0) ? `${acc},\n     ${elem}` : `${acc}, ${elem}`;
                         },
                         null
                     )
-                }.\nFor more details of each command, please use the command 'man [command_name]'.`,
+                }.\nFor more details, please use the command 'man [command_name]'.`,
                 false,
                 true
             );
@@ -397,14 +397,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const tfp = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
                 if (parameters[0] === '-f') { // rename a file
-                    const file_path = parameters[1];
-                    const index = file_path.lastIndexOf('/');
-                    const [fileDir, fileName] = (() => {
-                        if (index === -1) return ['.', file_path];
-                        if (index === 0) return ['/', file_path.slice(1)];
-                        return [file_path.substring(0, index), file_path.slice(index + 1)];
-                    })();
                     const
+                        [fileDir, fileName] = extractFileDirAndName(parameters[1]),
                         url = URL.createObjectURL(
                             new Blob(
                                 [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
@@ -416,19 +410,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.download = fileName; // the filename the user sees
                     link.click();
                     URL.revokeObjectURL(url);
-                    currentTabRecord.terminalCore.printToWindow('Successfully downloaded the file.', false, true);
+                    currentTabRecord.terminalCore.printToWindow(
+                        'Successfully downloaded the file.',
+                        false, true
+                    );
                 } else if (parameters[0] === '-d') { // rename a directory
-                    const directory_path = parameters[1];
-                    await tfp.gotoPath(directory_path).getZipBlob().then((blob) => {
-                        const
-                            url = URL.createObjectURL(blob),
-                            link = document.createElement('a'),
-                            zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
-                        link.href = url;
-                        link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
-                        link.click();
-                        URL.revokeObjectURL(url);
-                    });
+                    const
+                        url = URL.createObjectURL(
+                            await tfp.gotoPath(parameters[1]).getZipBlob()
+                        ),
+                        link = document.createElement('a'),
+                        zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
+                    link.href = url;
+                    link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
+                    link.click();
+                    URL.revokeObjectURL(url);
                     currentTabRecord.terminalCore.printToWindow('Successfully downloaded the directory.', false, true);
                 }
             } catch (error) {
@@ -727,6 +723,13 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mini -r [number]    to recover the minimized window',
     };
 
+    supportedCommands['mycloud'] = {
+        executable: (parameters) => {
+
+        },
+        description: ''
+    }
+
     supportedCommands['ttt'] = {
         executable: (_) => {
             console.log(currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().JSON());
@@ -734,28 +737,28 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    // Update Needed
-    supportedCommands['ctow'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
-
-
-    // Update Needed
-    supportedCommands['pytow'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
-
-
-    // Update Needed
-    supportedCommands['wasm'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
+    // // Update Needed
+    // supportedCommands['ctow'] = {
+    //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
+    //
+    //
+    // // Update Needed
+    // supportedCommands['pytow'] = {
+    //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
+    //
+    //
+    // // Update Needed
+    // supportedCommands['wasm'] = {
+    //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
 
     // supportedCommands[''] = {
     //     executable: (parameters) => {},

@@ -13,7 +13,7 @@
 * */
 const
     getTimeNumber = () => new Date().getTime(),
-    getHumanReadableTime = () => new Date().toISOString();
+    getISOTimeString = () => new Date().toISOString();
 
 /**
  * This regular expression checks whether a string is a legal key-name in the file system.
@@ -384,6 +384,20 @@ class Folder {
 }
 
 /**
+ * This function extracts the directory path and file name from <filePath>.
+ * @param {string} filePath
+ * @returns {[string, string]}
+ * */
+function extractFileDirAndName(filePath) {
+    const index = filePath.lastIndexOf('/');
+    if (index === -1) // <filePath> is a single filename
+        return ['.', filePath];
+    if (index === 0) // file is in the ROOT
+        return ['/', filePath.slice(1)];
+    return [filePath.substring(0, index), filePath.substring(index + 1)];
+}
+
+/**
  * This function shallow-moves <.files> and <.subfolders> from <srcFolder> to <destFolder>.
  * Before the movement, <destFolder> should be set up.
  * After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
@@ -401,21 +415,21 @@ function shallowMoveFolders(destFolder, srcFolder) {
         if (!(destFolder.files[fileKey] instanceof File)) {
             destFolder.files[fileKey] = srcFolder.files[fileKey];
         } else {
-            destFolder.files[`${getHumanReadableTime()}_${fileKey}`] = srcFolder.files[fileKey];
+            destFolder.files[`${getISOTimeString()}_${fileKey}`] = srcFolder.files[fileKey];
         }
     }
     for (const folderLinkKey in srcFolder.folderLinks) {
         if (typeof destFolder.folderLinks[folderLinkKey] !== 'string') {
             destFolder.folderLinks[folderLinkKey] = srcFolder.folderLinks[folderLinkKey];
         } else {
-            destFolder.folderLinks[`${getHumanReadableTime()}_${folderLinkKey}`] = srcFolder.folderLinks[folderLinkKey];
+            destFolder.folderLinks[`${getISOTimeString()}_${folderLinkKey}`] = srcFolder.folderLinks[folderLinkKey];
         }
     }
     for (const fileLinkKey in srcFolder.fileLinks) {
         if (typeof destFolder.fileLinks[fileLinkKey] !== 'string') {
             destFolder.fileLinks[fileLinkKey] = srcFolder.fileLinks[fileLinkKey];
         } else {
-            destFolder.fileLinks[`${getHumanReadableTime()}_${fileLinkKey}`] = srcFolder.fileLinks[fileLinkKey];
+            destFolder.fileLinks[`${getISOTimeString()}_${fileLinkKey}`] = srcFolder.fileLinks[fileLinkKey];
         }
     }
     for (const folderKey in destFolder.subfolders) {
