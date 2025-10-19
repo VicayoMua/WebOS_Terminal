@@ -721,18 +721,84 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Update Needed
-    supportedCommands['mycloud'] = {
+    supportedCommands['mc'] = {
         is_async: true,
         executable: async (parameters) => {
-            if (parameters.length === 2 && parameters[0] === '-new' && parameters[1].startsWith('-id=')) { // Command: mycloud -new -id=[user_id]
-                const userId = parameters[1].substring(4);
-                // ...
-                return;
-            }
-            if (parameters.length === 2 && parameters[0] === '-conf' && parameters[1].startsWith('-id=')) { // Command: mycloud -conf -id=[user_id]
-                const userId = parameters[1].substring(4);
-                // ...
-                return;
+            if (parameters.length === 3 &&
+                parameters[0].length > 6 && parameters[0].startsWith('-ipp=') &&  // ip:port
+                parameters[1].length > 5 && parameters[1].startsWith('-key=')     // user key
+            ) {
+                const
+                    ipp = parameters[0].substring(5),
+                    userKey = parameters[1].substring(5);
+                if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
+                    try {
+                        const
+                            res = await fetch(
+                                `http://${ipp}/api/users/${userKey}`,
+                                {
+                                    method: 'POST',
+                                }
+                            ),
+                            body = await res.json();
+                        if (body.connection === true) { // has connection
+                            if (body.error !== undefined) { // has error
+                                currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                            } else { // no error
+                                currentTabRecord.terminalCore.printToWindow('Successfully registered a user key.', false, true);
+                            }
+                        } else { // no connection
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                        }
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
+                if (parameters[2] === '-conf') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -conf
+                    try {
+                        const
+                            res = await fetch(
+                                `http://${ipp}/api/users/${userKey}`,
+                                {
+                                    method: 'GET',
+                                }
+                            ),
+                            body = await res.json();
+                        if (body.connection === true) { // has connection
+                            if (body.error !== undefined) { // has error
+                                currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                            } else { // no error
+                                if (body.result === true) { // user_key exists
+                                    currentTabRecord.terminalCore.printToWindow(
+                                        'The user key is valid.\n' +
+                                        ' --> Generating the configuration file at /.mycloud_conf\n'
+                                        , false, true
+                                    );
+                                    const rootFolder = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoRoot();
+                                    if (rootFolder.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
+                                        const file = rootFolder.getFile('.mycloud_conf');
+                                        file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                                    } else {
+                                        const [file, _] = rootFolder.createNewFile(false, '.mycloud_conf', serialLake.generateNext());
+                                        file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                                    }
+                                    currentTabRecord.terminalCore.printToWindow(
+                                        ' --> Success!'
+                                        , false, true
+                                    );
+                                } else { // user_key does not exist
+                                    currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);
+                                }
+                            }
+                        } else { // no connection
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                        }
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
+                    return;
+                }
             }
             if (parameters.length === 1) {
                 if (parameters[0] === '-b') { // Command: mycloud -b
@@ -746,18 +812,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             currentTabRecord.terminalCore.printToWindow(
                 'Wrong grammar!\n' +
-                'Usage: mycloud -new -id=[user_id]     to register a new user ID on MyCloud server\n' +
-                '       mycloud -conf -id=[user_id]    to configure MyCloud client (creating file "/mycloud.conf")\n' +
-                '       mycloud -b                     to backup the current file system to MyCloud server\n' +
-                '       mycloud -r                     to recover the file system to MyCloud server\n',
+                'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
+                '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
+                '       mycloud -b                                      to backup the current file system to MyCloud server\n' +
+                '       mycloud -r                                      to recover the file system to MyCloud server\n',
                 false, true
             );
         },
         description: 'Backup and recover the terminal file system to MyCloud server.\n' +
-            'Usage: mycloud -new -id=[user_id]     to register a new user ID on MyCloud server\n' +
-            '       mycloud -conf -id=[user_id]    to configure MyCloud client, creating configuration file "/mycloud.conf"\n' +
-            '       mycloud -b                     to backup the current file system to MyCloud server\n' +
-            '       mycloud -r                     to recover the file system to MyCloud server\n'
+            'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
+            '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
+            '       mycloud -b                                      to backup the current file system to MyCloud server\n' +
+            '       mycloud -r                                      to recover the file system to MyCloud server\n'
     }
 
     // Update Needed
