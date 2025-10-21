@@ -74,7 +74,9 @@ app.use((error, req, res, next) => {
  * */
 app.post('/mycloud/users/', (req, res) => {
     const
+        /** @type {'new_account' | 'conf_account'} */
         aim = req.body.aim,
+        /** @type {string} */
         user_key = req.body.user_key;
     if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
         return res.status(400).json({
@@ -194,81 +196,41 @@ app.post('/mycloud/users/', (req, res) => {
  *      result=true/false    when success and aim='backup'
  *      content              when success and aim='recover'
  * */
-// app.post('/mycloud/files/', (req, res) => {
-//
-// });
+app.post('/mycloud/files/', (req, res) => {
+    const
+        /** @type {'backup' | 'recover'} */
+        aim = req.body.aim,
+        /** @type {string} */
+        user_key = req.body.user_key,
+        /** @type {string} */
+        serial = req.body.serial;
+    if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
+        return res.status(400).json({
+            connection: true,
+            error: `"${user_key}" is an invalid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
+        });
+    }
+    if (typeof serial !== 'string' || serial.length === 0) {
+        return res.status(400).json({
+            connection: true,
+            error: `serial must be a non-empty string. Please check the client implementation.`
+        });
+    }
+    if (aim === 'backup') {
+        db.run();
+        return;
+    }
+    if (aim === 'recover') {
+        db.get();
+        return;
+    }
+    return res.status(400).json({
+        connection: true,
+        error: `"${aim}" is not a valid aim (file operation). Please check the client implementation.`
+    });
+});
 
-/*
-* Create/Update one file by serial
-* req.params:
-*       serial: string
-* req.body:
-*       encoding: string
-*       content: string
-* */
-// app.post('/api/files/:serial', (req, res) => {
-//     // check if serial is valid
-//     const serial = String(req.params.serial || ''); // we can do this because serial cannot be an empty string.
-//     if (serial.length <= 0) return res.status(400).json({error: 'Serial cannot be empty.'});
-//     // check if encoding is valid
-//     const encoding = String(req.body?.encoding || '').toLowerCase();
-//     if (!allowedEncodings.has(encoding)) return res.status(400).json({error: `Unsupported encoding: ${encoding}.`});
-//     // check if content is valid
-//     if (!('content' in req.body)) return res.status(400).json({error: 'Content Not Found.'});
-//     let content = String(req.body.content);
-//     // check if the length of content is valid
-//     if (content.length > MAX_CONTENT_CHARS)
-//         return res.status(413).json({
-//             error: 'Payload Too Large.',
-//             limit: MAX_CONTENT_CHARS
-//         });
-//     // try to decode <content> as a blob via <encoding>
-//     try {
-//         const contentBuffer = Buffer.from(content, encoding);
-//         if (content.length > 0 && contentBuffer.length <= 0)
-//             return res.status(400).json({error: `Mismatch in original and decoded contents as ${encoding}`});
-//         content = contentBuffer;
-//     } catch (e) {
-//         return res.status(400).json({error: `Failed to decode content as ${encoding}.`});
-//     }
-//     // language=SQL format=false
-//     db.run( // create (serial, encoding, content, created_at, updated_at)
-//         `
-//             INSERT INTO files (serial, encoding, content)
-//             VALUES (?, ?, ?)
-//             ON CONFLICT(serial) DO UPDATE SET
-//                 encoding   = excluded.encoding,
-//                 content    = excluded.content,
-//                 updated_at = CURRENT_TIMESTAMP
-//         `,
-//         [serial, encoding, content],
-//         (upsertError) => {
-//             // if upsert failed
-//             if (upsertError) return res.status(500).json({error: upsertError.message});
-//             // double-check the upserted data
-//             db.get(
-//                 `
-//                     SELECT serial, created_at, updated_at FROM files WHERE serial = ?
-//                     LIMIT 1
-//                 `,
-//                 [serial],
-//                 (getError, getRow) => {
-//                     if (getError) return res.status(500).json({error: getError.message});
-//                     if (!getRow) return res.status(500).json({error: 'Row missing after upsert (Unexpected Error).'});
-//                     const behavior = (getRow.created_at === getRow.updated_at) ? 'create' : 'update';
-//                     // Use 201 for creates, 200 for updates
-//                     return res.status(behavior === 'create' ? 201 : 200).json({
-//                         serial: serial,
-//                         bytes: content.length,
-//                         created_at: getRow.created_at,
-//                         updated_at: getRow.updated_at,
-//                         behavior: behavior
-//                     });
-//                 }
-//             );
-//         }
-//     );
-// });
+
 
 /*
 * Get one file by serial
