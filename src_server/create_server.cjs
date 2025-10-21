@@ -1,4 +1,4 @@
-// --- DB ---
+// ------------------------------------- DB -------------------------------------
 const
     sqlite3 = require('sqlite3').verbose(),
     db = new sqlite3.Database(
@@ -30,7 +30,8 @@ db.serialize(() => {
     );
 });
 
-// --- Server App ---
+
+// ------------------------------------- Server App -------------------------------------
 const
     express = require('express'),
     app = express(),
@@ -54,157 +55,134 @@ app.use((error, req, res, next) => {
 });
 
 /**
- * This post request:
- *      (1) Registers a <user_key> in the <users> table;
- *      (2) Creates a <user_key> table.
- * req.params:
+ * This POST request
+ *      when aim='new_account':
+ *          (1) Registers a <user_key> in the <users> table
+ *          (2) Creates a <user_key> table
+ *      when aim='conf_account':
+ *          Determines whether <user_key> is in the <users> table
+ *
+ * req.body:
+ *      aim: 'new_account' | 'conf_account'
  *      user_key: string
+ *
  * res.body:
- *      connection=true    everytime
- *      error              when failure
- *      NOTHING            when success
+ *      connection=true      every time
+ *      error                when failure
+ *      NOTHING              when success and aim='new_account'
+ *      result=true/false    when success and aim='conf_account'
  * */
-app.post('/api/users/:user_key', (req, res) => {
-    const user_key = req.params.user_key;
+app.post('/mycloud/users/', (req, res) => {
+    const
+        aim = req.body.aim,
+        user_key = req.body.user_key;
     if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
         return res.status(400).json({
             connection: true,
             error: `"${user_key}" is an invalid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
         });
     }
-    // language=SQL format=false
-    db.run(
-        'INSERT INTO users (user_key) VALUES (?);',
-        [user_key],
-        (insertError) => {
-            if (insertError) {
-                return res.status(400).json({
-                    connection: true,
-                    error: `Failed to register in the user table: ${insertError}.`
-                });
-            }
-            console.log(` --> Registered ${user_key} in the user table`);
-            db.run(
-                `CREATE TABLE IF NOT EXISTS "${user_key}" (` +
-                '    serial         TEXT PRIMARY KEY,         /* unique file serial number (string) */' +
-                '    content        BLOB NOT NULL,            /* binary-safe content */' +
-                '    created_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),' +
-                '    updated_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)' +
-                ') WITHOUT ROWID;                             /* good when PRIMARY KEY is not an integer */',
-                (createError) => {
-                    if (createError) {
-                        db.run(
-                            'DELETE FROM users WHERE user_key = ?;',
-                            [user_key],
-                            (deleteError) => {
-                            }
-                        );
-                        return res.status(500).json({
-                            connection: true,
-                            error: `Failed to create a new file table: ${createError}.`
-                        });
-                    }
-                    console.log(` --> Created a file table called ${user_key}`);
-                    return res.status(200).json({
+    if (aim === 'new_account') {
+        // language=SQL format=false
+        db.run(
+            'INSERT INTO users (user_key) VALUES (?);',
+            [user_key],
+            (insertError) => {
+                if (insertError) {
+                    return res.status(400).json({
                         connection: true,
-                        // ok: true
+                        error: `Failed to register in the user table: ${insertError}.`
                     });
                 }
-            );
-        }
-    );
+                console.log(` --> Registered ${user_key} in the user table`);
+                db.run(
+                    `CREATE TABLE IF NOT EXISTS "${user_key}" (` +
+                    '    serial         TEXT PRIMARY KEY,         /* unique file serial number (string) */' +
+                    '    content        BLOB NOT NULL,            /* binary-safe content */' +
+                    '    created_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),' +
+                    '    updated_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)' +
+                    ') WITHOUT ROWID;                             /* good when PRIMARY KEY is not an integer */',
+                    (createError) => {
+                        if (createError) {
+                            db.run(
+                                'DELETE FROM users WHERE user_key = ?;',
+                                [user_key],
+                                (deleteError) => {
+                                }
+                            );
+                            return res.status(500).json({
+                                connection: true,
+                                error: `Failed to create a new file table: ${createError}.`
+                            });
+                        }
+                        console.log(` --> Created a file table called ${user_key}`);
+                        return res.status(200).json({
+                            connection: true,
+                            // ok: true
+                        });
+                    }
+                );
+            }
+        );
+        return;
+    }
+    if (aim === 'conf_account') {
+        db.get(
+            'SELECT 1 AS present FROM users WHERE user_key = ? LIMIT 1;',
+            [user_key],
+            (selectError, selectRow) => {
+                if (selectError) {
+                    return res.status(500).json({
+                        connection: true,
+                        error: `Failed to find the user: ${selectError}.`
+                    });
+                }
+                if (!selectRow || !selectRow.present) {
+                    return res.status(200).json({
+                        connection: true,
+                        result: false
+                    });
+                }
+                db.get(
+                    'SELECT 1 AS present FROM main.sqlite_schema WHERE type = ? AND name = ? LIMIT 1;',
+                    ['table', user_key],
+                    (selectError2, selectRow2) => {
+                        if (selectError2) {
+                            return res.status(500).json({
+                                connection: true,
+                                error: `Found the user, but Failed to find the user table: ${selectError2}.`
+                            });
+                        }
+                        if (!selectRow2 || !selectRow2.present) {
+                            return res.status(500).json({
+                                connection: true,
+                                error: `Found the user, but Failed to find the user table.`
+                            });
+                        }
+                        return res.status(200).json({
+                            connection: true,
+                            result: true
+                        });
+                    }
+                );
+            }
+        );
+        return;
+    }
+    return res.status(400).json({
+        connection: true,
+        error: `"${aim}" is not a valid aim (user operation). Please check the client implementation.`
+    });
 });
 
 /**
- * This get request:
- *      Determine whether <user_key> is in the <users> table.
- * req.params:
+ *
+ * req.body:
  *      user_key: string
- * res.body:
- *      connection=true      everytime
- *      error                when failure
- *      result=true/false    when success
+ *
  * */
-app.get('/api/users/:user_key', (req, res) => {
-    const user_key = req.params.user_key;
-    if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
-        return res.status(400).json({
-            connection: true,
-            error: `"${user_key}" is an invalid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
-        });
-    }
-    db.get(
-        'SELECT 1 AS present FROM users WHERE user_key = ? LIMIT 1;',
-        [user_key],
-        (selectError, selectRow) => {
-            if (selectError) {
-                return res.status(500).json({
-                    connection: true,
-                    error: `Failed to find the user: ${selectError}.`
-                });
-            }
-            if (!selectRow || !selectRow.present) {
-                return res.status(200).json({
-                    connection: true,
-                    result: false
-                });
-            }
-            db.get(
-                'SELECT 1 AS present FROM main.sqlite_schema WHERE type = ? AND name = ? LIMIT 1;',
-                ['table', user_key],
-                (selectError2, selectRow2) => {
-                    if (selectError2) {
-                        return res.status(500).json({
-                            connection: true,
-                            error: `Found the user, but Failed to find the user table: ${selectError2}.`
-                        });
-                    }
-                    if (!selectRow2 || !selectRow2.present) {
-                        return res.status(500).json({
-                            connection: true,
-                            error: `Found the user, but Failed to find the user table.`
-                        });
-                    }
-                    return res.status(200).json({
-                        connection: true,
-                        result: true
-                    });
-                }
-            );
-        }
-    );
-});
-
-/*
-* Get one file by serial
-* req.params:
-*       serial: string
-* */
-// app.get('/api/files/:serial', (req, res) => {
-//     // check if serial is valid
-//     const serial = String(req.params.serial || '');
-//     if (serial.length <= 0) return res.status(400).json({error: 'Serial cannot be empty.'});
-//     // language=SQL format=false
-//     db.get( // get (serial, encoding, content, created_at, updated_at)
-//         `
-//             SELECT serial, encoding, content, created_at, updated_at FROM files WHERE serial = ?
-//             LIMIT 1              -- unique file serial number (string)
-//         `,
-//         [serial],
-//         (getError, getRow) => {
-//             if (getError) return res.status(500).json({error: getError.message});
-//             if (!getRow) return res.status(404).json({error: 'File Not Found.'});
-//             if (!Buffer.isBuffer(getRow.content)) return res.status(500).json({error: 'Content is not a blob buffer.'});
-//             if (!allowedEncodings.has(getRow.encoding)) return res.status(500).json({error: 'Corrupted Encoding (Unexpected Error).'});
-//             res.status(200).json({
-//                 serial: getRow.serial,
-//                 encoding: getRow.encoding,
-//                 content: getRow.content.toString(getRow.encoding), // row.content is a __Buffer__ (BLOB).
-//                 created_at: getRow.created_at,
-//                 updated_at: getRow.updated_at,
-//             });
-//         }
-//     );
+// app.post('/mycloud/files/', (req, res) => {
+//
 // });
 
 /*
@@ -275,6 +253,38 @@ app.get('/api/users/:user_key', (req, res) => {
 //                     });
 //                 }
 //             );
+//         }
+//     );
+// });
+
+/*
+* Get one file by serial
+* req.params:
+*       serial: string
+* */
+// app.get('/api/files/:serial', (req, res) => {
+//     // check if serial is valid
+//     const serial = String(req.params.serial || '');
+//     if (serial.length <= 0) return res.status(400).json({error: 'Serial cannot be empty.'});
+//     // language=SQL format=false
+//     db.get( // get (serial, encoding, content, created_at, updated_at)
+//         `
+//             SELECT serial, encoding, content, created_at, updated_at FROM files WHERE serial = ?
+//             LIMIT 1              -- unique file serial number (string)
+//         `,
+//         [serial],
+//         (getError, getRow) => {
+//             if (getError) return res.status(500).json({error: getError.message});
+//             if (!getRow) return res.status(404).json({error: 'File Not Found.'});
+//             if (!Buffer.isBuffer(getRow.content)) return res.status(500).json({error: 'Content is not a blob buffer.'});
+//             if (!allowedEncodings.has(getRow.encoding)) return res.status(500).json({error: 'Corrupted Encoding (Unexpected Error).'});
+//             res.status(200).json({
+//                 serial: getRow.serial,
+//                 encoding: getRow.encoding,
+//                 content: getRow.content.toString(getRow.encoding), // row.content is a __Buffer__ (BLOB).
+//                 created_at: getRow.created_at,
+//                 updated_at: getRow.updated_at,
+//             });
 //         }
 //     );
 // });

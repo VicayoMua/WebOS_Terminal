@@ -735,9 +735,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const
                             res = await fetch(
-                                `http://${ipp}/api/users/${userKey}`,
+                                `http://${ipp}/mycloud/users/`,
                                 {
                                     method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        aim: 'new_account',
+                                        user_key: userKey
+                                    })
                                 }
                             ),
                             body = await res.json();
@@ -759,9 +767,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const
                             res = await fetch(
-                                `http://${ipp}/api/users/${userKey}`,
+                                `http://${ipp}/mycloud/users/`,
                                 {
-                                    method: 'GET',
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        aim: 'conf_account',
+                                        user_key: userKey
+                                    })
                                 }
                             ),
                             body = await res.json();
