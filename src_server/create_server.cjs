@@ -176,10 +176,23 @@ app.post('/mycloud/users/', (req, res) => {
 });
 
 /**
+ * This POST request
+ *      when aim='backup':
+ *          Saves <serial, content> pair to the <user_key> table
+ *      when aim='recover':
+ *          Gets <content> by <serial> in the <user_key> table
  *
  * req.body:
+ *      aim: 'backup' | 'recover'
  *      user_key: string
+ *      serial: string
+ *      content: string     ONLY when aim='backup'
  *
+ * res.body:
+ *      connection=true      every time
+ *      error                when failure
+ *      result=true/false    when success and aim='backup'
+ *      content              when success and aim='recover'
  * */
 // app.post('/mycloud/files/', (req, res) => {
 //

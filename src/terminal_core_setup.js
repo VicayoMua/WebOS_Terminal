@@ -730,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ) {
                 const
                     ipp = parameters[0].substring(5),
-                    userKey = parameters[1].substring(5);
+                    user_key = parameters[1].substring(5);
                 if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
                     try {
                         const
@@ -744,7 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     },
                                     body: JSON.stringify({
                                         aim: 'new_account',
-                                        user_key: userKey
+                                        user_key: user_key
                                     })
                                 }
                             ),
@@ -776,7 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     },
                                     body: JSON.stringify({
                                         aim: 'conf_account',
-                                        user_key: userKey
+                                        user_key: user_key
                                     })
                                 }
                             ),
