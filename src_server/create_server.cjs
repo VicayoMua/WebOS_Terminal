@@ -36,6 +36,7 @@ const
     express = require('express'),
     app = express(),
     validUserKeyRegEx = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
+    validSerialRegEx = /^[A-Za-z_][A-Za-z0-9_]{128,4096}$/,
     cors = require('cors'),
     MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
     // path = require('path');
@@ -81,7 +82,7 @@ app.post('/mycloud/users/', (req, res) => {
     if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
         return res.status(400).json({
             connection: true,
-            error: `"${user_key}" is an invalid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
+            error: `"${user_key}" is not a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
         });
     }
     if (aim === 'new_account') {
@@ -195,6 +196,8 @@ app.post('/mycloud/users/', (req, res) => {
  *      error                when failure
  *      result=true/false    when success and aim='backup'
  *      content              when success and aim='recover'
+ *      created_at           when success and aim='recover'
+ *      updated_at           when success and aim='recover'
  * */
 app.post('/mycloud/files/', (req, res) => {
     const
@@ -207,17 +210,30 @@ app.post('/mycloud/files/', (req, res) => {
     if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
         return res.status(400).json({
             connection: true,
-            error: `"${user_key}" is an invalid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
+            error: `"${user_key}" is not a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
         });
     }
-    if (typeof serial !== 'string' || serial.length === 0) {
+    if (typeof serial !== 'string' || !validSerialRegEx.text(serial)) {
         return res.status(400).json({
             connection: true,
-            error: `serial must be a non-empty string. Please check the client implementation.`
+            error: `"${user_key}" is not a valid user_key ([A-Za-z_][A-Za-z0-9_]{128,4096}). Please check the client implementation.`
         });
     }
     if (aim === 'backup') {
-        db.run();
+        const
+            /** @type {string} */
+            content = req.body.content;
+        // language=SQL format=false
+        db.run(
+            `INSERT INTO ${user_key} (serial, content) VALUES (?, ?)` +
+            'ON CONFLICT(serial) DO UPDATE SET' +
+            '    content    = excluded.content,' +
+            '    updated_at = CURRENT_TIMESTAMP',
+            [serial, content],
+            (upsertError) => {
+
+            }
+        );
         return;
     }
     if (aim === 'recover') {
@@ -229,7 +245,6 @@ app.post('/mycloud/files/', (req, res) => {
         error: `"${aim}" is not a valid aim (file operation). Please check the client implementation.`
     });
 });
-
 
 
 /*
