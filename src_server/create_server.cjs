@@ -92,7 +92,14 @@ app.post('/mycloud/users/', (req, res) => {
             [user_key],
             (insertError) => {
                 if (insertError) {
-                    return res.status(400).json({
+                    // console.log(insertError.code);
+                    if (insertError.code === 'SQLITE_CONSTRAINT') {
+                        return res.status(400).json({ // should check error.code here!!!!!!
+                            connection: true,
+                            error: `This user_key has already been taken by others. Please try another.`
+                        });
+                    }
+                    return res.status(500).json({ // should check error.code here!!!!!!
                         connection: true,
                         error: `Failed to register in the user table: ${insertError}.`
                     });
@@ -121,7 +128,6 @@ app.post('/mycloud/users/', (req, res) => {
                         console.log(` --> Created a file table called ${user_key}`);
                         return res.status(200).json({
                             connection: true,
-                            // ok: true
                         });
                     }
                 );
@@ -131,43 +137,33 @@ app.post('/mycloud/users/', (req, res) => {
     }
     if (aim === 'conf_account') {
         db.get(
-            'SELECT 1 AS present FROM users WHERE user_key = ? LIMIT 1;',
-            [user_key],
+            'SELECT ' +
+            '   EXISTS(SELECT 1 FROM users WHERE user_key = ?) AS user_present,' +
+            "   EXISTS(SELECT 1 FROM main.sqlite_schema WHERE type='table' AND name = ?) AS table_present;",
+            [user_key, user_key],
             (selectError, selectRow) => {
-                if (selectError) {
+                if (selectError || !selectRow) {
                     return res.status(500).json({
                         connection: true,
-                        error: `Failed to find the user: ${selectError}.`
+                        error: `Failed to lookup the database: ${selectError}.`
                     });
                 }
-                if (!selectRow || !selectRow.present) {
+                if (!selectRow.user_present) {
                     return res.status(200).json({
                         connection: true,
                         result: false
                     });
                 }
-                db.get(
-                    'SELECT 1 AS present FROM main.sqlite_schema WHERE type = ? AND name = ? LIMIT 1;',
-                    ['table', user_key],
-                    (selectError2, selectRow2) => {
-                        if (selectError2) {
-                            return res.status(500).json({
-                                connection: true,
-                                error: `Found the user, but Failed to find the user table: ${selectError2}.`
-                            });
-                        }
-                        if (!selectRow2 || !selectRow2.present) {
-                            return res.status(500).json({
-                                connection: true,
-                                error: `Found the user, but Failed to find the user table.`
-                            });
-                        }
-                        return res.status(200).json({
-                            connection: true,
-                            result: true
-                        });
-                    }
-                );
+                if (!selectRow.table_present) {
+                    return res.status(500).json({
+                        connection: true,
+                        error: `Found the user, but Failed to find the user table: ${selectError2}.`
+                    });
+                }
+                return res.status(200).json({
+                    connection: true,
+                    result: true
+                });
             }
         );
         return;
@@ -181,9 +177,9 @@ app.post('/mycloud/users/', (req, res) => {
 /**
  * This POST request
  *      when aim='backup':
- *          Saves <serial, content> pair to the <user_key> table
+ *          Create/Update <serial, content> pair to the <user_key> table (updating <updated_at>)
  *      when aim='recover':
- *          Gets <content> by <serial> in the <user_key> table
+ *          Gets <content> by <serial> in the <user_key> table (getting <created_at> and <updated_at>)
  *
  * req.body:
  *      aim: 'backup' | 'recover'
@@ -194,7 +190,7 @@ app.post('/mycloud/users/', (req, res) => {
  * res.body:
  *      connection=true      every time
  *      error                when failure
- *      result=true/false    when success and aim='backup'
+ *      result=true          when success and aim='backup'
  *      content              when success and aim='recover'
  *      created_at           when success and aim='recover'
  *      updated_at           when success and aim='recover'
@@ -223,6 +219,12 @@ app.post('/mycloud/files/', (req, res) => {
         const
             /** @type {string} */
             content = req.body.content;
+        if (typeof content !== 'string') {
+            return res.status(400).json({
+                connection: true,
+                error: `content is not a string. Please check the client implementation.`
+            });
+        }
         // language=SQL format=false
         db.run(
             `INSERT INTO ${user_key} (serial, content) VALUES (?, ?)` +
@@ -231,13 +233,40 @@ app.post('/mycloud/files/', (req, res) => {
             '    updated_at = CURRENT_TIMESTAMP',
             [serial, content],
             (upsertError) => {
-
+                if (upsertError) {
+                    return res.status(500).json({
+                        connection: true,
+                        error: `Failed to update the file content.`
+                    });
+                }
+                return res.status(200).json({
+                    connection: true,
+                    result: true
+                });
             }
         );
         return;
     }
     if (aim === 'recover') {
-        db.get();
+        // language=SQL format=false
+        db.get(
+            `SELECT content, created_at, updated_at FROM ${user_key} WHERE serial = ? LIMIT 1;`,
+            [serial],
+            (selectError, selectRow) => {
+                if (selectError) {
+                    return res.status(500).json({
+                        connection: true,
+                        error: `Failed to find the serial from the user_id files.`
+                    });
+                }
+                return res.status(200).json({
+                    connection: true,
+                    content: selectRow.content,
+                    created_at: selectRow.created_at,
+                    updated_at: selectRow.updated_at
+                });
+            }
+        );
         return;
     }
     return res.status(400).json({
@@ -245,39 +274,6 @@ app.post('/mycloud/files/', (req, res) => {
         error: `"${aim}" is not a valid aim (file operation). Please check the client implementation.`
     });
 });
-
-
-/*
-* Get one file by serial
-* req.params:
-*       serial: string
-* */
-// app.get('/api/files/:serial', (req, res) => {
-//     // check if serial is valid
-//     const serial = String(req.params.serial || '');
-//     if (serial.length <= 0) return res.status(400).json({error: 'Serial cannot be empty.'});
-//     // language=SQL format=false
-//     db.get( // get (serial, encoding, content, created_at, updated_at)
-//         `
-//             SELECT serial, encoding, content, created_at, updated_at FROM files WHERE serial = ?
-//             LIMIT 1              -- unique file serial number (string)
-//         `,
-//         [serial],
-//         (getError, getRow) => {
-//             if (getError) return res.status(500).json({error: getError.message});
-//             if (!getRow) return res.status(404).json({error: 'File Not Found.'});
-//             if (!Buffer.isBuffer(getRow.content)) return res.status(500).json({error: 'Content is not a blob buffer.'});
-//             if (!allowedEncodings.has(getRow.encoding)) return res.status(500).json({error: 'Corrupted Encoding (Unexpected Error).'});
-//             res.status(200).json({
-//                 serial: getRow.serial,
-//                 encoding: getRow.encoding,
-//                 content: getRow.content.toString(getRow.encoding), // row.content is a __Buffer__ (BLOB).
-//                 created_at: getRow.created_at,
-//                 updated_at: getRow.updated_at,
-//             });
-//         }
-//     );
-// });
 
 /*
 * Delete one file by serial
