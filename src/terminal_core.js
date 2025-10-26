@@ -8,61 +8,52 @@
 * **************************************************************************************************************
 * */
 
-/*
-* This is the system Date-and-Time utils.
-* */
 const
+    /**
+     * This function returns the number of milliseconds since the midnight at the beginning of January 1, 1970, UTC.
+     * @returns {number}
+     * */
     getTimeNumber = () => new Date().getTime(),
-    getISOTimeString = () => new Date().toISOString();
-
-/**
- * This function returns a random integer between <l> and <r> (inclusive).
- * @param {number} l
- * @param {number} r
- * @returns {number}
- * */
-function randomInt(l, r) {
-    return Math.floor(Math.random() * (r - l + 1)) + l;
-}
+    /**
+     * This function returns a string representing this date in the date time string format, UTC.
+     * @returns {string}
+     * */
+    getISOTimeString = () => new Date().toISOString(),
+    /**
+     * This function returns a random integer between <min> and <max> (inclusive).
+     * @param {number} min
+     * @param {number} max
+     * @returns {number}
+     * */
+    randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 /**
  * This regular expression checks whether a string is a legal key-name in the file system.
  * */
-const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/;
+const
+    legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/;
 
 class SerialLake {
     /** @type {Set<string>} */
     #serialSet;
-    /** @type {string} */
-    #mask;
+    /** @type {function():string} */
+    #serialGenerator;
 
     /**
-     * @param {string[]} init
+     * @param {function():string} serialGenerator
      * */
-    constructor(init) {
-        this.#serialSet = new Set(init);
-        this.#mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
-    }
-
-    /**
-     * @returns {string}
-     * */
-    #next() {
-        const len = Math.floor(Math.random() * 3968) + 129; // 4096-128=3968, len is within [129,4096]
-        let str = '';
-        str += this.#mask[randomInt(0,52)];
-        for (let i = 1; i < len; i++) // i = 1 to len-1
-            str += this.#mask[randomInt(0,62)];
-        return str;
+    constructor(serialGenerator) {
+        this.#serialSet = new Set();
+        this.#serialGenerator = serialGenerator;
     }
 
     /**
      * @returns {string}
      * */
     generateNext() {
-        let serial;
+        let serial = '';
         do {
-            serial = this.#next();
+            serial = this.#serialGenerator();
         } while (this.#serialSet.has(serial));
         this.#serialSet.add(serial);
         return serial;
@@ -153,8 +144,9 @@ class Folder {
     fileLinks;           // IN JSON
 
     /**
+     * This function converts the current Folder object to a JSON string.
      * @returns {string}
-     * This function converts the current Folder object to a JSON string
+     * @throws {TypeError}
      * */
     JSON() {
         /**

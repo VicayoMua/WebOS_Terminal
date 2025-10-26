@@ -32,7 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTabRecord = null;
     const
         fsRoot = new Folder(true), // Initialize File System Root
-        serialLake = new SerialLake(undefined),
+        serialMusk = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789',
+        serialLake = new SerialLake(() => {
+            const serialLen = Math.floor(Math.random() * 3968) + 129; // 4096-128=3968, <serialLen> is within [129,4096]
+            let str = '';
+            str += serialMusk[randomInt(0, 52)];
+            for (let i = 1; i < serialLen; i++) // i = 1 to serialLen-1
+                str += serialMusk[randomInt(0, 62)];
+            return str;
+        }),
         /** @type {{divTerminal: HTMLDivElement, terminalCore: TerminalCore, buttonViewSwitch: HTMLButtonElement}[]} */
         tabRecords = [],
         /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
@@ -68,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const
             newXTermObject = new window.Terminal(XTermSetup),
             newTerminalCore = new TerminalCore(
-            // newTerminalCore = generateTerminalCore(
+                // newTerminalCore = generateTerminalCore(
                 newXTermObject,
                 divNewTerminal,
                 fsRoot,
