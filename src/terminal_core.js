@@ -16,25 +16,32 @@ const
     getISOTimeString = () => new Date().toISOString();
 
 /**
+ * This function returns a random integer between <l> and <r> (inclusive).
+ * @param {number} l
+ * @param {number} r
+ * @returns {number}
+ * */
+function randomInt(l, r) {
+    return Math.floor(Math.random() * (r - l + 1)) + l;
+}
+
+/**
  * This regular expression checks whether a string is a legal key-name in the file system.
  * */
-const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
+const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/;
 
 class SerialLake {
     /** @type {Set<string>} */
     #serialSet;
     /** @type {string} */
-    #headMask;
-    /** @type {string} */
-    #tailMask;
+    #mask;
 
     /**
      * @param {string[]} init
      * */
     constructor(init) {
         this.#serialSet = new Set(init);
-        this.#headMask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
-        this.#tailMask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
+        this.#mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
     }
 
     /**
@@ -42,19 +49,23 @@ class SerialLake {
      * */
     #next() {
         const len = Math.floor(Math.random() * 3968) + 129; // 4096-128=3968, len is within [129,4096]
-
+        let str = '';
+        str += this.#mask[randomInt(0,52)];
+        for (let i = 1; i < len; i++) // i = 1 to len-1
+            str += this.#mask[randomInt(0,62)];
+        return str;
     }
 
     /**
      * @returns {string}
      * */
     generateNext() {
-        let s;
+        let serial;
         do {
-            s = Math.random();
-        } while (this.#serialSet.has(`${s}`));
-        this.#serialSet.add(`${s}`);
-        return `${s}`;
+            serial = this.#next();
+        } while (this.#serialSet.has(serial));
+        this.#serialSet.add(serial);
+        return serial;
     }
 }
 
