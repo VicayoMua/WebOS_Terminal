@@ -843,15 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mycloud -r                                      to recover the file system to MyCloud server\n'
     }
 
-    // Update Needed
-    supportedCommands['sh'] = {
-        is_async: false,
-        executable: (parameters) => {
-
-        },
-        description: ''
-    }
-
     supportedCommands['ttt'] = {
         // is_async: true,
         executable: (_) => {
@@ -879,6 +870,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // // Update Needed
     // supportedCommands['wasm'] = {
     //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
+
+    // // Update Needed
+    // supportedCommands['sh'] = {
+    //     is_async: false,
+    //     executable: (parameters) => {
+    //
     //     },
     //     description: ''
     // }
