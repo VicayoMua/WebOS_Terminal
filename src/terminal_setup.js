@@ -28,12 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     let
         tabCount = 0, // Initialize the total tab count
-        /** @type {null | {divTerminal: HTMLDivElement, terminalCore: Object, buttonViewSwitch: HTMLButtonElement}} */
-        currentTabRecord = null; // This is an object from <generateTerminalCore>.
+        /** @type {{divTerminal: HTMLDivElement, terminalCore: TerminalCore, buttonViewSwitch: HTMLButtonElement} | null} */
+        currentTabRecord = null;
     const
         fsRoot = new Folder(true), // Initialize File System Root
         serialLake = new SerialLake(undefined),
-        /** @type {{divTerminal: HTMLDivElement, terminalCore: Object, buttonViewSwitch: HTMLButtonElement}[]} */
+        /** @type {{divTerminal: HTMLDivElement, terminalCore: TerminalCore, buttonViewSwitch: HTMLButtonElement}[]} */
         tabRecords = [],
         /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
         supportedCommands = {}; // Initialize Supported Commands
@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create a new terminal core on the new div
         const
             newXTermObject = new window.Terminal(XTermSetup),
-            newTerminalCore = generateTerminalCore(
+            newTerminalCore = new TerminalCore(
+            // newTerminalCore = generateTerminalCore(
                 newXTermObject,
                 divNewTerminal,
                 fsRoot,
@@ -121,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     button_to_save_terminal_log.addEventListener('click', () => {
         const
-            url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogString()], {type: 'text/plain'})),
+            url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
         link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
@@ -576,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             .getFile(fileName);
                     currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                     openFileEditor(
-                        currentTabRecord.terminalCore.getHTMLDivForTerminalWindow(),
+                        currentTabRecord.terminalCore.getWindowContainer(),
                         fileName,
                         file.getContent(),
                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
@@ -800,8 +801,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                         file.setContent(`${parameters[0]}\n${parameters[1]}`);
                                     }
                                     currentTabRecord.terminalCore.printToWindow(
-                                        ' --> Success!'
-                                        , false, true
+                                        ' --> Success!',
+                                        false, true
                                     );
                                 } else { // user_key does not exist
                                     currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);

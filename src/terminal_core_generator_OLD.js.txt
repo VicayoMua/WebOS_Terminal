@@ -847,7 +847,7 @@ function generateTerminalCore(xtermObj, HTMLDivElement_TerminalWindowContainer, 
         *  Terminal Status/Content Getters
         * */
         getFitAddon: () => fitAddon,
-        getTerminalLogString: () => terminalLog.reduce((acc, elem) => acc + elem, ''),
+        getTerminalLogAsString: () => terminalLog.reduce((acc, elem) => acc + elem, ''),
         getHTMLDivForTerminalWindow: () => HTMLDivElement_TerminalWindowContainer,
         getMinimizedWindowRecords: () => terminalMinimizedWindowRecords,
         getCacheSpace: () => terminalCacheSpace,

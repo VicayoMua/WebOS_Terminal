@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('button_to_download_terminal_log').addEventListener('click', () => {
         const
-            url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogString()], {type: 'text/plain'})),
+            url = URL.createObjectURL(new Blob([currentTabRecord.terminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
             link = document.createElement('a');
         link.href = url;
         link.download = `terminal_log @ ${sysdate.getHours()}-${sysdate.getMinutes()}'-${sysdate.getSeconds()}''_${sysdate.getDate()}-${sysdate.getMonth() + 1}-${sysdate.getFullYear()}.txt`; // the filename the user will get
