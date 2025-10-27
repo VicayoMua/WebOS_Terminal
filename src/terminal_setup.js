@@ -733,7 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['mc'] = {
         is_async: true,
         executable: async (parameters) => {
-            if (parameters.length === 3 &&
+            if (
+                parameters.length === 3 &&
                 parameters[0].length > 6 && parameters[0].startsWith('-ipp=') &&  // ip:port
                 parameters[1].length > 5 && parameters[1].startsWith('-key=')     // user key
             ) {
@@ -800,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         ' --> Generating the configuration file at /.mycloud_conf\n'
                                         , false, true
                                     );
-                                    const rootFolder = currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoRoot();
+                                    const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
                                     if (rootFolder.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
                                         const file = rootFolder.getFile('.mycloud_conf');
                                         file.setContent(`${parameters[0]}\n${parameters[1]}`);
@@ -826,7 +827,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             if (parameters.length === 1) {
+                // get the configuration file
+                const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
+                if (!rootFolder.hasFile('.mycloud_conf')) {
+                    currentTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false, true);
+                    return;
+                }
+                const
+                    confContent = rootFolder.getFile('.mycloud_conf').getContent(),
+                    ippIndex = confContent.indexOf('-ipp='),
+                    enterIndex = confContent.indexOf('\n'),
+                    keyIndex = confContent.indexOf('-key=');
+                // check the configuration file content
+                if (
+                    ippIndex === -1 || enterIndex === -1 || keyIndex === -1 ||
+                    ippIndex + 4 >= enterIndex || enterIndex >= keyIndex || keyIndex + 4 >= confContent.length - 1
+                ) {
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
+                    return;
+                }
+                const
+                    ipp = confContent.substring(ippIndex + 5, enterIndex),
+                    user_key = confContent.substring(keyIndex + 5);
+                // check the content of <ipp> and <user_key>
+                if (ipp.length === 0 || user_key.length === 0) {
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
+                    return;
+                }
                 if (parameters[0] === '-b') { // Command: mycloud -b
+                    currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
 
                     } catch (error) {
@@ -835,6 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (parameters[0] === '-r') { // Command: mycloud -r
+                    currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
 
                     } catch (error) {
