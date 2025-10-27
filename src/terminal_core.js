@@ -439,7 +439,7 @@ class Folder {
 }
 
 /**
- * This function extracts the directory path and key name from <path>.
+ * This function extracts the directory-path and key-name from <path>.
  * @param {string} path
  * @returns {[string, string]}
  * */
