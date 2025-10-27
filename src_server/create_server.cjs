@@ -295,35 +295,6 @@ app.post('/mycloud/files/', (req, res) => {
     });
 });
 
-/*
-* Delete one file by serial
-* req.params:
-*       serial: string
-* */
-// app.delete('/api/files/:serial', (req, res) => {
-//     // check if serial is valid
-//     const serial = String(req.params.serial || ''); // we can do this because serial cannot be an empty string.
-//     if (serial.length <= 0) return res.status(400).json({error: 'Serial cannot be empty.'});
-//     // language=SQL format=false
-//     db.run( // delete (serial)
-//         `DELETE FROM files WHERE serial = ?`,
-//         [serial],
-//         function (deleteError) {
-//             if (deleteError) {
-//                 return res.status(500).json({error: deleteError.message});
-//             }
-//             if (this.changes === 0) {
-//                 return res.status(404).json({error: 'File Not Found.'});
-//             }
-//             // Successfully deleted
-//             return res.status(200).json({
-//                 serial: serial,
-//                 changes: this.changes // number of rows affected (should be 1)
-//             });
-//         }
-//     );
-// });
-
 const server = app.listen(
     PORT,
     HOST,
