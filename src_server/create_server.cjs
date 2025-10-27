@@ -18,7 +18,7 @@ db.serialize(() => {
     db.run(
         'CREATE TABLE IF NOT EXISTS users (' +
         '    user_key      TEXT PRIMARY KEY,                                    /* unique user key (string) */' +
-        '    created_at    DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)' +
+        '    created_at    TEXT NOT NULL' +
         ') WITHOUT ROWID;                                                       /* good when PRIMARY KEY is not an integer */',
         (createError) => {
             if (createError) {
@@ -38,7 +38,8 @@ const
     validUserKeyRegEx = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
     validSerialRegEx = /^[A-Za-z_][A-Za-z0-9_]{128,4096}$/,
     cors = require('cors'),
-    MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
+    getISOTimeString = () => new Date().toISOString(),
+    // MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
     // path = require('path');
     HOST = '127.0.0.1',
     PORT = 80;
@@ -88,8 +89,8 @@ app.post('/mycloud/users/', (req, res) => {
     if (aim === 'new_account') {
         // language=SQL format=false
         db.run(
-            'INSERT INTO users (user_key) VALUES (?);',
-            [user_key],
+            'INSERT INTO users (user_key, created_at) VALUES (?, ?);',
+            [user_key, getISOTimeString()],
             (insertError) => {
                 if (insertError) {
                     // console.log(insertError.code);
@@ -106,11 +107,11 @@ app.post('/mycloud/users/', (req, res) => {
                 }
                 console.log(` --> Registered ${user_key} in the user table`);
                 db.run(
-                    `CREATE TABLE IF NOT EXISTS "${user_key}" (` +
+                    `CREATE TABLE IF NOT EXISTS ${user_key} (` +
                     '    serial         TEXT PRIMARY KEY,         /* unique file serial number (string) */' +
                     '    content        BLOB NOT NULL,            /* binary-safe content */' +
-                    '    created_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP),' +
-                    '    updated_at     DATETIME NOT NULL DEFAULT (CURRENT_TIMESTAMP)' +
+                    '    created_at     TEXT NOT NULL,' +
+                    '    updated_at     TEXT NOT NULL' +
                     ') WITHOUT ROWID;                             /* good when PRIMARY KEY is not an integer */',
                     (createError) => {
                         if (createError) {
@@ -186,6 +187,8 @@ app.post('/mycloud/users/', (req, res) => {
  *      user_key: string
  *      serial: string
  *      content: string     ONLY when aim='backup'
+ *      created_at: string  ONLY when aim='backup'
+ *      updated_at: string  ONLY when aim='backup'
  *
  * res.body:
  *      connection=true      every time
@@ -218,20 +221,36 @@ app.post('/mycloud/files/', (req, res) => {
     if (aim === 'backup') {
         const
             /** @type {string} */
-            content = req.body.content;
+            content = req.body.content,
+            /** @type {string} */
+            created_at = req.body.created_at,
+            /** @type {string} */
+            updated_at = req.body.updated_at;
         if (typeof content !== 'string') {
             return res.status(400).json({
                 connection: true,
                 error: `content is not a string. Please check the client implementation.`
             });
         }
+        if (typeof created_at !== 'string') {
+            return res.status(400).json({
+                connection: true,
+                error: `created_at is not a string. Please check the client implementation.`
+            });
+        }
+        if (typeof updated_at !== 'string') {
+            return res.status(400).json({
+                connection: true,
+                error: `updated_at is not a string. Please check the client implementation.`
+            });
+        }
         // language=SQL format=false
         db.run(
-            `INSERT INTO ${user_key} (serial, content) VALUES (?, ?)` +
+            `INSERT INTO ${user_key} (serial, content, created_at, updated_at) VALUES (?, ?, ?, ?)` +
             'ON CONFLICT(serial) DO UPDATE SET' +
             '    content    = excluded.content,' +
-            '    updated_at = CURRENT_TIMESTAMP',
-            [serial, content],
+            '    updated_at = excluded.updated_at',
+            [serial, content, created_at, updated_at],
             (upsertError) => {
                 if (upsertError) {
                     return res.status(500).json({

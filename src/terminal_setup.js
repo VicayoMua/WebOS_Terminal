@@ -827,11 +827,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (parameters.length === 1) {
                 if (parameters[0] === '-b') { // Command: mycloud -b
-                    // ...
+                    try {
+
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
                     return;
                 }
                 if (parameters[0] === '-r') { // Command: mycloud -r
-                    // ...
+                    try {
+
+                    } catch (error) {
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    }
                     return;
                 }
             }
@@ -854,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['ttt'] = {
         // is_async: true,
         executable: (_) => {
-            console.log(currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().JSON());
+            console.log(currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder().JSON());
         },
         description: ''
     }
