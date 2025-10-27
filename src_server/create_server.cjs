@@ -36,7 +36,7 @@ const
     express = require('express'),
     app = express(),
     validUserKeyRegEx = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
-    validSerialRegEx = /^[A-Za-z_][A-Za-z0-9_]{128,4096}$/,
+    validSerialRegEx = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
     cors = require('cors'),
     getISOTimeString = () => new Date().toISOString(),
     // MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
@@ -212,7 +212,7 @@ app.post('/mycloud/files/', (req, res) => {
             error: `"${user_key}" is not a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
         });
     }
-    if (typeof serial !== 'string' || !validSerialRegEx.text(serial)) {
+    if (typeof serial !== 'string' || !validSerialRegEx.test(serial)) {
         return res.status(400).json({
             connection: true,
             error: `"${user_key}" is not a valid user_key ([A-Za-z_][A-Za-z0-9_]{128,4096}). Please check the client implementation.`
@@ -250,7 +250,7 @@ app.post('/mycloud/files/', (req, res) => {
             'ON CONFLICT(serial) DO UPDATE SET' +
             '    content    = excluded.content,' +
             '    updated_at = excluded.updated_at',
-            [serial, content, created_at, updated_at],
+            [serial, Buffer.from(content, 'utf8'), created_at, updated_at],
             (upsertError) => {
                 if (upsertError) {
                     return res.status(500).json({
@@ -280,7 +280,7 @@ app.post('/mycloud/files/', (req, res) => {
                 }
                 return res.status(200).json({
                     connection: true,
-                    content: selectRow.content,
+                    content: selectRow.content.toString('utf8'),
                     created_at: selectRow.created_at,
                     updated_at: selectRow.updated_at
                 });

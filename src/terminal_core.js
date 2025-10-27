@@ -10,11 +10,6 @@
 
 const
     /**
-     * This function returns the number of milliseconds since the midnight at the beginning of January 1, 1970, UTC.
-     * @returns {number}
-     * */
-    getTimeNumber = () => new Date().getTime(),
-    /**
      * This function returns a string representing this date in the date time string format, UTC.
      * @returns {string}
      * */
@@ -69,14 +64,10 @@ class File {
     #serial;
     /** @type {string} */
     #content;
-    /** @type {number} */
+    /** @type {string} */
     #created_at;
-    /** @type {number} */
+    /** @type {string} */
     #updated_at;
-
-    // JSON(){
-    //     throw new Error('Not implemented');
-    // }
 
     /**
      * @param {string} serial
@@ -88,8 +79,8 @@ class File {
             throw new TypeError('Parameters must have correct data types');
         this.#serial = serial;
         this.#content = content;
-        this.#created_at = getTimeNumber();
-        this.#updated_at = getTimeNumber();
+        this.#created_at = getISOTimeString();
+        this.#updated_at = getISOTimeString();
     }
 
     /**
@@ -115,12 +106,26 @@ class File {
     }
 
     /**
+     * @returns {number}
+     * */
+    getCreatedAt() {
+        return this.#created_at;
+    }
+
+    /**
+     * @returns {number}
+     * */
+    getUpdatedAt() {
+        return this.#updated_at;
+    }
+
+    /**
      * @param {string} newContent
      * @returns {File}
      * */
     setContent(newContent) {
         this.#content = newContent;
-        this.#updated_at = getTimeNumber();
+        this.#updated_at = getISOTimeString();
         return this;
     }
 }
@@ -145,6 +150,7 @@ class Folder {
 
     /**
      * This function converts the current Folder object to a JSON string.
+     * In the JSON string, files are converted to name-to-serial pairs.
      * @returns {string}
      * @throws {TypeError}
      * */
@@ -191,6 +197,30 @@ class Folder {
     }
 
     /**
+     * This function recursively collects all the File objects and generates a list.
+     * @returns {File[]}
+     * */
+    getFilesAsList() {
+        const files = [];
+
+        /**
+         * @param {Folder} folder
+         * @returns {void}
+         * */
+        function getFiles(folder) {
+            Object.values(folder.files).forEach((file) => {
+                files.push(file);
+            });
+            Object.values(folder.subfolders).forEach((subfolder)=>{
+                getFiles(subfolder);
+            });
+        }
+
+        getFiles(this);
+        return files;
+    }
+
+    /**
      * @param {boolean} is_root
      * @param {Folder} parentFolder
      * @throws {TypeError | Error}
@@ -209,7 +239,7 @@ class Folder {
         this.parentFolder = is_root ? this : parentFolder;
         this.subfolders = {};
         this.files = {};
-        this.#created_at = getTimeNumber();
+        this.#created_at = getISOTimeString();
         this.folderLinks = {};
         this.fileLinks = {};
     }
@@ -222,7 +252,7 @@ class Folder {
         const dcFolder = new Folder(false, parentFolder);
         for (const fileKey in this.files)
             dcFolder.files[fileKey] = this.files[fileKey];
-        dcFolder.#created_at = getTimeNumber();
+        dcFolder.#created_at = getISOTimeString();
         for (const folderLinkKey in this.folderLinks)
             dcFolder.folderLinks[folderLinkKey] = this.folderLinks[folderLinkKey];
         for (const fileLinkKey in this.fileLinks)

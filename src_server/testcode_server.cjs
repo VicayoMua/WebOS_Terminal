@@ -10,3 +10,6 @@ const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
 let s = 'a';
 s += 'b';
 console.log(s);
+
+const b = Buffer.from('ddd','utf8');
+b.toString('utf8');

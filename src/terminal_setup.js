@@ -759,15 +759,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             ),
                             body = await res.json();
-                        if (body.connection === true) { // has connection
-                            if (body.error !== undefined) { // has error
-                                currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
-                            } else { // no error
-                                currentTabRecord.terminalCore.printToWindow('Successfully registered a user key.', false, true);
-                            }
-                        } else { // no connection
+                        if (body.connection !== true) {
                             currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                            return;
                         }
+                        if (body.error !== undefined) { // has error
+                            currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                            return;
+                        }
+                        currentTabRecord.terminalCore.printToWindow('Successfully registered a user key.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
@@ -791,35 +791,35 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             ),
                             body = await res.json();
-                        if (body.connection === true) { // has connection
-                            if (body.error !== undefined) { // has error
-                                currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
-                            } else { // no error
-                                if (body.result === true) { // user_key exists
-                                    currentTabRecord.terminalCore.printToWindow(
-                                        'The user key is valid.\n' +
-                                        ' --> Generating the configuration file at /.mycloud_conf\n'
-                                        , false, true
-                                    );
-                                    const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
-                                    if (rootFolder.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
-                                        const file = rootFolder.getFile('.mycloud_conf');
-                                        file.setContent(`${parameters[0]}\n${parameters[1]}`);
-                                    } else {
-                                        const [file, _] = rootFolder.createNewFile(false, '.mycloud_conf', serialLake.generateNext());
-                                        file.setContent(`${parameters[0]}\n${parameters[1]}`);
-                                    }
-                                    currentTabRecord.terminalCore.printToWindow(
-                                        ' --> Success!',
-                                        false, true
-                                    );
-                                } else { // user_key does not exist
-                                    currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);
-                                }
-                            }
-                        } else { // no connection
+                        if (body.connection !== true) {
                             currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                            return;
                         }
+                        if (body.error !== undefined) { // has error
+                            currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                            return;
+                        }
+                        if (body.result !== true) {
+                            currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);
+                            return;
+                        }
+                        currentTabRecord.terminalCore.printToWindow(
+                            'The user key is valid.\n' +
+                            ' --> Generating the configuration file at /.mycloud_conf.\n'
+                            , false, true
+                        );
+                        const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
+                        if (rootFolder.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
+                            const file = rootFolder.getFile('.mycloud_conf');
+                            file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                        } else {
+                            const [file, _] = rootFolder.createNewFile(false, '.mycloud_conf', serialLake.generateNext());
+                            file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                        }
+                        currentTabRecord.terminalCore.printToWindow(
+                            ' --> Success!',
+                            false, true
+                        );
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
@@ -854,16 +854,87 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
                     return;
                 }
-                if (parameters[0] === '-b') { // Command: mycloud -b
-                    currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
+                if (parameters[0] === '-backup') { // Command: mycloud -b
+                    currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false, true);
                     try {
-
+                        const jsonFetches = rootFolder.getFilesAsList().map((file) =>
+                            fetch(
+                                `http://${ipp}/mycloud/files/`,
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        aim: 'backup',
+                                        user_key: user_key,
+                                        serial: file.getSerial(),
+                                        content: file.getContent(),
+                                        created_at: file.getCreatedAt(),
+                                        updated_at: file.getUpdatedAt()
+                                    })
+                                }
+                            ).then(
+                                (res) => res.json()
+                            )
+                        );
+                        jsonFetches.push(
+                            fetch(
+                                `http://${ipp}/mycloud/files/`,
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        aim: 'backup',
+                                        user_key: user_key,
+                                        serial: 'ROOT',
+                                        content: rootFolder.JSON(),
+                                        created_at: getISOTimeString(),
+                                        updated_at: getISOTimeString()
+                                    })
+                                }
+                            ).then(
+                                (res) => res.json()
+                            )
+                        );
+                        const settledResults = await Promise.allSettled(jsonFetches);
+                        let failure = false;
+                        settledResults.forEach((settledResult) => {
+                            if (settledResult.status === 'rejected') {
+                                currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
+                                failure = true;
+                            }
+                            if (settledResult.status === 'fulfilled') {
+                                const body = settledResult.value;
+                                if (body.connection !== true) {
+                                    currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.\n', false, true);
+                                    failure = true;
+                                }
+                                if (body.error !== undefined) { // has error
+                                    currentTabRecord.terminalCore.printToWindow(`${body.error}\n`, false, true);
+                                    failure = true;
+                                }
+                                if (body.result !== true) {
+                                    currentTabRecord.terminalCore.printToWindow('The user key does not exist.\n', false, true);
+                                    failure = true;
+                                }
+                            }
+                        });
+                        if (failure) {
+                            currentTabRecord.terminalCore.printToWindow('Failed to back up the file system.', false, true);
+                        } else {
+                            currentTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system.', false, true);
+                        }
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
                     return;
                 }
-                if (parameters[0] === '-r') { // Command: mycloud -r
+                if (parameters[0] === '-recover') { // Command: mycloud -r
                     currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
 
@@ -877,16 +948,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
                 '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
-                '       mycloud -b                                      to backup the current file system to MyCloud server\n' +
-                '       mycloud -r                                      to recover the file system to MyCloud server\n',
+                '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
+                '       mycloud -recover                                to recover the file system to MyCloud server\n',
                 false, true
             );
         },
         description: 'Backup and recover the terminal file system to MyCloud server.\n' +
+            'Wrong grammar!\n' +
             'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
             '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
-            '       mycloud -b                                      to backup the current file system to MyCloud server\n' +
-            '       mycloud -r                                      to recover the file system to MyCloud server\n'
+            '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
+            '       mycloud -recover                                to recover the file system to MyCloud server\n'
     }
 
     supportedCommands['ttt'] = {
@@ -928,6 +1000,8 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: ''
     // }
+
+    // command ping
 
     // supportedCommands[''] = {
     //     executable: (parameters) => {},
