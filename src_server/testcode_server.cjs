@@ -7,9 +7,17 @@ const mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
 const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
 // console.log(legalKeyNameInFileSystem.test('\r'));
 
-let s = 'a';
-s += 'b';
-console.log(s);
-
-const b = Buffer.from('ddd','utf8');
-b.toString('utf8');
+class Folder {
+    /**
+     * @param {string} fileName
+     * @returns {void}
+     * @throws {Error}
+     * */
+    deleteFile(fileName) {
+        if (!legalKeyNameInFileSystem.test(fileName))
+            throw new Error(`File name is illegal`);
+        if (!(this.files[fileName] instanceof File))
+            throw new Error(`File ${fileName} not found`);
+        delete this.files[fileName];
+    }
+}

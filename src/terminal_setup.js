@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    const [fileDir, fileName] = extractFileDirAndName(parameters[0]);
+                    const [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
                     currentTabRecord.terminalCore.printToWindow(
                         currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
                         false, true
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const emptyKBL = (_) => undefined; // empty keyboard listener
                 try {
                     const
-                        [fileDir, fileName] = extractFileDirAndName(parameters[0]),
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
                         file = currentTabRecord.terminalCore
                             .getCurrentFolderPointer()
                             .duplicate()
@@ -674,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-f') {
                     try {
                         const
-                            [fileDir, fileName] = extractFileDirAndName(parameters[1]),
+                            [fileDir, fileName] = extractDirAndKeyName(parameters[1]),
                             url = URL.createObjectURL(
                                 new Blob(
                                     [tfp.gotoPath(fileDir).getFile(fileName).getContent()],

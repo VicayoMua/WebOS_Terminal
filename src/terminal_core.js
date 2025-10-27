@@ -439,17 +439,17 @@ class Folder {
 }
 
 /**
- * This function extracts the directory path and file name from <filePath>.
- * @param {string} filePath
+ * This function extracts the directory path and key name from <path>.
+ * @param {string} path
  * @returns {[string, string]}
  * */
-function extractFileDirAndName(filePath) {
-    const index = filePath.lastIndexOf('/');
-    if (index === -1) // <filePath> is a single filename
-        return ['.', filePath];
+function extractDirAndKeyName(path) {
+    const index = path.lastIndexOf('/');
+    if (index === -1) // <path> is a single filename
+        return ['.', path];
     if (index === 0) // file is in the ROOT
-        return ['/', filePath.slice(1)];
-    return [filePath.substring(0, index), filePath.substring(index + 1)];
+        return ['/', path.slice(1)];
+    return [path.substring(0, index), path.substring(index + 1)];
 }
 
 /**
