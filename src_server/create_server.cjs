@@ -193,7 +193,6 @@ app.post('/mycloud/users/', (req, res) => {
  * res.body:
  *      connection=true      every time
  *      error                when failure
- *      result=true          when success and aim='backup'
  *      content              when success and aim='recover'
  *      created_at           when success and aim='recover'
  *      updated_at           when success and aim='recover'
@@ -258,9 +257,11 @@ app.post('/mycloud/files/', (req, res) => {
                         error: `Failed to update the file content.`
                     });
                 }
+                if (serial === 'ROOT') { // clean up the files when ROOT updates
+                    // TODO: Clean up the files when ROOT updates
+                }
                 return res.status(200).json({
                     connection: true,
-                    result: true
                 });
             }
         );

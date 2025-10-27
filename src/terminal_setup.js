@@ -918,10 +918,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     currentTabRecord.terminalCore.printToWindow(`${body.error}\n`, false, true);
                                     failure = true;
                                 }
-                                if (body.result !== true) {
-                                    currentTabRecord.terminalCore.printToWindow('The user key does not exist.\n', false, true);
-                                    failure = true;
-                                }
                             }
                         });
                         if (failure) {
