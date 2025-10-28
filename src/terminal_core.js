@@ -695,7 +695,7 @@ class TerminalFolderPointer {
         *  When moving a single file, if the destination is already existing, then the copy will stop.
         *
         *  When moving a folder, if a destination folder is already existing, then the folders will be merged;
-        *                            if a destination file is already existing, then the file will be renamed and copied.
+        *                        if a destination file is already existing, then the file will be renamed and copied.
         * */
         switch (type) {
             case 'file': {
