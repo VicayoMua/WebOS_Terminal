@@ -38,6 +38,7 @@ class SerialLake {
      * @param {function():string} serialGenerator
      * */
     constructor(serialGenerator) {
+        serialGenerator(); // check whether serial generator is a function.
         this.#serialSet = new Set();
         this.#serialGenerator = serialGenerator;
     }
@@ -75,8 +76,10 @@ class File {
      * @throws {TypeError}
      * */
     constructor(serial, content) {
-        if (typeof serial !== 'string' || typeof content !== 'string')
-            throw new TypeError('Parameters must have correct data types');
+        if (typeof serial !== 'string' || serial.length === 0)
+            throw new TypeError('Serial must be a non-empty string.');
+        if (typeof content !== 'string')
+            throw new TypeError('Content must be a string.');
         this.#serial = serial;
         this.#content = content;
         this.#created_at = getISOTimeString();
@@ -86,8 +89,11 @@ class File {
     /**
      * @param {string} serial
      * @returns {File}
+     * @throws {TypeError}
      * */
     duplicate(serial) {
+        if (typeof serial !== 'string' || serial.length === 0)
+            throw new TypeError('Serial must be a non-empty string.');
         return new File(serial, this.#content);
     }
 
@@ -122,8 +128,11 @@ class File {
     /**
      * @param {string} newContent
      * @returns {File}
+     * @throws {TypeError}
      * */
     setContent(newContent) {
+        if (typeof newContent !== 'string')
+            throw new TypeError('New content must be a string.');
         this.#content = newContent;
         this.#updated_at = getISOTimeString();
         return this;
@@ -136,17 +145,69 @@ class File {
 * */
 class Folder {
     /** @type {Folder} */
-    parentFolder;                    // NOT IN JSON, BUILT DURING RECOVERY
+    #parentFolder;                    // NOT IN JSON, BUILT DURING RECOVERY
     /** @type {Record<string, Folder>} */
-    subfolders;          // IN JSON
+    #subfolders;          // IN JSON
     /** @type {Record<string, File>} */
-    files;                 // IN JSON, name <--> serial
-    /** @type {number} */
+    #files;                 // IN JSON, name <--> serial
+    /** @type {string} */
     #created_at;                    // IN JSON
     /** @type {Record<string, string>} */
-    folderLinks;         // IN JSON
+    #folderLinks;         // IN JSON
     /** @type {Record<string, string>} */
-    fileLinks;           // IN JSON
+    #fileLinks;           // IN JSON
+
+    /**
+     * @returns {Folder}
+     * */
+    getParentFolder() {
+        return this.#parentFolder;
+    }
+
+    /**
+     * @param {Folder} newParentFolder
+     * @param {boolean} override_root
+     * @returns {Folder}
+     * @throws {TypeError | Error}
+     * */
+    setParentFolder(newParentFolder, override_root = false) {
+        if (!(newParentFolder instanceof Folder))
+            throw new TypeError('New parent folder must be a Folder.');
+        if (typeof override_root !== 'boolean')
+            throw new TypeError('override_root must be a boolean.');
+        if (!override_root && this.#parentFolder === this)
+            throw new Error('Root cannot be overridden when override_root is false.');
+        this.#parentFolder = newParentFolder;
+        return this;
+    }
+
+    /**
+     * @returns {Record<string, Folder>}
+     * */
+    getSubfolders() {
+        return this.#subfolders;
+    }
+
+    /**
+     * @returns {Record<string, File>}
+     * */
+    getFiles() {
+        return this.#files;
+    }
+
+    /**
+     * @returns {Record<string, string>}
+     * */
+    getFolderLinks() {
+        return this.#folderLinks;
+    }
+
+    /**
+     * @returns {Record<string, string>}
+     * */
+    getFileLinks() {
+        return this.#fileLinks;
+    }
 
     /**
      * This function converts the current Folder object to a JSON string.
@@ -161,14 +222,14 @@ class Folder {
          * */
         function toPlainObject(folder) {
             return {
-                subfolder: Object.entries(folder.subfolders).reduce(
+                subfolder: Object.entries(folder.getSubfolders()).reduce(
                     (acc, [name, subfolder]) => {
                         acc[name] = toPlainObject(subfolder);
                         return acc;
                     },
                     {}
                 ),
-                files: Object.entries(folder.files).reduce(
+                files: Object.entries(folder.getFiles()).reduce(
                     (acc, [name, file]) => {
                         acc[name] = file.getSerial();
                         return acc;
@@ -176,14 +237,14 @@ class Folder {
                     {}
                 ),
                 created_at: folder.getCreatedAt(),
-                folderLinks: Object.entries(folder.folderLinks).reduce(
+                folderLinks: Object.entries(folder.getFolderLinks()).reduce(
                     (acc, [name, folderLink]) => {
                         acc[name] = folderLink;
                         return acc;
                     },
                     {}
                 ),
-                fileLinks: Object.entries(folder.fileLinks).reduce(
+                fileLinks: Object.entries(folder.getFileLinks()).reduce(
                     (acc, [name, fileLink]) => {
                         acc[name] = fileLink;
                         return acc;
@@ -208,10 +269,10 @@ class Folder {
          * @returns {void}
          * */
         function getFiles(folder) {
-            Object.values(folder.files).forEach((file) => {
+            Object.values(folder.getFiles()).forEach((file) => {
                 files.push(file);
             });
-            Object.values(folder.subfolders).forEach((subfolder)=>{
+            Object.values(folder.getSubfolders()).forEach((subfolder) => {
                 getFiles(subfolder);
             });
         }
@@ -222,43 +283,46 @@ class Folder {
 
     /**
      * @param {boolean} is_root
-     * @param {Folder} parentFolder
-     * @throws {TypeError | Error}
+     * @param {Folder | undefined} parentFolder
+     * @throws {TypeError}
      * */
-    constructor(is_root, parentFolder) {
+    constructor(is_root, parentFolder = undefined) {
         // parameter check
         if (typeof is_root !== 'boolean')
-            throw new TypeError('Parameters must have correct data types');
+            throw new TypeError('is_root must be a boolean.');
         if (is_root && parentFolder !== undefined) {
-            throw new Error('The parent folder cannot be specified when creating a root');
+            throw new TypeError('The parent folder cannot be specified when creating a root.');
         }
-        if (!is_root && parentFolder !== null && !(parentFolder instanceof Folder)) {
-            throw new Error('The parent folder must be specified when creating a regular folder');
+        if (!is_root && !(parentFolder instanceof Folder)) {
+            throw new TypeError('The parent folder must be a folder when creating a regular folder.');
         }
         // process data
-        this.parentFolder = is_root ? this : parentFolder;
-        this.subfolders = {};
-        this.files = {};
+        this.#parentFolder = is_root ? this : parentFolder;
+        this.#subfolders = {};
+        this.#files = {};
         this.#created_at = getISOTimeString();
-        this.folderLinks = {};
-        this.fileLinks = {};
+        this.#folderLinks = {};
+        this.#fileLinks = {};
     }
 
     /**
      * @param {Folder} parentFolder
      * @returns {Folder}
+     * @throws {TypeError}
      * */
     deepCopyTo(parentFolder) {
+        if (!(parentFolder instanceof Folder))
+            throw new TypeError('Parent folder must be a Folder.');
         const dcFolder = new Folder(false, parentFolder);
-        for (const fileKey in this.files)
-            dcFolder.files[fileKey] = this.files[fileKey];
+        for (const fileKey in this.#files)
+            dcFolder.#files[fileKey] = this.#files[fileKey];
         dcFolder.#created_at = getISOTimeString();
-        for (const folderLinkKey in this.folderLinks)
-            dcFolder.folderLinks[folderLinkKey] = this.folderLinks[folderLinkKey];
-        for (const fileLinkKey in this.fileLinks)
-            dcFolder.fileLinks[fileLinkKey] = this.fileLinks[fileLinkKey];
-        for (const subfolderKey in this.subfolders)
-            dcFolder.subfolders[subfolderKey] = this.subfolders[subfolderKey].deepCopyTo(dcFolder);
+        for (const folderLinkKey in this.#folderLinks)
+            dcFolder.#folderLinks[folderLinkKey] = this.#folderLinks[folderLinkKey];
+        for (const fileLinkKey in this.#fileLinks)
+            dcFolder.#fileLinks[fileLinkKey] = this.#fileLinks[fileLinkKey];
+        for (const subfolderKey in this.#subfolders)
+            dcFolder.#subfolders[subfolderKey] = this.#subfolders[subfolderKey].deepCopyTo(dcFolder);
         return dcFolder;
     }
 
@@ -275,10 +339,10 @@ class Folder {
     getContentListAsString() {
         let contents = '';
         const
-            folderNames = Object.keys(this.subfolders),
-            fileNames = Object.keys(this.files),
-            folderLinkNames = Object.keys(this.folderLinks),
-            fileLinkNames = Object.keys(this.fileLinks);
+            folderNames = Object.keys(this.#subfolders),
+            fileNames = Object.keys(this.#files),
+            folderLinkNames = Object.keys(this.#folderLinks),
+            fileLinkNames = Object.keys(this.#fileLinks);
         if (folderNames.length > 0)
             contents += 'Folders:' + folderNames.reduce(
                 (acc, elem) => `${acc}\n            ${elem}`,
@@ -311,31 +375,37 @@ class Folder {
     /**
      * @param {string} fileName
      * @returns {boolean}
+     * @throws {TypeError}
      * */
     hasFile(fileName) {
-        return (legalKeyNameInFileSystem.test(fileName) && this.files[fileName] instanceof File);
+        if (typeof fileName !== 'string')
+            throw new TypeError('File name must be a string.');
+        return (legalKeyNameInFileSystem.test(fileName) && this.#files[fileName] instanceof File);
     }
 
     /**
      * @param {string} subfolderName
      * @returns {boolean}
+     * @throws {TypeError}
      * */
     hasSubfolder(subfolderName) {
-        return (legalKeyNameInFileSystem.test(subfolderName) && this.subfolders[subfolderName] instanceof Folder);
+        if (typeof subfolderName !== 'string')
+            throw new TypeError('Subfolder name must be a string');
+        return (legalKeyNameInFileSystem.test(subfolderName) && this.#subfolders[subfolderName] instanceof Folder);
     }
 
     /**
      * @param {string} fileName
      * @returns {File}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     getFile(fileName) {
-        if (!legalKeyNameInFileSystem.test(fileName))
-            throw new Error(`File name is illegal`);
-        const file = this.files[fileName];
-        if (file instanceof File)
-            return file;
-        throw new Error(`File ${fileName} not found`);
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        const file = this.#files[fileName];
+        if (!(file instanceof File))
+            throw new Error(`File ${fileName} not found`);
+        return file;
     }
 
     /**
@@ -343,73 +413,79 @@ class Folder {
      * @param {string} fileName
      * @param {string} fileSerial
      * @returns {[File, string]}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     createNewFile(fix_duplicated_filename, fileName, fileSerial) {
-        if (!legalKeyNameInFileSystem.test(fileName))
-            throw new Error(`File name is illegal`);
+        if (typeof fix_duplicated_filename !== 'boolean')
+            throw new TypeError('fix_duplicated_filename must be a boolean.');
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
         if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-            throw new Error(`File Serial is illegal`);
-        if (this.files[fileName] instanceof File) {
+            throw new TypeError('File Serial must be a non-empty string.');
+        if (this.#files[fileName] instanceof File) { // keep this low level implementation to boost runtime
             if (!fix_duplicated_filename)
-                throw new Error(`File ${fileName} is already existing`);
+                throw new Error(`File ${fileName} is already existing.`);
             let i = 2;
-            while (this.files[`${fileName} ${i}`] instanceof File)
+            while (this.#files[`${fileName} ${i}`] instanceof File)
                 i++;
             fileName = `${fileName} ${i}`;
         }
-        return [(this.files[fileName] = new File(fileSerial, '')), fileName];
+        return [(this.#files[fileName] = new File(fileSerial, '')), fileName];
     }
 
     /**
      * @param {string} oldFileName
      * @param {string} newFileName
      * @returns {File}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     renameExistingFile(oldFileName, newFileName) {
-        if (!legalKeyNameInFileSystem.test(oldFileName) || !legalKeyNameInFileSystem.test(newFileName))
-            throw new Error(`File name is illegal`);
-        if (!(this.files[oldFileName] instanceof File))
-            throw new Error(`File ${oldFileName} not found`);
-        if (this.files[newFileName] instanceof File)
-            throw new Error(`File ${newFileName} already exists`);
-        this.files[newFileName] = this.files[oldFileName];
-        delete this.files[oldFileName];
-        return this.files[newFileName];
+        if (typeof oldFileName !== 'string' || !legalKeyNameInFileSystem.test(oldFileName))
+            throw new TypeError('Old file name must be a string and follow the keyname requirements.')
+        if (typeof newFileName !== 'string' || !legalKeyNameInFileSystem.test(newFileName))
+            throw new TypeError(`New file name must be a string and follow the keyname requirements.`);
+        if (!(this.#files[oldFileName] instanceof File))
+            throw new Error(`File ${oldFileName} not found.`);
+        if (this.#files[newFileName] instanceof File)
+            throw new Error(`File ${newFileName} already exists.`);
+        this.#files[newFileName] = this.#files[oldFileName];
+        delete this.#files[oldFileName];
+        return this.#files[newFileName];
     }
 
     /**
      * @param {string} fileName
      * @returns {void}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     deleteFile(fileName) {
-        if (!legalKeyNameInFileSystem.test(fileName))
-            throw new Error(`File name is illegal`);
-        if (!(this.files[fileName] instanceof File))
-            throw new Error(`File ${fileName} not found`);
-        delete this.files[fileName];
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        if (!(this.#files[fileName] instanceof File))
+            throw new Error(`File ${fileName} not found.`);
+        delete this.#files[fileName];
     }
 
     /**
      * @param {boolean} fix_duplicated_subfolderName
      * @param {string} subfolderName
      * @returns {Folder}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     createSubfolder(fix_duplicated_subfolderName, subfolderName) {
-        if (!legalKeyNameInFileSystem.test(subfolderName))
-            throw new Error(`Subfolder name is illegal`);
-        if (this.subfolders[subfolderName] instanceof Folder) {
+        if (typeof fix_duplicated_subfolderName !== 'boolean')
+            throw new TypeError('fix_duplicated_subfolderName must be a boolean.');
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+        if (this.#subfolders[subfolderName] instanceof Folder) { // keep this low level implementation to boost runtime
             if (!fix_duplicated_subfolderName)
                 throw new Error(`Subfolder ${subfolderName} is already existing`);
             let i = 2;
-            while (this.subfolders[`${subfolderName} ${i}`] instanceof Folder)
+            while (this.#subfolders[`${subfolderName} ${i}`] instanceof Folder)
                 i++;
             subfolderName = `${subfolderName} ${i}`;
         }
-        return (this.subfolders[subfolderName] = new Folder(false, this));
+        return (this.#subfolders[subfolderName] = new Folder(false, this));
     }
 
     /**
@@ -423,10 +499,12 @@ class Folder {
          * @returns {void}
          * */
         function addFolderToZip(folderObject, zipObject) {
-            for (const [fileName, file] of Object.entries(folderObject.files))
+            Object.entries(folderObject.getFiles()).forEach(([fileName, file]) => {
                 zipObject.file(fileName, file.getContent(), {binary: true});
-            for (const [subfolderName, subfolderObject] of Object.entries(folderObject.subfolders))
+            });
+            Object.entries(folderObject.getSubfolders()).forEach(([subfolderName, subfolderObject]) => {
                 addFolderToZip(subfolderObject, zipObject.folder(subfolderName));
+            });
         }
 
         // Create a new JSZip instance to generate the .zip file
@@ -449,54 +527,63 @@ function extractDirAndKeyName(path) {
         return ['.', path];
     if (index === 0) // file is in the ROOT
         return ['/', path.slice(1)];
+    //     [   parent directory path, immediate key name   ]
     return [path.substring(0, index), path.substring(index + 1)];
 }
 
 /**
- * This function shallow-moves <.files> and <.subfolders> from <srcFolder> to <destFolder>.
+ * This function shallow-moves <.#files> and <.#subfolders> from <srcFolder> to <destFolder>.
  * Before the movement, <destFolder> should be set up.
  * After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
  * @param {Folder} destFolder
  * @param {Folder} srcFolder
  * @returns {void}
- * @throws {TypeError} same as <destFolder>
+ * @throws {TypeError}
  * */
 function shallowMoveFolders(destFolder, srcFolder) {
-    // process the data
-    Object.entries(srcFolder.files).forEach(([fileName, file]) => {
-        if (destFolder.files[fileName] instanceof File) {
+    if (!(destFolder instanceof Folder))
+        throw new TypeError('Destination folder must be a Folder.');
+    if (!(srcFolder instanceof Folder))
+        throw new TypeError('Source folder must be a Folder.');
+    const
+        destFolderFiles = destFolder.getFiles(),
+        destFolderFileLinks = destFolder.getFileLinks(),
+        destFolerSubfolders = destFolder.getSubfolders(),
+        destFolderFolderLinks = destFolder.getFolderLinks();
+    Object.entries(srcFolder.getFiles()).forEach(([fileName, file]) => {
+        if (destFolderFiles[fileName] instanceof File) {
             let i = 2;
-            while (destFolder.files[`${fileName} ${i}`] instanceof File)
+            while (destFolderFiles[`${fileName} ${i}`] instanceof File)
                 i++;
             fileName = `${fileName} ${i}`;
         }
-        destFolder.files[fileName] = file;
+        destFolderFiles[fileName] = file;
     });
-    Object.entries(srcFolder.fileLinks).forEach(([fileLinkName, fileLink]) => {
-        if (typeof destFolder.fileLinks[fileLinkName] === 'string') {
+    Object.entries(srcFolder.getFileLinks()).forEach(([fileLinkName, fileLink]) => {
+        if (typeof destFolderFileLinks[fileLinkName] === 'string') {
             let i = 2;
-            while (typeof destFolder.fileLinks[`${fileLinkName} ${i}`] === 'string')
+            while (typeof destFolderFileLinks[`${fileLinkName} ${i}`] === 'string')
                 i++;
             fileLinkName = `${fileLinkName} ${i}`;
         }
-        destFolder.fileLinks[fileLinkName] = fileLink;
+        destFolderFileLinks[fileLinkName] = fileLink;
     });
-    Object.entries(srcFolder.subfolders).forEach(([subfolderName, subfolder]) => {
-        if (destFolder.subfolders[subfolderName] instanceof Folder) {
-            shallowMoveFolders(destFolder.subfolders[subfolderName], subfolder);
+    Object.entries(srcFolder.getSubfolders()).forEach(([subfolderName, subfolder]) => {
+        if (destFolerSubfolders[subfolderName] instanceof Folder) {
+            shallowMoveFolders(destFolerSubfolders[subfolderName], subfolder);
         } else {
-            destFolder.subfolders[subfolderName] = subfolder;
-            subfolder.parentFolder = destFolder; // reset parent folder
+            destFolerSubfolders[subfolderName] = subfolder;
+            subfolder.setParentFolder(destFolder); // reset parent folder
         }
     });
-    Object.entries(srcFolder.folderLinks).forEach(([folderLinkName, folderLink]) => {
-        if (typeof destFolder.folderLinks[folderLinkName] === 'string') {
+    Object.entries(srcFolder.getFolderLinks()).forEach(([folderLinkName, folderLink]) => {
+        if (typeof destFolderFolderLinks[folderLinkName] === 'string') {
             let i = 2;
-            while (typeof destFolder.folderLinks[`${folderLinkName} ${i}`] === 'string')
+            while (typeof destFolderFolderLinks[`${folderLinkName} ${i}`] === 'string')
                 i++;
             folderLinkName = `${folderLinkName} ${i}`;
         }
-        destFolder.folderLinks[folderLinkName] = folderLink;
+        destFolderFolderLinks[folderLinkName] = folderLink;
     });
     return destFolder;
 }
@@ -516,8 +603,12 @@ class TerminalFolderPointer {
      * @throws {TypeError}
      * */
     constructor(fsRoot, currentFolder = fsRoot, currentFullPathStack = []) {
-        if (!(fsRoot instanceof Folder) || !(currentFolder instanceof Folder) || !(currentFullPathStack instanceof Array))
-            throw new TypeError('Parameters must have correct data types');
+        if (!(fsRoot instanceof Folder))
+            throw new TypeError('fsRoot must be a Folder.');
+        if (!(currentFolder instanceof Folder))
+            throw new TypeError('Current folder must be a Folder.');
+        if (!(currentFullPathStack instanceof Array))
+            throw new TypeError('Current Full Path Stack must be an array.');
         this.#fsRoot = fsRoot;
         this.#currentFolder = currentFolder;
         this.#currentFolderTrackingStack = currentFullPathStack;
@@ -546,8 +637,8 @@ class TerminalFolderPointer {
      * @returns {string}
      * */
     getFullPath() {
-        return this.#currentFolderTrackingStack.length === 0 ? '/' :
-            this.#currentFolderTrackingStack.reduce((acc, elem) => `${acc}/${elem}`, '');
+        return this.#currentFolderTrackingStack.length === 0 ?
+            '/' : this.#currentFolderTrackingStack.reduce((acc, elem) => `${acc}/${elem}`, '');
     }
 
     /**
@@ -565,7 +656,7 @@ class TerminalFolderPointer {
     gotoParentFolder() {
         if (this.#currentFolderTrackingStack.length > 0)
             this.#currentFolderTrackingStack.pop()
-        return (this.#currentFolder = this.#currentFolder.parentFolder);
+        return (this.#currentFolder = this.#currentFolder.getParentFolder());
     }
 
     /**
@@ -575,6 +666,9 @@ class TerminalFolderPointer {
      * @throws {Error}
      * */
     gotoSubfolder(include_link, subfolderName) {
+        if (typeof include_link !== 'boolean')
+            throw new TypeError('include_link must be a boolean.');
+        // TODO
         if (!legalKeyNameInFileSystem.test(subfolderName))
             throw new Error(`Subfolder name is illegal`);
         const nextFolder = this.#currentFolder.subfolders[subfolderName];
@@ -700,33 +794,23 @@ class TerminalFolderPointer {
         switch (type) {
             case 'file': {
                 // analyze the old file path
-                let index = oldPath.lastIndexOf('/');
-                const [oldFileDir, oldFileName] = (() => {
-                    if (index === -1) return ['.', oldPath];
-                    if (index === 0) return ['/', oldPath.slice(1)];
-                    return [oldPath.substring(0, index), oldPath.slice(index + 1)];
-                })();
+                const [oldFileDir, oldFileName] = extractDirAndKeyName(oldPath);
                 if (!legalKeyNameInFileSystem.test(oldFileName))
                     throw new Error(`The old file name is illegal`);
                 // analyze the new file path
-                index = newPath.lastIndexOf('/');
-                const [newFileDir, newFileName] = (() => {
-                    if (index === -1) return ['.', newPath];
-                    if (index === 0) return ['/', newPath.slice(1)];
-                    return [newPath.substring(0, index), newPath.slice(index + 1)];
-                })();
+                const [newFileDir, newFileName] = extractDirAndKeyName(newPath);
                 if (!legalKeyNameInFileSystem.test(newFileName))
                     throw new Error(`The new file name is illegal`);
                 // check the old file status
-                const fp_old = this.duplicate();
-                fp_old.gotoPath(oldFileDir);
-                const oldFile = fp_old.#currentFolder.files[oldFileName];
-                if (!(oldFile instanceof File))
+                const oldDir = this.duplicate().gotoPath(oldFileDir);
+                if (!oldDir.hasFile(oldFileName))
                     throw new Error(`The old file is not found`);
+                const oldFile = oldDir.getFile(oldFileName);
                 // check the new file status
-                const fp_new = this.duplicate();
-                fp_new.createPath(newFileDir, true);
-                if (fp_new.#currentFolder.files[newFileName] instanceof File)
+                const newDir = this.duplicate().createPath(newFileDir, true).getCurrentFolder();
+                // const fp_new = this.duplicate();
+                // fp_new.createPath(newFileDir, true);
+                if (newDir.getFile(newFileName) instanceof File)
                     throw new Error(`The new file is already existing`);
                 // do the movement
                 delete fp_old.#currentFolder.files[oldFileName];
@@ -765,7 +849,7 @@ class TerminalFolderPointer {
                 if (!(fp_new.#currentFolder.subfolders[newDirName] instanceof Folder)) {
                     // directly deposit the folder directory
                     fp_new.#currentFolder.subfolders[newDirName] = oldDir;
-                    oldDir.parentFolder = fp_new.#currentFolder;
+                    oldDir.setParentFolder(fp_new.#currentFolder);
                 } else {
                     // combine two folder directories (shallow copying)
                     shallowMoveFolders(fp_new.#currentFolder.subfolders[newDirName], oldDir);
