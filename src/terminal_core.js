@@ -1032,41 +1032,27 @@ class TerminalFolderPointer {
             throw new TypeError('Type must be either "file" or "directory".');
         if (typeof path !== 'string' || path.length === 0)
             throw new TypeError('Path must be a non-empty string.');
-
-        switch (type) {
-            case 'file': {
-                // analyze file path
-                const [fileDir, fileName] = extractDirAndKeyName(path);
-                // check the file status
-                const dir = this.duplicate().gotoPath(fileDir);
-                if (!dir.hasFile(fileName))
-                    throw new Error(`File ${path} not found.`);
-                // delete the file
-                dir.deleteFile(fileName);
-                break;
-            }
-            case 'directory': {
-                // analyze the dir path
-                const index = path.lastIndexOf('/');
-                const [dirParent, dirName] = (() => {
-                    if (index === -1) return ['.', path];
-                    if (index === 0) return ['/', path.slice(1)];
-                    return [path.substring(0, index), path.slice(index + 1)];
-                })();
-                if (!legalKeyNameInFileSystem.test(dirName))
-                    throw new Error(`The directory name is illegal`);
-                // check the dir status
-                const fp = this.duplicate();
-                fp.gotoPath(dirParent);
-                // delete the file
-                if (!(fp.#currentFolder.subfolders[dirName] instanceof Folder))
-                    throw new Error(`The directory `);
-                delete fp.#currentFolder.subfolders[dirName];
-                break;
-            }
-            default: {
-                throw new Error(`Path type is illegal`);
-            }
+        if (type === 'file') {
+            // analyze file path
+            const [fileDir, fileName] = extractDirAndKeyName(path);
+            // check the file status
+            const dir = this.duplicate().gotoPath(fileDir);
+            if (!dir.hasFile(fileName))
+                throw new Error(`File ${path} not found.`);
+            // delete the file
+            dir.deleteFile(fileName);
+            return this;
+        }
+        if (type === 'directory') {
+            // analyze dir path
+            const [dirParentPath, dirName] = extractDirAndKeyName(path);
+            // check the dir status
+            const dirParent = this.duplicate().gotoPath(dirParentPath);
+            if (!dirParent.hasSubfolder(dirName))
+                throw new Error(`Folder ${path} not found.`);
+            // delete the dir
+            dirParent.deleteSubfolder(dirName);
+            return this;
         }
         return this;
     }
