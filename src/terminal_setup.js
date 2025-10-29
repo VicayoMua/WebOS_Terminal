@@ -743,22 +743,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_key = parameters[1].substring(5);
                 if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
                     try {
-                        const
-                            res = await fetch(
-                                `http://${ipp}/mycloud/users/`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        aim: 'new_account',
-                                        user_key: user_key
-                                    })
-                                }
-                            ),
-                            body = await res.json();
+                        const body = await fetch(
+                            `http://${ipp}/mycloud/users/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    aim: 'new_account',
+                                    user_key: user_key
+                                })
+                            }
+                        ).then(
+                            (res) => res.json()
+                        );
                         if (body.connection !== true) {
                             currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
                             return;
@@ -775,22 +775,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[2] === '-conf') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -conf
                     try {
-                        const
-                            res = await fetch(
-                                `http://${ipp}/mycloud/users/`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        aim: 'conf_account',
-                                        user_key: user_key
-                                    })
-                                }
-                            ),
-                            body = await res.json();
+                        const body = await fetch(
+                            `http://${ipp}/mycloud/users/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    aim: 'conf_account',
+                                    user_key: user_key
+                                })
+                            }
+                        ).then(
+                            (res) => res.json()
+                        );
                         if (body.connection !== true) {
                             currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
                             return;
@@ -933,6 +933,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-recover') { // Command: mycloud -r
                     currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
+                        const bodyROOT = await fetch(
+                            `http://${ipp}/mycloud/files/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    aim: 'recover',
+                                    user_key: user_key,
+                                    serial: 'ROOT'
+                                })
+                            }
+                        ).then(
+                            (res) => res.json()
+                        );
 
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);

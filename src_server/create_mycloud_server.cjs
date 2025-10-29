@@ -257,7 +257,7 @@ app.post('/mycloud/files/', (req, res) => {
                         error: `Failed to update the file content.`
                     });
                 }
-                if (serial === 'ROOT') { // clean up the files when ROOT updates
+                if (serial === 'ROOT') { // clean up the files when ROOT updates, "content = rootFolder.JSON()"
                     // TODO: Clean up the files when ROOT updates
                 }
                 return res.status(200).json({
