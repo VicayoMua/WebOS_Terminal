@@ -37,5 +37,3 @@ function extractDirAndKeyName(path) {
     //
     //
     //
-
-console.log(legalKeyNameInFileSystem.test('\0\0\0'.split('/').filter((s) => s.length > 0)[0]))

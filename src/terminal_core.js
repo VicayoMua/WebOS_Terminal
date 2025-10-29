@@ -306,6 +306,22 @@ class Folder {
     }
 
     /**
+     * This method is VERY DANGEROUS to use, designed for developers.
+     * This method adds <file> to <.files> and assumes that <file> is a valid File, and that <fileName> does not exists.
+     * @param {string} fileName
+     * @param {File} file
+     * @returns void
+     * @throws {TypeError}
+     * */
+    createFileDangerous(fileName, file) {
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        if (!(file instanceof File))
+            throw new TypeError('File must be a File.');
+        this.#files[fileName] = file;
+    }
+
+    /**
      * @param {string} fileName
      * @returns {void}
      * @throws {TypeError | Error}
@@ -830,7 +846,7 @@ class TerminalFolderPointer {
     /**
      * @param {string} path
      * @param {boolean} goto_new_folder
-     * @returns {TerminalFolderPointer}
+     * @returns {Folder}
      * @throws {TypeError | Error}
      * */
     createPath(path, goto_new_folder = false) {
@@ -843,9 +859,9 @@ class TerminalFolderPointer {
             fp.gotoRoot();
         }
         const pathStack = path.split('/').filter((s) => s.length > 0);
-        // check the availability of path for creation
+        // check the availability of path for creation; otherwise, need to reverse all the edits
         if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalKeyNameInFileSystem.test(folderName)))
-            throw new Error(`Path ${path} is illegal.`);
+            throw new Error(`Path ${path} must follow the keyname requirements.`);
         try {
             // do the creation of path
             pathStack.forEach((folderName) => {
@@ -866,96 +882,67 @@ class TerminalFolderPointer {
                     }
                 }
             });
+            if (goto_new_folder)
+                this.recover(fp, false);
+            return this.#currentFolder;
         } catch (error) {
             throw new Error(`Failed to create ${path}. <-- ${error}`);
         }
-        return goto_new_folder ? this.recover(fp, false) : this;
     }
 
     /**
      * @param {'file' | 'directory'} type
      * @param {string} oldPath
      * @param {string} newPath
+     * @param {boolean} include_link
      * @returns {TerminalFolderPointer}
      * @throws {Error}
      * */
-    movePath(type, oldPath, newPath) {
+    movePath(type, oldPath, newPath, include_link = false) {
         /*
         *  When moving a single file, if the destination is already existing, then the copy will stop.
         *
         *  When moving a folder, if a destination folder is already existing, then the folders will be merged;
         *                        if a destination file is already existing, then the file will be renamed and copied.
         * */
-        switch (type) {
-            case 'file': {
-                // analyze the old file path
-                const [oldFileDir, oldFileName] = extractDirAndKeyName(oldPath);
-                if (!legalKeyNameInFileSystem.test(oldFileName))
-                    throw new Error(`The old file name is illegal`);
-                // analyze the new file path
-                const [newFileDir, newFileName] = extractDirAndKeyName(newPath);
-                if (!legalKeyNameInFileSystem.test(newFileName))
-                    throw new Error(`The new file name is illegal`);
-                // check the old file status
-                const oldDir = this.duplicate().gotoPath(oldFileDir);
-                if (!oldDir.hasFile(oldFileName))
-                    throw new Error(`The old file is not found`);
-                const oldFile = oldDir.getFile(oldFileName);
-                // check the new file status
-                const newDir = this.duplicate().createPath(newFileDir, true).getCurrentFolder();
-                // const fp_new = this.duplicate();
-                // fp_new.createPath(newFileDir, true);
-                if (newDir.getFile(newFileName) instanceof File)
-                    throw new Error(`The new file is already existing`);
-                // do the movement
-                delete fp_old.#currentFolder.files[oldFileName];
-                fp_new.#currentFolder.files[newFileName] = oldFile;
-                break;
-            }
-            case 'directory': {
-                // analyze the old dir path
-                let index = oldPath.lastIndexOf('/');
-                const [oldDirParent, oldDirName] = (() => {
-                    if (index === -1) return ['.', oldPath];
-                    if (index === 0) return ['/', oldPath.slice(1)];
-                    return [oldPath.substring(0, index), oldPath.slice(index + 1)];
-                })();
-                if (!legalKeyNameInFileSystem.test(oldDirName))
-                    throw new Error(`The old directory name is illegal`);
-                // analyze the new dir path
-                index = newPath.lastIndexOf('/');
-                const [newDirParent, newDirName] = (() => {
-                    if (index === -1) return ['.', newPath];
-                    if (index === 0) return ['/', newPath.slice(1)];
-                    return [newPath.substring(0, index), newPath.slice(index + 1)];
-                })();
-                if (!legalKeyNameInFileSystem.test(newDirName))
-                    throw new Error(`The new directory name is illegal`);
-                // check the old dir status
-                const fp_old = this.duplicate();
-                fp_old.gotoPath(oldDirParent);
-                const oldDir = fp_old.#currentFolder.subfolders[oldDirName];
-                if (!(oldDir instanceof Folder))
-                    throw new Error(`The old directory is not found`);
-                // check the new dir status
-                const fp_new = this.duplicate();
-                fp_new.createPath(newDirParent, true);
-                // do the movement
-                if (!(fp_new.#currentFolder.subfolders[newDirName] instanceof Folder)) {
-                    // directly deposit the folder directory
-                    fp_new.#currentFolder.subfolders[newDirName] = oldDir;
-                    oldDir.setParentFolder(fp_new.#currentFolder);
-                } else {
-                    // combine two folder directories (shallow copying)
-                    shallowMoveFolders(fp_new.#currentFolder.subfolders[newDirName], oldDir);
-                }
-                // delete the moved folder directory
-                delete fp_old.#currentFolder.subfolders[oldDirName];
-                break;
-            }
-            default: {
-                throw new Error(`Path type is illegal`);
-            }
+        if (type !== 'file' && type !== 'directory')
+            throw new TypeError('Type must be either "file" or "directory".');
+        if (typeof oldPath !== 'string' || oldPath.length === 0)
+            throw new TypeError('Old Path must be a non-empty string.');
+        if (typeof newPath !== 'string' || newPath.length === 0)
+            throw new TypeError('New Path must be a non-empty string.');
+        if (typeof include_link !== 'boolean')
+            throw new TypeError('include_link must be a boolean.');
+        if (type === 'file') {
+            // analyze file paths
+            const
+                [oldFileDir, oldFileName] = extractDirAndKeyName(oldPath),
+                [newFileDir, newFileName] = extractDirAndKeyName(newPath);
+            // check the old file status
+            const oldDir = this.duplicate().gotoPath(oldFileDir, include_link);
+            if (!oldDir.hasFile(oldFileName))
+                throw new Error('Old file is not found.');
+            // check the new file status
+            const newDir = this.duplicate().createPath(newFileDir, true);
+            if (newDir.hasFile(newFileName))
+                throw new Error('New file is already existing.');
+            // do the movement
+            const oldFile = oldDir.getFile(oldFileName);
+            oldDir.deleteFile(oldFileName);
+            newDir.createFileDangerous(newFileName, oldFile);
+            return this;
+        }
+        if (type === 'directory') {
+            // analyze dir paths
+            const
+                [oldDirParentPath, oldDirName] = extractDirAndKeyName(oldPath),
+                oldDirParent = this.duplicate().gotoPath(oldDirParentPath, include_link),
+                oldDir = oldDirParent.getSubfolder(oldDirName),
+                newDir = this.duplicate().createPath(newPath, include_link);
+            // do the movement
+            shallowMoveFolders(newDir, oldDir);
+            oldDirParent.deleteSubfolder(oldDirName);
+            return this;
         }
         return this;
     }
