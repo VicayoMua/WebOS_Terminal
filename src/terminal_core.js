@@ -28,6 +28,10 @@ const
 const
     legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/;
 
+/**
+ * This structure represents the space, which serial numers are picked from.
+ * Methods may throw Errors due to illegal inputs.
+ * */
 class SerialLake {
     /** @type {Set<string>} */
     #serialSet;
@@ -36,30 +40,38 @@ class SerialLake {
 
     /**
      * @param {function():string} fileSerialGenerator
+     * @throws {TypeError}
      * */
     constructor(fileSerialGenerator) {
-        fileSerialGenerator(); // check whether the file serial generator is a function.
+        if (typeof fileSerialGenerator !== 'function' || typeof fileSerialGenerator() !== 'string')
+            throw new TypeError('fileSerialGenerator must be a function that returns a string.');
         this.#serialSet = new Set();
         this.#serialGenerator = fileSerialGenerator;
     }
 
     /**
      * @returns {string}
+     * @throws {Error}
      * */
     generateNext() {
-        let fileSerial = '';
-        do {
-            fileSerial = this.#serialGenerator();
-        } while (this.#serialSet.has(fileSerial));
-        this.#serialSet.add(fileSerial);
-        return fileSerial;
+        try {
+            let fileSerial = '';
+            do {
+                fileSerial = this.#serialGenerator();
+            } while (this.#serialSet.has(fileSerial));
+            this.#serialSet.add(fileSerial);
+            return fileSerial;
+        } catch (error) {
+            throw new Error(`Failed to generate the next serial number. <-- ${error}`);
+        }
     }
 }
 
-/*
-* This structure represents a single file in the file system.
-* Each instance is submitted to the file server.
-* */
+/**
+ * This structure represents a single file in the file system.
+ * Methods may throw Errors due to illegal inputs.
+ * Each instance can be submitted to a file server.
+ * */
 class File {
     /** @type {string} */
     #fileSerial;
@@ -139,10 +151,11 @@ class File {
     }
 }
 
-/*
-* This structure represents a single folder in the file system.
-* The root folder is submitted to the file server as a JSON file.
-* */
+/**
+ * This structure represents a single folder in the file system.
+ * Methods may throw Errors due to illegal inputs.
+ * The root folder can be submitted to a file server as a JSON file.
+ * */
 class Folder {
     /** @type {Folder} */
     #parentFolder;                    // NOT IN JSON, BUILT DURING RECOVERY
@@ -373,7 +386,7 @@ class Folder {
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         const folderLink = this.#folderLinks[folderLinkName];
         if (typeof folderLink !== 'string')
-            throw new Error(`Folder link ${folderLinkName} not found`);
+            throw new Error(`Folder link ${folderLinkName} not found.`);
         return folderLink;
     }
 
@@ -681,6 +694,10 @@ function extractDirAndKeyName(path) {
     return [path.substring(0, index), path.substring(index + 1)];
 }
 
+/**
+ * This structure represents an advanced browsing tool on the file system.
+ * Methods may throw Errors due to illegal inputs.
+ * */
 class TerminalFolderPointer {
     /** @type {Folder} */
     #fsRoot;
@@ -1144,6 +1161,9 @@ class TerminalFolderPointer {
     }
 }
 
+/**
+ *
+ * */
 class CommandInputHandler {
     /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
     #supportedCommands;
@@ -1266,6 +1286,9 @@ class CommandInputHandler {
     }
 }
 
+/**
+ *
+ * */
 class MinimizedWindowRecords {
     /** @type {Record<number, [string, function():void]>} */
     #records; // description: windowRecoverCallback
@@ -1330,6 +1353,9 @@ class MinimizedWindowRecords {
     }
 }
 
+/**
+ *
+ * */
 class TerminalCore {
     /** @type {window.Terminal} */
     #xtermObj;
