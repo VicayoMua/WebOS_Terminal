@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
                 '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
                 '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
-                '       mycloud -recover                                to recover the file system to MyCloud server\n',
+                '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n',
                 false, true
             );
         },
@@ -954,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
             '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
             '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
-            '       mycloud -recover                                to recover the file system to MyCloud server\n'
+            '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     }
 
     supportedCommands['ttt'] = {
