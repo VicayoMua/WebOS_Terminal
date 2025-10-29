@@ -358,35 +358,70 @@ class Folder {
      * @throws {TypeError}
      * */
     hasFolderLink(folderLinkName) {
-
+        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+            throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
+        return typeof this.#folderLinks[folderLinkName] === 'string';
     }
 
     /**
-     *
+     * @param {string} folderLinkName
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     getFolderLink(folderLinkName) {
-
+        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+            throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
+        const folderLink = this.#folderLinks[folderLinkName];
+        if (typeof folderLink !== 'string')
+            throw new Error(`Folder link ${folderLinkName} not found`);
+        return folderLink;
     }
 
     /**
-     *
+     * @param {string} folderLinkName
+     * @param {string} link
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     createFolderLink(folderLinkName, link) {
-
+        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+            throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
+        if (typeof link !== 'string' || link.length === 0)
+            throw new TypeError('Link must be a non-empty string.');
+        if (typeof this.#folderLinks[folderLinkName] === 'string')
+            throw new Error(`Folder link ${folderLinkName} already existing.`);
+        return (this.#folderLinks[folderLinkName] = link);
     }
 
     /**
-     *
+     * @param {string} folderLinkName
+     * @param {string} newLink
+     * @returns {void}
+     * @throws {TypeError | Error}
      * */
     setFolderLink(folderLinkName, newLink) {
-
+        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+            throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
+        if (typeof newLink !== 'string' || newLink.length === 0)
+            throw new TypeError('New link must be a non-empty string.');
+        if (typeof this.#folderLinks[folderLinkName] !== 'string')
+            throw new Error(`Folder link ${folderLinkName} not found.`);
+        this.#folderLinks[folderLinkName] = newLink;
     }
 
     /**
-     *
+     * @param {string} folderLinkName
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     deleteFolderLink(folderLinkName) {
-
+        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+            throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
+        const folderLink = this.#folderLinks[folderLinkName];
+        if (typeof folderLink !== 'string')
+            throw new Error(`Folder link ${folderLinkName} not found.`);
+        delete this.#folderLinks[folderLinkName];
+        return folderLink;
     }
 
     /**
@@ -397,38 +432,75 @@ class Folder {
     }
 
     /**
-     *
+     * @param {string} fileLinkName
+     * @returns {boolean}
+     * @throws {TypeError}
      * */
     hasFileLink(fileLinkName) {
-
+        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+            throw new TypeError('File link name must be a string and follow the keyname requirements.');
+        return typeof this.#fileLinks[fileLinkName] === 'string';
     }
 
     /**
-     *
+     * @param {string} fileLinkName
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     getFileLink(fileLinkName) {
-
+        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+            throw new TypeError('File link name must be a string and follow the keyname requirements.');
+        const fileLink = this.#fileLinks[fileLinkName];
+        if (typeof fileLink !== 'string')
+            throw new Error(`File link ${fileLinkName} not found.`);
+        return fileLink;
     }
 
     /**
-     *
+     * @param {string} fileLinkName
+     * @param {string} link
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     createFileLink(fileLinkName, link) {
-
+        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+            throw new TypeError('File link name must be a string and follow the keyname requirements.');
+        if (typeof link !== 'string' || link.length === 0)
+            throw new Error('Link must be a non-empty string.');
+        if (typeof this.#fileLinks[fileLinkName] === 'string')
+            throw new Error(`File link ${fileLinkName} already existing.`);
+        return (this.#fileLinks[fileLinkName] = link);
     }
 
     /**
-     *
+     * @param {string} fileLinkName
+     * @param {string} newLink
+     * @returns {void}
+     * @throws {TypeError | Error}
      * */
     setFileLink(fileLinkName, newLink) {
-
+        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+            throw new TypeError('File link name must be a string and follow the keyname requirements.');
+        if (typeof newLink !== 'string' || newLink.length === 0)
+            throw new TypeError('New link must be a non-empty string.');
+        if (typeof this.#fileLinks[fileLinkName] !== 'string')
+            throw new Error(`File link ${fileLinkName} not found.`);
+        this.#fileLinks[fileLinkName] = newLink;
     }
 
     /**
-     *
+     * @param {string} fileLinkName
+     * @returns {string}
+     * @throws {TypeError | Error}
      * */
     deleteFileLink(fileLinkName) {
-
+        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+            throw new TypeError('File link name must be a string and follow the keyname requirements.');
+        const fileLink = this.#fileLinks[fileLinkName];
+        if (typeof fileLink !== 'string')
+            throw new Error(`File link ${fileLinkName} not found.`);
+        delete this.#fileLinks[fileLinkName];
+        return fileLink;
     }
 
     /**
