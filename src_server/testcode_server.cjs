@@ -7,21 +7,6 @@ const mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
 const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
 // console.log(legalKeyNameInFileSystem.test('\r'));
 
-class Folder {
-    /**
-     * @param {string} fileName
-     * @returns {void}
-     * @throws {Error}
-     * */
-    deleteFile(fileName) {
-        if (!legalKeyNameInFileSystem.test(fileName))
-            throw new Error(`File name is illegal`);
-        if (!(this.files[fileName] instanceof File))
-            throw new Error(`File ${fileName} not found`);
-        delete this.files[fileName];
-    }
-}
-
 
 /**
  * This function extracts the directory-path and key-name from <path>.
@@ -37,12 +22,20 @@ function extractDirAndKeyName(path) {
     return [path.substring(0, index), path.substring(index + 1)];
 }
 
+    //
+    //
+    //
+    //
+    //      /** @type {Record<string, Folder>} */
+    //      subfolders;          // IN JSON
+    //      /** @type {Record<string, File>} */
+    //      files;                 // IN JSON, name <--> serial
+    //      /** @type {Record<string, string>} */
+    //      folderLinks;         // IN JSON
+    //      /** @type {Record<string, string>} */
+    //      fileLinks;           // IN JSON
+    //
+    //
+    //
 
-    /** @type {Record<string, Folder>} */
-    subfolders;          // IN JSON
-    /** @type {Record<string, File>} */
-    files;                 // IN JSON, name <--> serial
-    /** @type {Record<string, string>} */
-    folderLinks;         // IN JSON
-    /** @type {Record<string, string>} */
-    fileLinks;           // IN JSON
+console.log(legalKeyNameInFileSystem.test('\0\0\0'.split('/').filter((s) => s.length > 0)[0]))

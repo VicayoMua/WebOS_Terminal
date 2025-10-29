@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         [newFile, newFileName] = currentTabRecord.terminalCore
                             .getCurrentFolderPointer()
                             .getCurrentFolder()
-                            .createNewFile(true, file.name, serialLake.generateNext());
+                            .createFile(true, file.name, serialLake.generateNext());
                     newFile.setContent(fileContent);
                     alert(`Successfully added file "${newFileName}" to the current directory.`);
                 };
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createNewFile(false, parameters[0], serialLake.generateNext());
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createFile(false, parameters[0], serialLake.generateNext());
                     currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
                 } catch (error) {
                     currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const file = rootFolder.getFile('.mycloud_conf');
                             file.setContent(`${parameters[0]}\n${parameters[1]}`);
                         } else {
-                            const [file, _] = rootFolder.createNewFile(false, '.mycloud_conf', serialLake.generateNext());
+                            const [file, _] = rootFolder.createFile(false, '.mycloud_conf', serialLake.generateNext());
                             file.setContent(`${parameters[0]}\n${parameters[1]}`);
                         }
                         currentTabRecord.terminalCore.printToWindow(

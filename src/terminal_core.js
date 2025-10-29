@@ -189,10 +189,140 @@ class Folder {
     }
 
     /**
+     * @param {string} subfolderName
+     * @returns {boolean}
+     * @throws {TypeError}
+     * */
+    hasSubfolder(subfolderName) {
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+        return this.#subfolders[subfolderName] instanceof Folder;
+    }
+
+    /**
+     * @param {string} subfolderName
+     * @returns {Folder}
+     * @throws {TypeError | Error}
+     * */
+    getSubfolder(subfolderName) {
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+        const subfolder = this.#subfolders[subfolderName];
+        if (!(subfolder instanceof Folder))
+            throw new Error(`Subfolder ${subfolderName} not found.`);
+        return subfolder;
+    }
+
+    /**
+     * @param {boolean} fix_duplicated_subfolderName
+     * @param {string} subfolderName
+     * @returns {Folder}
+     * @throws {TypeError | Error}
+     * */
+    createSubfolder(fix_duplicated_subfolderName, subfolderName) {
+        if (typeof fix_duplicated_subfolderName !== 'boolean')
+            throw new TypeError('fix_duplicated_subfolderName must be a boolean.');
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+        if (this.#subfolders[subfolderName] instanceof Folder) { // keep this low level implementation to boost runtime
+            if (!fix_duplicated_subfolderName)
+                throw new Error(`Subfolder ${subfolderName} is already existing.`);
+            let i = 2;
+            while (this.#subfolders[`${subfolderName} ${i}`] instanceof Folder)
+                i++;
+            subfolderName = `${subfolderName} ${i}`;
+        }
+        return (this.#subfolders[subfolderName] = new Folder(false, this));
+    }
+
+    /**
+     * @param {string} subfolderName
+     * @returns {Folder}
+     * @throws {TypeError | Error}
+     * */
+    deleteSubfolder(subfolderName) {
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+        if (!(this.#subfolders[subfolderName] instanceof Folder))
+            throw new Error(`Subfolder ${subfolderName} not found.`);
+        delete this.#subfolders[subfolderName];
+    }
+
+    /**
      * @returns {Record<string, File>}
      * */
     getFiles() {
         return this.#files;
+    }
+
+    /**
+     * @param {string} fileName
+     * @returns {boolean}
+     * @throws {TypeError}
+     * */
+    hasFile(fileName) {
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        return this.#files[fileName] instanceof File;
+    }
+
+    /**
+     * @param {string} fileName
+     * @returns {File}
+     * @throws {TypeError | Error}
+     * */
+    getFile(fileName) {
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        const file = this.#files[fileName];
+        if (!(file instanceof File))
+            throw new Error(`File ${fileName} not found.`);
+        return file;
+    }
+
+    /**
+     * @param {boolean} fix_duplicated_filename
+     * @param {string} fileName
+     * @param {string} fileSerial
+     * @returns {[File, string]}
+     * @throws {TypeError | Error}
+     * */
+    createFile(fix_duplicated_filename, fileName, fileSerial) {
+        if (typeof fix_duplicated_filename !== 'boolean')
+            throw new TypeError('fix_duplicated_filename must be a boolean.');
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
+            throw new TypeError('File Serial must be a non-empty string.');
+        if (this.#files[fileName] instanceof File) { // keep this low level implementation to boost runtime
+            if (!fix_duplicated_filename)
+                throw new Error(`File ${fileName} is already existing.`);
+            let i = 2;
+            while (this.#files[`${fileName} ${i}`] instanceof File)
+                i++;
+            fileName = `${fileName} ${i}`;
+        }
+        return [(this.#files[fileName] = new File(fileSerial, '')), fileName];
+    }
+
+    /**
+     * @param {string} fileName
+     * @returns {void}
+     * @throws {TypeError | Error}
+     * */
+    deleteFile(fileName) {
+        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+            throw new TypeError('File name must be a string and follow the keyname requirements.');
+        if (!(this.#files[fileName] instanceof File))
+            throw new Error(`File ${fileName} not found.`);
+        delete this.#files[fileName];
+    }
+
+    /**
+     * @returns {string}
+     * */
+    getCreatedAt() {
+        return this.#created_at;
     }
 
     /**
@@ -202,11 +332,114 @@ class Folder {
         return this.#folderLinks;
     }
 
+    hasFolderLink(folderLinkName) {
+
+    }
+
+    getFolderLink(folderLinkName) {
+
+    }
+
+    createFolderLink(folderLinkName, link) {
+
+    }
+
+    setFolderLink(folderLinkName, newLink) {
+
+    }
+
+    deleteFolderLink(folderLinkName) {
+
+    }
+
     /**
      * @returns {Record<string, string>}
      * */
     getFileLinks() {
         return this.#fileLinks;
+    }
+
+    hasFileLink(fileLinkName) {
+
+    }
+
+    getFileLink(fileLinkName) {
+
+    }
+
+    createFileLink(fileLinkName, link) {
+
+    }
+
+    setFileLink(fileLinkName, newLink) {
+
+    }
+
+    deleteFileLink(fileLinkName) {
+
+    }
+
+    /**
+     * @param {boolean} is_root
+     * @param {Folder | undefined} parentFolder
+     * @throws {TypeError}
+     * */
+    constructor(is_root, parentFolder = undefined) {
+        // parameter check
+        if (typeof is_root !== 'boolean')
+            throw new TypeError('is_root must be a boolean.');
+        if (is_root && parentFolder !== undefined) {
+            throw new TypeError('The parent folder cannot be specified when creating a root.');
+        }
+        if (!is_root && !(parentFolder instanceof Folder)) {
+            throw new TypeError('The parent folder must be a folder when creating a regular folder.');
+        }
+        // process data
+        this.#parentFolder = is_root ? this : parentFolder;
+        this.#subfolders = {};
+        this.#files = {};
+        this.#created_at = getISOTimeString();
+        this.#folderLinks = {};
+        this.#fileLinks = {};
+    }
+
+    /**
+     * @returns {string}
+     * */
+    getContentListAsString() {
+        let contents = '';
+        const
+            folderNames = Object.keys(this.#subfolders),
+            fileNames = Object.keys(this.#files),
+            folderLinkNames = Object.keys(this.#folderLinks),
+            fileLinkNames = Object.keys(this.#fileLinks);
+        if (folderNames.length > 0)
+            contents += 'Folders:' + folderNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && fileNames.length > 0)
+            contents += '\n';
+        if (fileNames.length > 0)
+            contents += 'Files:' + fileNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && folderLinkNames.length > 0)
+            contents += '\n';
+        if (folderLinkNames.length > 0)
+            contents += 'Folder Links:' + folderLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        if (contents.length > 0 && fileLinkNames.length > 0)
+            contents += '\n';
+        if (fileLinkNames.length > 0)
+            contents += 'File Links:' + fileLinkNames.reduce(
+                (acc, elem) => `${acc}\n            ${elem}`,
+                ''
+            );
+        return contents.length === 0 ? 'No file or folder existing here...' : contents;
     }
 
     /**
@@ -282,30 +515,7 @@ class Folder {
     }
 
     /**
-     * @param {boolean} is_root
-     * @param {Folder | undefined} parentFolder
-     * @throws {TypeError}
-     * */
-    constructor(is_root, parentFolder = undefined) {
-        // parameter check
-        if (typeof is_root !== 'boolean')
-            throw new TypeError('is_root must be a boolean.');
-        if (is_root && parentFolder !== undefined) {
-            throw new TypeError('The parent folder cannot be specified when creating a root.');
-        }
-        if (!is_root && !(parentFolder instanceof Folder)) {
-            throw new TypeError('The parent folder must be a folder when creating a regular folder.');
-        }
-        // process data
-        this.#parentFolder = is_root ? this : parentFolder;
-        this.#subfolders = {};
-        this.#files = {};
-        this.#created_at = getISOTimeString();
-        this.#folderLinks = {};
-        this.#fileLinks = {};
-    }
-
-    /**
+     * This method deeply copies the <this> Folder under <parentFolder>.
      * @param {Folder} parentFolder
      * @returns {Folder}
      * @throws {TypeError}
@@ -314,178 +524,20 @@ class Folder {
         if (!(parentFolder instanceof Folder))
             throw new TypeError('Parent folder must be a Folder.');
         const dcFolder = new Folder(false, parentFolder);
-        for (const fileKey in this.#files)
-            dcFolder.#files[fileKey] = this.#files[fileKey];
+        Object.entries(this.#files).forEach(([name, file]) => {
+            dcFolder.#files[name] = file;
+        });
         dcFolder.#created_at = getISOTimeString();
-        for (const folderLinkKey in this.#folderLinks)
-            dcFolder.#folderLinks[folderLinkKey] = this.#folderLinks[folderLinkKey];
-        for (const fileLinkKey in this.#fileLinks)
-            dcFolder.#fileLinks[fileLinkKey] = this.#fileLinks[fileLinkKey];
-        for (const subfolderKey in this.#subfolders)
-            dcFolder.#subfolders[subfolderKey] = this.#subfolders[subfolderKey].deepCopyTo(dcFolder);
+        Object.entries(this.#fileLinks).forEach(([name, fileLink]) => {
+            dcFolder.#fileLinks[name] = fileLink;
+        });
+        Object.entries(this.#subfolders).forEach(([name, subfolder]) => {
+            dcFolder.#subfolders[name] = subfolder.deepCopyTo(dcFolder);
+        });
+        Object.entries(this.#folderLinks).forEach(([name, folderLink]) => {
+            dcFolder.#folderLinks[name] = folderLink;
+        });
         return dcFolder;
-    }
-
-    /**
-     * @returns {number}
-     * */
-    getCreatedAt() {
-        return this.#created_at;
-    }
-
-    /**
-     * @returns {string}
-     * */
-    getContentListAsString() {
-        let contents = '';
-        const
-            folderNames = Object.keys(this.#subfolders),
-            fileNames = Object.keys(this.#files),
-            folderLinkNames = Object.keys(this.#folderLinks),
-            fileLinkNames = Object.keys(this.#fileLinks);
-        if (folderNames.length > 0)
-            contents += 'Folders:' + folderNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && fileNames.length > 0)
-            contents += '\n';
-        if (fileNames.length > 0)
-            contents += 'Files:' + fileNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && folderLinkNames.length > 0)
-            contents += '\n';
-        if (folderLinkNames.length > 0)
-            contents += 'Folder Links:' + folderLinkNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        if (contents.length > 0 && fileLinkNames.length > 0)
-            contents += '\n';
-        if (fileLinkNames.length > 0)
-            contents += 'File Links:' + fileLinkNames.reduce(
-                (acc, elem) => `${acc}\n            ${elem}`,
-                ''
-            );
-        return contents.length === 0 ? 'No file or folder existing here...' : contents;
-    }
-
-    /**
-     * @param {string} fileName
-     * @returns {boolean}
-     * @throws {TypeError}
-     * */
-    hasFile(fileName) {
-        if (typeof fileName !== 'string')
-            throw new TypeError('File name must be a string.');
-        return (legalKeyNameInFileSystem.test(fileName) && this.#files[fileName] instanceof File);
-    }
-
-    /**
-     * @param {string} subfolderName
-     * @returns {boolean}
-     * @throws {TypeError}
-     * */
-    hasSubfolder(subfolderName) {
-        if (typeof subfolderName !== 'string')
-            throw new TypeError('Subfolder name must be a string');
-        return (legalKeyNameInFileSystem.test(subfolderName) && this.#subfolders[subfolderName] instanceof Folder);
-    }
-
-    /**
-     * @param {string} fileName
-     * @returns {File}
-     * @throws {TypeError | Error}
-     * */
-    getFile(fileName) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
-            throw new TypeError('File name must be a string and follow the keyname requirements.');
-        const file = this.#files[fileName];
-        if (!(file instanceof File))
-            throw new Error(`File ${fileName} not found`);
-        return file;
-    }
-
-    /**
-     * @param {boolean} fix_duplicated_filename
-     * @param {string} fileName
-     * @param {string} fileSerial
-     * @returns {[File, string]}
-     * @throws {TypeError | Error}
-     * */
-    createNewFile(fix_duplicated_filename, fileName, fileSerial) {
-        if (typeof fix_duplicated_filename !== 'boolean')
-            throw new TypeError('fix_duplicated_filename must be a boolean.');
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
-            throw new TypeError('File name must be a string and follow the keyname requirements.');
-        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-            throw new TypeError('File Serial must be a non-empty string.');
-        if (this.#files[fileName] instanceof File) { // keep this low level implementation to boost runtime
-            if (!fix_duplicated_filename)
-                throw new Error(`File ${fileName} is already existing.`);
-            let i = 2;
-            while (this.#files[`${fileName} ${i}`] instanceof File)
-                i++;
-            fileName = `${fileName} ${i}`;
-        }
-        return [(this.#files[fileName] = new File(fileSerial, '')), fileName];
-    }
-
-    /**
-     * @param {string} oldFileName
-     * @param {string} newFileName
-     * @returns {File}
-     * @throws {TypeError | Error}
-     * */
-    renameExistingFile(oldFileName, newFileName) {
-        if (typeof oldFileName !== 'string' || !legalKeyNameInFileSystem.test(oldFileName))
-            throw new TypeError('Old file name must be a string and follow the keyname requirements.')
-        if (typeof newFileName !== 'string' || !legalKeyNameInFileSystem.test(newFileName))
-            throw new TypeError(`New file name must be a string and follow the keyname requirements.`);
-        if (!(this.#files[oldFileName] instanceof File))
-            throw new Error(`File ${oldFileName} not found.`);
-        if (this.#files[newFileName] instanceof File)
-            throw new Error(`File ${newFileName} already exists.`);
-        this.#files[newFileName] = this.#files[oldFileName];
-        delete this.#files[oldFileName];
-        return this.#files[newFileName];
-    }
-
-    /**
-     * @param {string} fileName
-     * @returns {void}
-     * @throws {TypeError | Error}
-     * */
-    deleteFile(fileName) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
-            throw new TypeError('File name must be a string and follow the keyname requirements.');
-        if (!(this.#files[fileName] instanceof File))
-            throw new Error(`File ${fileName} not found.`);
-        delete this.#files[fileName];
-    }
-
-    /**
-     * @param {boolean} fix_duplicated_subfolderName
-     * @param {string} subfolderName
-     * @returns {Folder}
-     * @throws {TypeError | Error}
-     * */
-    createSubfolder(fix_duplicated_subfolderName, subfolderName) {
-        if (typeof fix_duplicated_subfolderName !== 'boolean')
-            throw new TypeError('fix_duplicated_subfolderName must be a boolean.');
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
-            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
-        if (this.#subfolders[subfolderName] instanceof Folder) { // keep this low level implementation to boost runtime
-            if (!fix_duplicated_subfolderName)
-                throw new Error(`Subfolder ${subfolderName} is already existing`);
-            let i = 2;
-            while (this.#subfolders[`${subfolderName} ${i}`] instanceof Folder)
-                i++;
-            subfolderName = `${subfolderName} ${i}`;
-        }
-        return (this.#subfolders[subfolderName] = new Folder(false, this));
     }
 
     /**
@@ -514,6 +566,26 @@ class Folder {
         // Generate the zip file as a Blob
         return zip.generateAsync({type: 'blob'});
     }
+
+    // /**
+    //  * @param {string} oldFileName
+    //  * @param {string} newFileName
+    //  * @returns {File}
+    //  * @throws {TypeError | Error}
+    //  * */
+    // renameExistingFile(oldFileName, newFileName) {
+    //     if (typeof oldFileName !== 'string' || !legalKeyNameInFileSystem.test(oldFileName))
+    //         throw new TypeError('Old file name must be a string and follow the keyname requirements.')
+    //     if (typeof newFileName !== 'string' || !legalKeyNameInFileSystem.test(newFileName))
+    //         throw new TypeError(`New file name must be a string and follow the keyname requirements.`);
+    //     if (!(this.#files[oldFileName] instanceof File))
+    //         throw new Error(`File ${oldFileName} not found.`);
+    //     if (this.#files[newFileName] instanceof File)
+    //         throw new Error(`File ${newFileName} already exists.`);
+    //     this.#files[newFileName] = this.#files[oldFileName];
+    //     delete this.#files[oldFileName];
+    //     return this.#files[newFileName];
+    // }
 }
 
 /**
@@ -548,7 +620,7 @@ function shallowMoveFolders(destFolder, srcFolder) {
     const
         destFolderFiles = destFolder.getFiles(),
         destFolderFileLinks = destFolder.getFileLinks(),
-        destFolerSubfolders = destFolder.getSubfolders(),
+        destFolderSubfolders = destFolder.getSubfolders(),
         destFolderFolderLinks = destFolder.getFolderLinks();
     Object.entries(srcFolder.getFiles()).forEach(([fileName, file]) => {
         if (destFolderFiles[fileName] instanceof File) {
@@ -569,10 +641,10 @@ function shallowMoveFolders(destFolder, srcFolder) {
         destFolderFileLinks[fileLinkName] = fileLink;
     });
     Object.entries(srcFolder.getSubfolders()).forEach(([subfolderName, subfolder]) => {
-        if (destFolerSubfolders[subfolderName] instanceof Folder) {
-            shallowMoveFolders(destFolerSubfolders[subfolderName], subfolder);
+        if (destFolderSubfolders[subfolderName] instanceof Folder) {
+            shallowMoveFolders(destFolderSubfolders[subfolderName], subfolder);
         } else {
-            destFolerSubfolders[subfolderName] = subfolder;
+            destFolderSubfolders[subfolderName] = subfolder;
             subfolder.setParentFolder(destFolder); // reset parent folder
         }
     });
@@ -615,6 +687,7 @@ class TerminalFolderPointer {
     }
 
     /**
+     * This method duplicates the current terminal folder pointer.
      * @returns {TerminalFolderPointer}
      * @throws {TypeError}
      * */
@@ -624,6 +697,26 @@ class TerminalFolderPointer {
             this.#currentFolder, // shallow copy
             this.#currentFolderTrackingStack.map(x => x) // deep copy
         )
+    }
+
+    /**
+     * This method recovers the current terminal folder pointer.
+     * @param {TerminalFolderPointer} another
+     * @param {boolean} deep_copy_stack
+     * @returns {TerminalFolderPointer}
+     * @throws {TypeError}
+     * */
+    recover(another, deep_copy_stack) {
+        if (!(another instanceof TerminalFolderPointer))
+            throw new TypeError('Another must be a TerminalFolderPointer.');
+        if (typeof deep_copy_stack !== 'boolean')
+            throw new TypeError('deep_copy_stack must be a boolean.');
+        // this.#fsRoot = another.#fsRoot; // this should always be the same.
+        this.#currentFolder = another.#currentFolder;
+        this.#currentFolderTrackingStack = deep_copy_stack ?
+            another.#currentFolderTrackingStack.map(x => x) :
+            another.#currentFolderTrackingStack;
+        return this;
     }
 
     /**
@@ -660,121 +753,123 @@ class TerminalFolderPointer {
     }
 
     /**
-     * @param {boolean} include_link
      * @param {string} subfolderName
+     * @param {boolean} include_link
      * @returns {Folder}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
-    gotoSubfolder(include_link, subfolderName) {
+    #gotoSubfolder(subfolderName, include_link = false) {
         if (typeof include_link !== 'boolean')
             throw new TypeError('include_link must be a boolean.');
-        // TODO
-        if (!legalKeyNameInFileSystem.test(subfolderName))
-            throw new Error(`Subfolder name is illegal`);
-        const nextFolder = this.#currentFolder.subfolders[subfolderName];
-        if (nextFolder instanceof Folder) {
+        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+            throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
+
+        if (this.#currentFolder.hasSubfolder(subfolderName)) {
             this.#currentFolderTrackingStack.push(subfolderName);
-            return (this.#currentFolder = nextFolder);
+            return (this.#currentFolder = this.#currentFolder.getSubfolder(subfolderName));
         }
-        const nextFolderLink = this.#currentFolder.folderLinks[subfolderName];
-        if (include_link && typeof nextFolderLink === 'string') {
-            const pointer2 = this.duplicate();
-            pointer2.gotoPath(nextFolderLink);
-            this.#currentFolderTrackingStack = pointer2.#currentFolderTrackingStack;
-            return (this.#currentFolder = pointer2.#currentFolder);
+
+        if (include_link && this.#currentFolder.hasFolderLink(subfolderName)) {
+            const
+                fp = this.duplicate(),
+                folderLink = this.#currentFolder.getFolderLink(subfolderName);
+            try {
+                this.#currentFolder.setFolderLink(subfolderName, '\0\0\0'); // avoid dead loop: block
+                fp.gotoPath(folderLink, include_link); // this may throw error.
+                this.#currentFolder.setFolderLink(subfolderName, folderLink); // avoid dead loop: back
+                this.recover(fp, false);
+                return this.#currentFolder;
+            } catch (_) {
+                this.#currentFolder.setFolderLink(subfolderName, folderLink); // avoid dead loop: back
+            }
         }
-        throw new Error(`Folder ${subfolderName} not found`);
+
+        throw new Error(`Folder ${subfolderName} not found.`);
     }
 
     /**
      * @param {string} path
+     * @param {boolean} include_link
      * @returns {Folder}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
-    gotoPath(path) {
-        if (path.length === 0)
-            throw new Error('Path cannot be empty');
-        const
-            pathStack = path.split('/').filter((s) => s.length > 0),
-            tfp = this.duplicate();
+    gotoPath(path, include_link = false) {
+        if (typeof path !== 'string' || path.length === 0)
+            throw new TypeError('Path must be a non-empty string.');
+        if (typeof include_link !== 'boolean')
+            throw new TypeError('include_link must be a boolean.');
+        const fp = this.duplicate();
         if (path.startsWith('/')) {
-            tfp.gotoRoot();
+            fp.gotoRoot();
         }
-        for (const folderName of pathStack) {
-            switch (folderName) {
-                case '.': {
-                    // do nothing (goto the current folder)
-                    break;
+        const pathStack = path.split('/').filter((s) => s.length > 0);
+        try {
+            pathStack.forEach((folderName) => {
+                switch (folderName) {
+                    case '.': {
+                        // do nothing (stay in the current folder)
+                        break;
+                    }
+                    case '..': {
+                        fp.gotoParentFolder();
+                        break;
+                    }
+                    default: {
+                        fp.#gotoSubfolder(folderName, true);
+                        break;
+                    }
                 }
-                case '..': {
-                    tfp.gotoParentFolder();
-                    break;
-                }
-                default: {
-                    tfp.gotoSubfolder(false, folderName);
-                    break;
-                }
-            }
+            });
+            this.recover(fp, false);
+            return this.#currentFolder;
+        } catch (error) {
+            throw new Error(`Path ${path} not found. <-- ${error}`);
         }
-        this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
-        return (this.#currentFolder = tfp.#currentFolder);
     }
 
     /**
      * @param {string} path
      * @param {boolean} goto_new_folder
      * @returns {TerminalFolderPointer}
-     * @throws {Error}
+     * @throws {TypeError | Error}
      * */
     createPath(path, goto_new_folder = false) {
-        if (path.length === 0)
-            throw new Error('Path cannot be empty');
-        const
-            pathStack = path.split('/').filter((s) => s.length > 0),
-            tfp = this.duplicate();
-        if (path.startsWith('/'))
-            tfp.gotoRoot();
+        if (typeof path !== 'string' || path.length === 0)
+            throw new TypeError('Path must be a non-empty string.');
+        if (typeof goto_new_folder !== 'boolean')
+            throw new TypeError('goto_new_folder must be a boolean.');
+        const fp = this.duplicate();
+        if (path.startsWith('/')) {
+            fp.gotoRoot();
+        }
+        const pathStack = path.split('/').filter((s) => s.length > 0);
         // check the availability of path for creation
-        for (const folderName of pathStack) {
-            switch (folderName) {
-                case '.': {
-                    break;
+        if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalKeyNameInFileSystem.test(folderName)))
+            throw new Error(`Path ${path} is illegal.`);
+        try {
+            // do the creation of path
+            pathStack.forEach((folderName) => {
+                switch (folderName) {
+                    case '.': {
+                        // do nothing (goto the current folder)
+                        break;
+                    }
+                    case '..': {
+                        fp.gotoParentFolder();
+                        break;
+                    }
+                    default: {
+                        fp.#currentFolder = fp.#currentFolder.hasSubfolder(folderName) ?
+                            fp.#currentFolder.getSubfolder(folderName) : fp.#currentFolder.createSubfolder(false, folderName);
+                        fp.#currentFolderTrackingStack.push(folderName);
+                        break;
+                    }
                 }
-                case '..': {
-                    break;
-                }
-                default: {
-                    if (!legalKeyNameInFileSystem.test(folderName))
-                        throw new Error(`Path name is illegal`);
-                    break;
-                }
-            }
+            });
+        } catch (error) {
+            throw new Error(`Failed to create ${path}. <-- ${error}`);
         }
-        // do the creation of path
-        for (const folderName of pathStack) {
-            switch (folderName) {
-                case '.': {
-                    // do nothing (goto the current folder)
-                    break;
-                }
-                case '..': {
-                    tfp.gotoParentFolder();
-                    break;
-                }
-                default: {
-                    if (!(tfp.#currentFolder.subfolders[folderName] instanceof Folder))
-                        tfp.#currentFolder.createSubfolder(false, folderName);
-                    tfp.#currentFolder = tfp.#currentFolder.subfolders[folderName];
-                    tfp.#currentFolderTrackingStack.push(folderName);
-                    break;
-                }
-            }
-        }
-        if (goto_new_folder) {
-            this.#currentFolder = tfp.#currentFolder;
-            this.#currentFolderTrackingStack = tfp.#currentFolderTrackingStack;
-        }
-        return this;
+        return goto_new_folder ? this.recover(fp, false) : this;
     }
 
     /**
