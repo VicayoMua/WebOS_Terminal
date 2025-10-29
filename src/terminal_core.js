@@ -245,7 +245,9 @@ class Folder {
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
         if (!(this.#subfolders[subfolderName] instanceof Folder))
             throw new Error(`Subfolder ${subfolderName} not found.`);
+        const folder = this.#subfolders[subfolderName];
         delete this.#subfolders[subfolderName];
+        return folder;
     }
 
     /**
@@ -350,22 +352,39 @@ class Folder {
         return this.#folderLinks;
     }
 
+    /**
+     * @param {string} folderLinkName
+     * @returns {boolean}
+     * @throws {TypeError}
+     * */
     hasFolderLink(folderLinkName) {
 
     }
 
+    /**
+     *
+     * */
     getFolderLink(folderLinkName) {
 
     }
 
+    /**
+     *
+     * */
     createFolderLink(folderLinkName, link) {
 
     }
 
+    /**
+     *
+     * */
     setFolderLink(folderLinkName, newLink) {
 
     }
 
+    /**
+     *
+     * */
     deleteFolderLink(folderLinkName) {
 
     }
@@ -377,22 +396,37 @@ class Folder {
         return this.#fileLinks;
     }
 
+    /**
+     *
+     * */
     hasFileLink(fileLinkName) {
 
     }
 
+    /**
+     *
+     * */
     getFileLink(fileLinkName) {
 
     }
 
+    /**
+     *
+     * */
     createFileLink(fileLinkName, link) {
 
     }
 
+    /**
+     *
+     * */
     setFileLink(fileLinkName, newLink) {
 
     }
 
+    /**
+     *
+     * */
     deleteFileLink(fileLinkName) {
 
     }
@@ -558,26 +592,6 @@ class Folder {
         // Generate the zip file as a Blob
         return zip.generateAsync({type: 'blob'});
     }
-
-    // /**
-    //  * @param {string} oldFileName
-    //  * @param {string} newFileName
-    //  * @returns {File}
-    //  * @throws {TypeError | Error}
-    //  * */
-    // renameExistingFile(oldFileName, newFileName) {
-    //     if (typeof oldFileName !== 'string' || !legalKeyNameInFileSystem.test(oldFileName))
-    //         throw new TypeError('Old file name must be a string and follow the keyname requirements.')
-    //     if (typeof newFileName !== 'string' || !legalKeyNameInFileSystem.test(newFileName))
-    //         throw new TypeError(`New file name must be a string and follow the keyname requirements.`);
-    //     if (!(this.#files[oldFileName] instanceof File))
-    //         throw new Error(`File ${oldFileName} not found.`);
-    //     if (this.#files[newFileName] instanceof File)
-    //         throw new Error(`File ${newFileName} already exists.`);
-    //     this.#files[newFileName] = this.#files[oldFileName];
-    //     delete this.#files[oldFileName];
-    //     return this.#files[newFileName];
-    // }
 }
 
 /**
