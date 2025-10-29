@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cfp = currentTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') {
                     try {
-                        cfp.copyPath('file', parameters[1], parameters[2], serialLake.generateNext());
+                        cfp.copyPath('file', parameters[1], parameters[2], serialLake);
                         currentTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[0] === '-d') {
                     try {
-                        cfp.copyPath('directory', parameters[1], parameters[2], undefined);
+                        cfp.copyPath('directory', parameters[1], parameters[2], serialLake);
                         currentTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
