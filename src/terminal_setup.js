@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0]);
+                    currentTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0], false);
                     currentTabRecord.terminalCore.printToWindow(
                         `Successfully created a directory. (Note that the directory may be already existing!)`,
                         false, true

@@ -568,6 +568,13 @@ class Folder {
     }
 
     /**
+     * @returns {boolean}
+     * */
+    isRoot() {
+        return (this.#parentFolder === this);
+    }
+
+    /**
      * @returns {string}
      * */
     getContentListAsString() {
@@ -980,7 +987,7 @@ class TerminalFolderPointer {
         }
         if (type === 'directory') {
             if (oldPath === '/')
-                throw new Error('Old path cannot be ROOT (ROOT cannot be moved).');
+                throw new Error('ROOT cannot be moved.');
 
             /**
              * This function shallow-moves <srcFolder> to <destFolder>.
@@ -1039,7 +1046,7 @@ class TerminalFolderPointer {
                 [oldDirParentPath, oldDirName] = extractDirAndKeyName(oldPath),
                 oldDirParent = this.duplicate().gotoPath(oldDirParentPath, include_link),
                 oldDir = oldDirParent.getSubfolder(oldDirName),
-                newDir = this.duplicate().createPath(newPath, include_link);
+                newDir = this.duplicate().createPath(newPath, true);
             // do the movement
             shallowMoveFolder(newDir, oldDir);
             oldDirParent.deleteSubfolder(oldDirName);
@@ -1091,8 +1098,8 @@ class TerminalFolderPointer {
             return this;
         }
         if (type === 'directory') {
-            if (oldPath === '/')
-                throw new Error('Old path cannot be ROOT.');
+            // if (oldPath === '/')
+            //     throw new Error('Old path cannot be ROOT.');
 
             /**
              * This function deep-copies <srcFolder> to <destFolder>.
@@ -1148,7 +1155,7 @@ class TerminalFolderPointer {
             // analyze dir paths
             const
                 oldDir = this.duplicate().gotoPath(oldPath, include_link),
-                newDir = this.duplicate().createPath(newPath, include_link);
+                newDir = this.duplicate().createPath(newPath, true);
             // do the deep copy
             deepCopyFolder(newDir, oldDir);
             return this;
