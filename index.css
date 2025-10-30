@@ -110,14 +110,14 @@ body.dark-body-mode {
     padding: 10px 12px;
     border: 1px solid var(--boarder-color);
     border-radius: 12px;
-    /* center the buttons, limit 10 per row */
-    display: grid;
-    grid-template-columns: repeat(10, max-content);
+    /* center the buttons, limit up to 10 per row responsively */
+    display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 8px;
     text-align: center;
-    overflow-x: visible;
+    overflow: hidden;
     box-shadow: var(--panel-shadow);
 }
 
@@ -131,6 +131,13 @@ body.dark-body-mode {
     margin-right: 0;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    /* ensure up to 10 per row when space allows; center when fewer */
+    flex: 1 0 clamp(100px, calc((100% - (9 * 8px)) / 10), 160px);
+    max-width: clamp(100px, calc((100% - (9 * 8px)) / 10), 240px);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .view-navigation button:hover {
