@@ -38,3 +38,5 @@ function extractDirAndKeyName(path) {
     //
     //
 
+// const a = [];
+// console.log(Array.isArray(a));

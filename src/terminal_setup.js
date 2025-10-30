@@ -1044,7 +1044,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false, true);
                             return;
                         }
-                        // recover fsRoot and serialLake with <plainRootFolderObject>, <filesMap>, and <fileSerials>
+                        // recover <serialLake> with <fileSerials>
+                        serialLake.recover(fileSerials);
+                        // recover fsRoot with <plainRootFolderObject> and <filesMap>
 
                         currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
