@@ -655,24 +655,24 @@ class Folder {
         return JSON.stringify(toPlainFolderObject(this));
     }
 
-    /**
-     * This method recovers <this> with plain folder object and files map.
-     * The files map contains fresh files that __can__ be __dangerously__moved__.
-     * @param {Object} plainFolderObject
-     * @param {Record<string, File>} filesMap
-     * @returns {Folder}
-     * @throws {TypeError | SyntaxError}
-     * */
-    recoverFromRecordsJSON(plainFolderObject, filesMap) {
-        if (typeof plainFolderObject !== 'object')
-            throw new TypeError('plainFolderObject must be an Object');
-        if (!Array.isArray(filesMap) || filesMap.some((file) => !(file instanceof File)))
-            throw new TypeError('filesMap must be a map between string and File.');
-
-
-
-        return this;
-    }
+    // /**
+    //  * This method recovers <this> with plain folder object and files map.
+    //  * The files map contains fresh files that __can__ be __dangerously__moved__.
+    //  * @param {Object} plainFolderObject
+    //  * @param {Record<string, File>} filesMap
+    //  * @returns {Folder}
+    //  * @throws {TypeError | SyntaxError}
+    //  * */
+    // recoverFromRecordsJSON(plainFolderObject, filesMap) {
+    //     if (typeof plainFolderObject !== 'object')
+    //         throw new TypeError('plainFolderObject must be an Object');
+    //     if (!Array.isArray(filesMap) || filesMap.some((file) => !(file instanceof File)))
+    //         throw new TypeError('filesMap must be a map between string and File.');
+    //
+    //
+    //
+    //     return this;
+    // }
 
     /**
      * This method converts <this> folder to a zip blob using JSZip.

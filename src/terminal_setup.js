@@ -849,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
                     return;
                 }
-                if (parameters[0] === '-backup') { // Command: mycloud -b
+                if (parameters[0] === '-backup') { // Command: mycloud -backup
                     currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false, true);
                     try {
                         const jsonFetches = fsRoot.getFilesAsList().map((file) =>
@@ -923,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return;
                 }
-                if (parameters[0] === '-recover') { // Command: mycloud -r
+                if (parameters[0] === '-recover') { // Command: mycloud -recover
                     currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
                         // get the ROOT map
@@ -956,38 +956,37 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTabRecord.terminalCore.printToWindow('The ROOT map is invalid.', false, true);
                             return;
                         }
-                        // get remaining files
+                        // get all file serials
                         const
+                            /** @type {Object} */
                             plainRootFolderObject = JSON.parse(bodyROOT.content),
+                            /** @type {string[]} */
+                            fileSerials = [],
                             /**
                              * @param {Object} plainFolderObject
-                             * @returns {string[]}
+                             * @returns {void}
                              * @throws {TypeError}
                              * */
                             getFileSerialsFromPlainFolderObject = (plainFolderObject) => {
-                                const
-                                    /** @type {string[]} */
-                                    fileSerials = [],
-                                    helper = (_) => {
-                                        if (_.files !== undefined) {
-                                            Object.values(_.files).forEach((fs) => {
-                                                if (typeof fs !== 'string' || fs.length === 0)
-                                                    throw new TypeError('File serial in the plain folder object is not a non-empty string.');
-                                                fileSerials.push(fs);
-                                            });
-                                        }
-                                        if (_.subfolders !== undefined) {
-                                            Object.values(_.subfolders).forEach((pfo) => {
-                                                if (typeof pfo !== 'object')
-                                                    throw new TypeError('Plain subfolder object in the plain folder object is not an object.');
-                                                helper(pfo);
-                                            });
-                                        }
-                                    };
-                                helper(plainFolderObject);
-                                return fileSerials;
-                            },
-                            jsonFetches = getFileSerialsFromPlainFolderObject(plainRootFolderObject).map((fileSerial) =>
+                                if (typeof plainFolderObject.files === 'object') {
+                                    Object.values(plainFolderObject.files).forEach((fileSerial) => {
+                                        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
+                                            throw new TypeError('File serial in the plain folder object is not a non-empty string.');
+                                        fileSerials.push(fileSerial);
+                                    });
+                                }
+                                if (typeof plainFolderObject.subfolders === 'object') {
+                                    Object.values(plainFolderObject.subfolders).forEach((psfo) => {
+                                        if (typeof psfo !== 'object')
+                                            throw new TypeError('Plain subfolder object in the plain folder object is not an object.');
+                                        getFileSerialsFromPlainFolderObject(psfo);
+                                    });
+                                }
+                            };
+                        getFileSerialsFromPlainFolderObject(plainRootFolderObject);
+                        // construct files map
+                        const
+                            jsonFetches = fileSerials.map((fileSerial) =>
                                 fetch( // {connection=true, error, content, created_at, updated_at}
                                     `http://${ipp}/mycloud/files/`,
                                     {
@@ -1007,7 +1006,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 )
                             ),
                             settledResults = await Promise.allSettled(jsonFetches);
-                        // construct files map
                         let failure = false;
                         /** @type {Record<string, File>} */
                         const filesMap = settledResults.reduce(
@@ -1046,8 +1044,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false, true);
                             return;
                         }
-                        // recover the file system (root folder)
-                        fsRoot.recoverFromRecordsJSON(plainRootFolderObject, filesMap);
+                        // recover fsRoot and serialLake with <plainRootFolderObject>, <filesMap>, and <fileSerials>
+
                         currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
