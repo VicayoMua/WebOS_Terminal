@@ -580,7 +580,7 @@ class Folder {
     }
 
     /**
-     * This function converts the current Folder object to a JSON string.
+     * This method converts the current Folder object to a JSON string.
      * In the JSON string, files are converted to name-to-fileSerial pairs.
      * @returns {string}
      * @throws {TypeError}
@@ -590,45 +590,43 @@ class Folder {
          * @param {Folder} folder
          * @returns {{subfolder, files, created_at, folderLinks, fileLinks}}
          * */
-        function toPlainObject(folder) {
-            return {
-                subfolder: Object.entries(folder.getSubfolders()).reduce(
-                    (acc, [name, subfolder]) => {
-                        acc[name] = toPlainObject(subfolder);
-                        return acc;
-                    },
-                    {}
-                ),
-                files: Object.entries(folder.getFiles()).reduce(
-                    (acc, [name, file]) => {
-                        acc[name] = file.getSerial();
-                        return acc;
-                    },
-                    {}
-                ),
-                created_at: folder.getCreatedAt(),
-                folderLinks: Object.entries(folder.getFolderLinks()).reduce(
-                    (acc, [name, folderLink]) => {
-                        acc[name] = folderLink;
-                        return acc;
-                    },
-                    {}
-                ),
-                fileLinks: Object.entries(folder.getFileLinks()).reduce(
-                    (acc, [name, fileLink]) => {
-                        acc[name] = fileLink;
-                        return acc;
-                    },
-                    {}
-                )
-            };
-        }
+        const toPlainObject = (folder) => ({
+            subfolder: Object.entries(folder.getSubfolders()).reduce(
+                (acc, [name, subfolder]) => {
+                    acc[name] = toPlainObject(subfolder);
+                    return acc;
+                },
+                {}
+            ),
+            files: Object.entries(folder.getFiles()).reduce(
+                (acc, [name, file]) => {
+                    acc[name] = file.getSerial();
+                    return acc;
+                },
+                {}
+            ),
+            created_at: folder.getCreatedAt(),
+            folderLinks: Object.entries(folder.getFolderLinks()).reduce(
+                (acc, [name, folderLink]) => {
+                    acc[name] = folderLink;
+                    return acc;
+                },
+                {}
+            ),
+            fileLinks: Object.entries(folder.getFileLinks()).reduce(
+                (acc, [name, fileLink]) => {
+                    acc[name] = fileLink;
+                    return acc;
+                },
+                {}
+            )
+        });
 
         return JSON.stringify(toPlainObject(this));
     }
 
     /**
-     * This function recursively collects all the File objects and generates a list.
+     * This method recursively collects all the File objects and generates a list.
      * @returns {File[]}
      * */
     getFilesAsList() {
@@ -638,14 +636,14 @@ class Folder {
          * @param {Folder} folder
          * @returns {void}
          * */
-        function getFiles(folder) {
+        const getFiles = (folder) => {
             Object.values(folder.getFiles()).forEach((file) => {
                 files.push(file);
             });
             Object.values(folder.getSubfolders()).forEach((subfolder) => {
                 getFiles(subfolder);
             });
-        }
+        };
 
         getFiles(this);
         return files;
@@ -656,19 +654,19 @@ class Folder {
      * */
     getZipBlob() {
         /**
-         * This function helps recursively add folder content to the zip file
+         * This method helps recursively add folder content to the zip file
          * @param {Folder} folderObject
          * @param {Object} zipObject
          * @returns {void}
          * */
-        function addFolderToZip(folderObject, zipObject) {
+        const addFolderToZip = (folderObject, zipObject) => {
             Object.entries(folderObject.getFiles()).forEach(([fileName, file]) => {
                 zipObject.file(fileName, file.getContent(), {binary: true});
             });
             Object.entries(folderObject.getSubfolders()).forEach(([subfolderName, subfolderObject]) => {
                 addFolderToZip(subfolderObject, zipObject.folder(subfolderName));
             });
-        }
+        };
 
         // Create a new JSZip instance to generate the .zip file
         const zip = new JSZip();
@@ -957,12 +955,12 @@ class TerminalFolderPointer {
              * This function shallow-moves <srcFolder> to <destFolder>.
              * Before the movement, <destFolder> should be set up.
              * After the movement, <srcFolder> should be __discarded__ (to avoid shared object pointers).
-             * Low-level implementation is applied to boost runtime.
+             * __Low-level__implementation__ is applied to boost runtime.
              * @param {Folder} destFolder
              * @param {Folder} srcFolder
              * @returns {void}
              * */
-            function shallowMoveFolder(destFolder, srcFolder) {
+            const shallowMoveFolder = (destFolder, srcFolder) => {
                 const
                     destFolderFiles = destFolder.getFiles(),
                     destFolderFileLinks = destFolder.getFileLinks(),
@@ -1003,7 +1001,7 @@ class TerminalFolderPointer {
                     }
                     destFolderFolderLinks[folderLinkName] = folderLink;
                 });
-            }
+            };
 
             // analyze dir paths
             const
@@ -1066,12 +1064,12 @@ class TerminalFolderPointer {
              * This function deep-copies <srcFolder> to <destFolder>.
              * Before the movement, <destFolder> should be set up.
              * After the movement, <srcFolder> is still valid.
-             * Low-level implementation is applied to boost runtime.
+             * __Low-level__implementation__ is applied to boost runtime.
              * @param {Folder} destFolder
              * @param {Folder} srcFolder
              * @returns {void}
              * */
-            function deepCopyFolder(destFolder, srcFolder) {
+            const deepCopyFolder = (destFolder, srcFolder) => {
                 const
                     destFolderFiles = destFolder.getFiles(),
                     destFolderFileLinks = destFolder.getFileLinks(),
@@ -1111,7 +1109,7 @@ class TerminalFolderPointer {
                     }
                     destFolderFolderLinks[folderLinkName] = folderLink;
                 });
-            }
+            };
 
             // analyze dir paths
             const
@@ -1475,7 +1473,7 @@ class TerminalCore {
     }
 
     /**
-     * This function generates a unified terminal interface.
+     * This method generates a unified terminal interface.
      * @param {window.Terminal} xtermObj
      * @param {HTMLDivElement} terminalWindowContainer
      * @param {Folder} fsRoot
