@@ -50,6 +50,7 @@ class SerialLake {
     }
 
     /**
+     * This method recovers <serialSet> with <fileSerials>, overwriting all previously-saved information.
      * @param {string[]} fileSerials
      * @returns {SerialLake}
      * @throws {TypeError}
