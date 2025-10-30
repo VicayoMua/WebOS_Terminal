@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const
+        MAX_TAB_COUNT = 40,
         XTermSetup = {
             fontFamily: '"Fira Code", monospace',
             cursorBlink: true,
@@ -60,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     button_to_open_new_terminal_tab.addEventListener('click', () => {
         // check the tab count limit
-        if (tabCount >= 8) {
-            alert('You can open at most 8 terminal tabs.');
+        if (tabCount >= MAX_TAB_COUNT) {
+            alert(`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
             return;
         }
         // Record the total tab count & Use it as current tab number
