@@ -56,7 +56,7 @@ class SerialLake {
      * @throws {TypeError}
      * */
     recover(fileSerials) {
-        if (!Array.isArray(fileSerials) || fileSerials.some((fs)=>(typeof fs !== 'string' || fs.length === 0)))
+        if (!Array.isArray(fileSerials) || fileSerials.some((fs) => (typeof fs !== 'string' || fs.length === 0)))
             throw new TypeError('File serials must be an array of non-empty strings.');
         this.#serialSet = new Set(fileSerials);
         return this;
@@ -536,6 +536,17 @@ class Folder {
     }
 
     /**
+     * This method clears all the contents previously-saved in <this> folder.
+     * Also used for initialization in <constructor>
+     * */
+    clear() {
+        this.#subfolders = {};
+        this.#files = {};
+        this.#folderLinks = {};
+        this.#fileLinks = {};
+    }
+
+    /**
      * @param {boolean} is_root
      * @param {Folder | undefined} parentFolder
      * @throws {TypeError}
@@ -552,11 +563,8 @@ class Folder {
         }
         // process data
         this.#parentFolder = is_root ? this : parentFolder;
-        this.#subfolders = {};
-        this.#files = {};
         this.#created_at = getISOTimeString();
-        this.#folderLinks = {};
-        this.#fileLinks = {};
+        this.clear();
     }
 
     /**
@@ -894,6 +902,8 @@ class TerminalFolderPointer {
             throw new TypeError('Path must be a non-empty string.');
         if (typeof goto_new_folder !== 'boolean')
             throw new TypeError('goto_new_folder must be a boolean.');
+        if (path === '/')
+            throw new Error('Path cannot be ROOT (ROOT cannot be created).');
         const fp = this.duplicate();
         if (path.startsWith('/')) {
             fp.gotoRoot();
@@ -971,6 +981,9 @@ class TerminalFolderPointer {
             return this;
         }
         if (type === 'directory') {
+            if (oldPath === '/')
+                throw new Error('Old path cannot be ROOT.');
+
             /**
              * This function shallow-moves <srcFolder> to <destFolder>.
              * Before the movement, <destFolder> should be set up.
@@ -1080,6 +1093,9 @@ class TerminalFolderPointer {
             return this;
         }
         if (type === 'directory') {
+            if (oldPath === '/')
+                throw new Error('Old path cannot be ROOT.');
+
             /**
              * This function deep-copies <srcFolder> to <destFolder>.
              * Before the movement, <destFolder> should be set up.
@@ -1165,14 +1181,18 @@ class TerminalFolderPointer {
             return this;
         }
         if (type === 'directory') {
-            // analyze dir path
-            const [dirParentPath, dirName] = extractDirAndKeyName(path);
-            // check the dir status
-            const dirParent = this.duplicate().gotoPath(dirParentPath);
-            if (!dirParent.hasSubfolder(dirName))
-                throw new Error(`Folder ${path} not found.`);
-            // delete the dir
-            dirParent.deleteSubfolder(dirName);
+            if (path === '/') {
+                this.#fsRoot.clear();
+            } else {
+                // analyze dir path
+                const [dirParentPath, dirName] = extractDirAndKeyName(path);
+                // check the dir status
+                const dirParent = this.duplicate().gotoPath(dirParentPath);
+                if (!dirParent.hasSubfolder(dirName))
+                    throw new Error(`Folder ${path} not found.`);
+                // delete the dir
+                dirParent.deleteSubfolder(dirName);
+            }
             return this;
         }
         return this;

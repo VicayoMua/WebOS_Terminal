@@ -968,18 +968,18 @@ document.addEventListener('DOMContentLoaded', () => {
                              * @throws {TypeError}
                              * */
                             getFileSerialsFromPlainFolderObject = (plainFolderObject) => {
-                                if (typeof plainFolderObject.files === 'object') {
-                                    Object.values(plainFolderObject.files).forEach((fileSerial) => {
-                                        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-                                            throw new TypeError('File serial in the plain folder object is not a non-empty string.');
-                                        fileSerials.push(fileSerial);
-                                    });
-                                }
                                 if (typeof plainFolderObject.subfolders === 'object') {
                                     Object.values(plainFolderObject.subfolders).forEach((psfo) => {
                                         if (typeof psfo !== 'object')
                                             throw new TypeError('Plain subfolder object in the plain folder object is not an object.');
                                         getFileSerialsFromPlainFolderObject(psfo);
+                                    });
+                                }
+                                if (typeof plainFolderObject.files === 'object') {
+                                    Object.values(plainFolderObject.files).forEach((fileSerial) => {
+                                        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
+                                            throw new TypeError('File serial in the plain folder object is not a non-empty string.');
+                                        fileSerials.push(fileSerial);
                                     });
                                 }
                             };
@@ -1008,38 +1008,62 @@ document.addEventListener('DOMContentLoaded', () => {
                             settledResults = await Promise.allSettled(jsonFetches);
                         let failure = false;
                         /** @type {Record<string, File>} */
-                        const filesMap = settledResults.reduce(
-                            (acc, settledResult) => {
-                                if (settledResult.status === 'rejected') {
-                                    currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
-                                    failure = true;
-                                } else if (settledResult.status === 'fulfilled') {
-                                    const {
-                                        connection, error,
-                                        serial, content, created_at, updated_at
-                                    } = settledResult.value;
-                                    if (connection !== true) {
-                                        currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
+                        const
+                            filesMap = settledResults.reduce(
+                                (acc, settledResult) => {
+                                    if (settledResult.status === 'rejected') {
+                                        currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
                                         failure = true;
-                                    } else if (error !== undefined) { // has error
-                                        currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
-                                        failure = true;
-                                    } else if (
-                                        typeof serial !== 'string' || serial.length === 0 ||
-                                        typeof content !== 'string' ||
-                                        typeof created_at !== 'string' || created_at.length === 0 ||
-                                        typeof updated_at !== 'string' || updated_at.length === 0
-                                    ) {
-                                        currentTabRecord.terminalCore.printToWindow('A file is illegal.\n', false, true);
-                                        failure = true;
-                                    } else {
-                                        acc[serial] = new File(serial, content, created_at, updated_at);
+                                    } else if (settledResult.status === 'fulfilled') {
+                                        const {
+                                            connection, error,
+                                            serial, content, created_at, updated_at
+                                        } = settledResult.value;
+                                        if (connection !== true) {
+                                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
+                                            failure = true;
+                                        } else if (error !== undefined) { // has error
+                                            currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
+                                            failure = true;
+                                        } else if (
+                                            typeof serial !== 'string' || serial.length === 0 ||
+                                            typeof content !== 'string' ||
+                                            typeof created_at !== 'string' || created_at.length === 0 ||
+                                            typeof updated_at !== 'string' || updated_at.length === 0
+                                        ) {
+                                            currentTabRecord.terminalCore.printToWindow('A file is illegal.\n', false, true);
+                                            failure = true;
+                                        } else {
+                                            acc[serial] = new File(serial, content, created_at, updated_at);
+                                        }
                                     }
+                                    return acc;
+                                },
+                                {}
+                            ),
+                            /**
+                             * @param {Object} plainFolderObject
+                             * @param {Folder} folder
+                             * @returns {void}
+                             * @throws {TypeError}
+                             * */
+                            recoverFSRoot = (plainFolderObject, folder) => {
+                                if (typeof plainFolderObject.subfolders === 'object') {
+
                                 }
-                                return acc;
-                            },
-                            {}
-                        );
+                                if (typeof plainFolderObject.files === 'object') {
+
+                                }
+                                if (typeof plainFolderObject.created_at === 'string') {
+
+                                }
+                                if (typeof plainFolderObject.folderLinks === 'object') {
+
+                                }
+                                if (typeof plainFolderObject.fileLinks === 'object') {
+
+                                }
+                            };
                         if (failure) {
                             currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false, true);
                             return;
@@ -1047,7 +1071,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         // recover <serialLake> with <fileSerials>
                         serialLake.recover(fileSerials);
                         // recover fsRoot with <plainRootFolderObject> and <filesMap>
-
+                        currentTabRecord.terminalCore.getCurrentFolderPointer().deletePath('directory', '/');
+                        recoverFSRoot(plainRootFolderObject, fsRoot);
                         currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
@@ -1073,9 +1098,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     supportedCommands['ttt'] = {
-        // is_async: true,
-        executable: (_) => {
+        is_async: true,
+        executable: async (_) => {
+            //
+        },
+        description: ''
+    }
 
+    // // Update Needed
+    supportedCommands['ping'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
         },
         description: ''
     }
@@ -1102,17 +1136,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: ''
     // }
-
-    // // Update Needed
-    // supportedCommands['sh'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //
-    //     },
-    //     description: ''
-    // }
-
-    // command ping
 
     // supportedCommands[''] = {
     //     executable: (parameters) => {},

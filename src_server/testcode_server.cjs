@@ -40,3 +40,6 @@ function extractDirAndKeyName(path) {
 
 // const a = [];
 // console.log(Array.isArray(a));
+const [dirParentPath, dirName] = extractDirAndKeyName('/');
+console.log(dirParentPath);
+console.log(dirName);
