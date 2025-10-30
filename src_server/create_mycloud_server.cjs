@@ -192,7 +192,7 @@ app.post('/mycloud/users/', (req, res) => {
  * res.body:
  *      connection=true      every time
  *      error                when failure
- *      serial               when success and aim='recover'
+ *      serial               when success and aim='recover' (for the convenience of implementation)
  *      content              when success and aim='recover'
  *      created_at           when success and aim='recover'
  *      updated_at           when success and aim='recover'
