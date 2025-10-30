@@ -85,17 +85,23 @@ class File {
     /**
      * @param {string} fileSerial
      * @param {string} content
+     * @param {string | undefined} created_at
+     * @param {string | undefined} updated_at
      * @throws {TypeError}
      * */
-    constructor(fileSerial, content) {
+    constructor(fileSerial, content, created_at = undefined, updated_at = undefined) {
         if (typeof fileSerial !== 'string' || fileSerial.length === 0)
             throw new TypeError('File serial must be a non-empty string.');
         if (typeof content !== 'string')
             throw new TypeError('Content must be a string.');
+        if ((typeof created_at !== 'string' || created_at.length === 0) && created_at !== undefined)
+            throw new TypeError('created_at must be either a non-empty string or undefined.');
+        if ((typeof updated_at !== 'string' || updated_at.length === 0) && updated_at !== undefined)
+            throw new TypeError('updated_at must be either a non-empty string or undefined.');
         this.#fileSerial = fileSerial;
         this.#content = content;
-        this.#created_at = getISOTimeString();
-        this.#updated_at = getISOTimeString();
+        this.#created_at = created_at !== undefined ? created_at : getISOTimeString();
+        this.#updated_at = updated_at !== undefined ? updated_at : getISOTimeString();
     }
 
     /**
@@ -154,21 +160,21 @@ class File {
 /**
  * This structure represents a single folder in the file system.
  * Methods may throw Errors due to illegal inputs.
- * The root folder can be submitted to a file server as a JSON file.
+ * The root folder can be submitted to a file server as a getRecordsJSON file.
  * */
 class Folder {
     /** @type {Folder} */
-    #parentFolder;                    // NOT IN JSON, BUILT DURING RECOVERY
+    #parentFolder;                    // NOT IN getRecordsJSON, BUILT DURING RECOVERY
     /** @type {Record<string, Folder>} */
-    #subfolders;          // IN JSON
+    #subfolders;          // IN getRecordsJSON
     /** @type {Record<string, File>} */
-    #files;                 // IN JSON, name <--> fileSerial
+    #files;                 // IN getRecordsJSON, name <--> fileSerial
     /** @type {string} */
-    #created_at;                    // IN JSON
+    #created_at;                    // IN getRecordsJSON
     /** @type {Record<string, string>} */
-    #folderLinks;         // IN JSON
+    #folderLinks;         // IN getRecordsJSON
     /** @type {Record<string, string>} */
-    #fileLinks;           // IN JSON
+    #fileLinks;           // IN getRecordsJSON
 
     /**
      * @returns {Folder}
@@ -580,20 +586,44 @@ class Folder {
     }
 
     /**
-     * This method converts the current Folder object to a JSON string.
-     * In the JSON string, files are converted to name-to-fileSerial pairs.
+     * This method recursively collects all the File objects and generates a list.
+     * @returns {File[]}
+     * */
+    getFilesAsList() {
+        const files = [];
+
+        /**
+         * @param {Folder} folder
+         * @returns {void}
+         * */
+        const getFiles = (folder) => {
+            Object.values(folder.getFiles()).forEach((file) => {
+                files.push(file);
+            });
+            Object.values(folder.getSubfolders()).forEach((subfolder) => {
+                getFiles(subfolder);
+            });
+        };
+
+        getFiles(this);
+        return files;
+    }
+
+    /**
+     * This method converts the current Folder object to a "RecordsJSON" string.
+     * In the "RecordsJSON" string, files are converted to name-to-fileSerial pairs.
      * @returns {string}
      * @throws {TypeError}
      * */
-    JSON() {
+    getRecordsJSON() {
         /**
          * @param {Folder} folder
          * @returns {{subfolder, files, created_at, folderLinks, fileLinks}}
          * */
-        const toPlainObject = (folder) => ({
-            subfolder: Object.entries(folder.getSubfolders()).reduce(
+        const toPlainFolderObject = (folder) => ({
+            subfolders: Object.entries(folder.getSubfolders()).reduce(
                 (acc, [name, subfolder]) => {
-                    acc[name] = toPlainObject(subfolder);
+                    acc[name] = toPlainFolderObject(subfolder);
                     return acc;
                 },
                 {}
@@ -622,35 +652,31 @@ class Folder {
             )
         });
 
-        return JSON.stringify(toPlainObject(this));
+        return JSON.stringify(toPlainFolderObject(this));
     }
 
     /**
-     * This method recursively collects all the File objects and generates a list.
-     * @returns {File[]}
+     * This method recovers <this> with plain folder object and files map.
+     * The files map contains fresh files that __can__ be __dangerously__moved__.
+     * @param {Object} plainFolderObject
+     * @param {Record<string, File>} filesMap
+     * @returns {Folder}
+     * @throws {TypeError | SyntaxError}
      * */
-    getFilesAsList() {
-        const files = [];
+    recoverFromRecordsJSON(plainFolderObject, filesMap) {
+        if (typeof plainFolderObject !== 'object')
+            throw new TypeError('plainFolderObject must be an Object');
+        if (!Array.isArray(filesMap) || filesMap.some((file) => !(file instanceof File)))
+            throw new TypeError('filesMap must be a map between string and File.');
 
-        /**
-         * @param {Folder} folder
-         * @returns {void}
-         * */
-        const getFiles = (folder) => {
-            Object.values(folder.getFiles()).forEach((file) => {
-                files.push(file);
-            });
-            Object.values(folder.getSubfolders()).forEach((subfolder) => {
-                getFiles(subfolder);
-            });
-        };
 
-        getFiles(this);
-        return files;
+
+        return this;
     }
 
     /**
-     * @returns {Object}
+     * This method converts <this> folder to a zip blob using JSZip.
+     * @returns {Promise<Blob>}
      * */
     getZipBlob() {
         /**
@@ -1160,7 +1186,8 @@ class TerminalFolderPointer {
 }
 
 /**
- *
+ * This structure represents the "stdin" for the command window.
+ * SHOULD BE UPDATED TO BETTER SUPPORT USER INPUT HANDLERS.
  * */
 class CommandInputHandler {
     /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
@@ -1285,7 +1312,8 @@ class CommandInputHandler {
 }
 
 /**
- *
+ * This structure represents the records of all minimized windows in a tab.
+ * All its instances should appear in a terminal core.
  * */
 class MinimizedWindowRecords {
     /** @type {Record<number, [string, function():void]>} */
@@ -1305,8 +1333,13 @@ class MinimizedWindowRecords {
      * @param {string} description
      * @param {function():void} windowRecoverCallback
      * @returns {void}
+     * @throws {TypeError}
      * */
     add(description, windowRecoverCallback) {
+        if (typeof description !== 'string' || description.length === 0)
+            throw new TypeError('Description should be a non-empty string.');
+        if (typeof windowRecoverCallback !== 'function')
+            throw new TypeError('windowRecoverCallback should be a function.');
         this.#addCount++;
         this.#records[this.#addCount] = [description, windowRecoverCallback];
     }
@@ -1314,8 +1347,11 @@ class MinimizedWindowRecords {
     /**
      * @param {number} index
      * @returns {null | boolean} whether records are re-factored.
+     * @throws {TypeError}
      * */
     recoverWindow(index) {
+        if (typeof index !== 'number')
+            throw new TypeError('Index must be a number.');
         if (this.#records[index] === undefined)
             return null;
         const [_, windowRecoverCallback] = this.#records[index];
@@ -1352,7 +1388,7 @@ class MinimizedWindowRecords {
 }
 
 /**
- *
+ * This structure represents the core services of the terminal, handling all the terminal interfaces.
  * */
 class TerminalCore {
     /** @type {window.Terminal} */
@@ -1474,6 +1510,7 @@ class TerminalCore {
 
     /**
      * This method generates a unified terminal interface.
+     * Because this is a basic set-up method, type-checks are omitted!!!
      * @param {window.Terminal} xtermObj
      * @param {HTMLDivElement} terminalWindowContainer
      * @param {Folder} fsRoot
@@ -1532,8 +1569,16 @@ class TerminalCore {
      * @param {boolean} if_print_to_log
      * @param {'white' | 'red' | 'green' | 'blue' | 'yellow'} color
      * @returns {void}
+     * @throws {TypeError}
      * */
     printToWindow(sentence, if_print_raw_to_window, if_print_to_log, color = 'white') { // (string, boolean, boolean) => void
+        if (typeof sentence !== 'string')
+            throw new TypeError('Sentence must be a string.');
+        if (typeof if_print_raw_to_window !== 'boolean')
+            throw new TypeError('if_print_raw_to_window must be a boolean.');
+        if (typeof if_print_to_log !== 'boolean')
+            throw new TypeError('if_print_to_log must be a boolean.');
+        // type check for color is not decided yet!!!
         if (if_print_to_log)
             this.#terminalLog.push(sentence);
         if (if_print_raw_to_window) {
