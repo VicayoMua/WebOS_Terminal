@@ -48,10 +48,10 @@ app.use(express.json());
 app.use(cors()); // ok for dev. lock this down in prod.
 app.use((error, req, res, next) => {
     if (error && error.type === 'entity.too.large') {
-        return res.status(413).json({error: 'Payload Too Large (JSON body limit).'});
+        return res.status(413).json({error: 'Payload Too Large (getRecordsJSON body limit).'});
     }
     if (error instanceof SyntaxError && 'body' in error) {
-        return res.status(400).json({error: 'Invalid JSON body.'});
+        return res.status(400).json({error: 'Invalid getRecordsJSON body.'});
     }
     next(error);
 });
@@ -71,7 +71,6 @@ app.use((error, req, res, next) => {
  * res.body:
  *      connection=true      every time
  *      error                when failure
- *      NOTHING              when success and aim='new_account'
  *      result=true/false    when success and aim='conf_account'
  * */
 app.post('/mycloud/users/', (req, res) => {
@@ -193,6 +192,7 @@ app.post('/mycloud/users/', (req, res) => {
  * res.body:
  *      connection=true      every time
  *      error                when failure
+ *      serial               when success and aim='recover'
  *      content              when success and aim='recover'
  *      created_at           when success and aim='recover'
  *      updated_at           when success and aim='recover'
@@ -257,7 +257,7 @@ app.post('/mycloud/files/', (req, res) => {
                         error: `Failed to update the file content.`
                     });
                 }
-                if (serial === 'ROOT') { // clean up the files when ROOT updates, "content = rootFolder.JSON()"
+                if (serial === 'ROOT') { // clean up the files when ROOT updates, "content = rootFolder.getRecordsJSON()"
                     // TODO: Clean up the files when ROOT updates
                 }
                 return res.status(200).json({
@@ -281,6 +281,7 @@ app.post('/mycloud/files/', (req, res) => {
                 }
                 return res.status(200).json({
                     connection: true,
+                    serial: serial,
                     content: selectRow.content.toString('utf8'),
                     created_at: selectRow.created_at,
                     updated_at: selectRow.updated_at

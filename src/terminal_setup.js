@@ -698,9 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-d') {
                     try {
                         const
-                            url = URL.createObjectURL(
-                                await tfp.gotoPath(parameters[1]).getZipBlob()
-                            ),
+                            url = URL.createObjectURL(await tfp.gotoPath(parameters[1]).getZipBlob()),
                             link = document.createElement('a'),
                             zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
                         link.href = url;
@@ -743,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_key = parameters[1].substring(5);
                 if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
                     try {
-                        const body = await fetch(
+                        const {connection, error} = await fetch( // {connection, error}
                             `http://${ipp}/mycloud/users/`,
                             {
                                 method: 'POST',
@@ -759,15 +757,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         ).then(
                             (res) => res.json()
                         );
-                        if (body.connection !== true) {
-                            currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                        if (connection !== true) {
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false, true);
                             return;
                         }
-                        if (body.error !== undefined) { // has error
-                            currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                        if (error !== undefined) { // has error
+                            currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                             return;
                         }
-                        currentTabRecord.terminalCore.printToWindow('Successfully registered a user key.', false, true);
+                        currentTabRecord.terminalCore.printToWindow(' --> Successfully registered a user key.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
@@ -775,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[2] === '-conf') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -conf
                     try {
-                        const body = await fetch(
+                        const {connection, error, result} = await fetch( // {connection, error, result=true/false}
                             `http://${ipp}/mycloud/users/`,
                             {
                                 method: 'POST',
@@ -791,20 +789,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         ).then(
                             (res) => res.json()
                         );
-                        if (body.connection !== true) {
-                            currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.', false, true);
+                        if (connection !== true) {
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false, true);
                             return;
                         }
-                        if (body.error !== undefined) { // has error
-                            currentTabRecord.terminalCore.printToWindow(`${body.error}`, false, true);
+                        if (error !== undefined) { // has error
+                            currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                             return;
                         }
-                        if (body.result !== true) {
+                        if (result !== true) {
                             currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);
                             return;
                         }
                         currentTabRecord.terminalCore.printToWindow(
-                            'The user key is valid.\n' +
+                            ' --> The user key is valid.\n' +
                             ' --> Generating the configuration file at /.mycloud_conf.\n'
                             , false, true
                         );
@@ -817,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             file.setContent(`${parameters[0]}\n${parameters[1]}`);
                         }
                         currentTabRecord.terminalCore.printToWindow(
-                            ' --> Success!',
+                            ' --> Successfully configured MyCloud Client.',
                             false, true
                         );
                     } catch (error) {
@@ -858,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false, true);
                     try {
                         const jsonFetches = rootFolder.getFilesAsList().map((file) =>
-                            fetch(
+                            fetch( // {connection, error}
                                 `http://${ipp}/mycloud/files/`,
                                 {
                                     method: 'POST',
@@ -880,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             )
                         );
                         jsonFetches.push(
-                            fetch(
+                            fetch( // {connection, error}
                                 `http://${ipp}/mycloud/files/`,
                                 {
                                     method: 'POST',
@@ -892,7 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         aim: 'backup',
                                         user_key: user_key,
                                         serial: 'ROOT',
-                                        content: rootFolder.JSON(),
+                                        content: rootFolder.getRecordsJSON(),
                                         created_at: getISOTimeString(),
                                         updated_at: getISOTimeString()
                                     })
@@ -907,15 +905,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (settledResult.status === 'rejected') {
                                 currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
                                 failure = true;
-                            }
-                            if (settledResult.status === 'fulfilled') {
-                                const body = settledResult.value;
-                                if (body.connection !== true) {
-                                    currentTabRecord.terminalCore.printToWindow('Bad connection: "body.connection" is not true.\n', false, true);
+                            } else if (settledResult.status === 'fulfilled') {
+                                const {connection, error} = settledResult.value;
+                                if (connection !== true) {
+                                    currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
                                     failure = true;
-                                }
-                                if (body.error !== undefined) { // has error
-                                    currentTabRecord.terminalCore.printToWindow(`${body.error}\n`, false, true);
+                                } else if (error !== undefined) { // has error
+                                    currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
                                     failure = true;
                                 }
                             }
@@ -933,7 +929,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-recover') { // Command: mycloud -r
                     currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
                     try {
-                        const bodyROOT = await fetch(
+                        // get the ROOT map
+                        const bodyROOT = await fetch( // {connection=true, error, __serial__IGNORED__, content, __created_at__IGNORED__, __updated_at__IGNORED__}
                             `http://${ipp}/mycloud/files/`,
                             {
                                 method: 'POST',
@@ -950,7 +947,111 @@ document.addEventListener('DOMContentLoaded', () => {
                         ).then(
                             (res) => res.json()
                         );
-
+                        if (bodyROOT.connection !== true) {
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBodyROOT.connection" is not true.', false, true);
+                            return;
+                        }
+                        if (bodyROOT.error !== undefined) {
+                            currentTabRecord.terminalCore.printToWindow(`${bodyROOT.error}`, false, true);
+                            return;
+                        }
+                        if (typeof bodyROOT.content !== 'string') {
+                            currentTabRecord.terminalCore.printToWindow('The ROOT map is invalid.', false, true);
+                            return;
+                        }
+                        // get remaining files
+                        const
+                            plainRootFolderObject = JSON.parse(bodyROOT.content),
+                            /**
+                             * @param {Object} plainFolderObject
+                             * @returns {string[]}
+                             * @throws {TypeError}
+                             * */
+                            getFileSerialsFromPlainFolderObject = (plainFolderObject) => {
+                                const
+                                    /** @type {string[]} */
+                                    fileSerials = [],
+                                    helper = (_) => {
+                                        if (_.files !== undefined) {
+                                            Object.values(_.files).forEach((fs) => {
+                                                if (typeof fs !== 'string' || fs.length === 0)
+                                                    throw new TypeError('File serial in the plain folder object is not a non-empty string.');
+                                                fileSerials.push(fs);
+                                            });
+                                        }
+                                        if (_.subfolders !== undefined) {
+                                            Object.values(_.subfolders).forEach((pfo) => {
+                                                if (typeof pfo !== 'object')
+                                                    throw new TypeError('Plain subfolder object in the plain folder object is not an object.');
+                                                helper(pfo);
+                                            });
+                                        }
+                                    };
+                                helper(plainFolderObject);
+                                return fileSerials;
+                            },
+                            jsonFetches = getFileSerialsFromPlainFolderObject(plainRootFolderObject).map((fileSerial) =>
+                                fetch( // {connection=true, error, content, created_at, updated_at}
+                                    `http://${ipp}/mycloud/files/`,
+                                    {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            aim: 'recover',
+                                            user_key: user_key,
+                                            serial: fileSerial
+                                        })
+                                    }
+                                ).then(
+                                    (res) => res.json()
+                                )
+                            ),
+                            settledResults = await Promise.allSettled(jsonFetches);
+                        // construct files map
+                        let failure = false;
+                        /** @type {Record<string, File>} */
+                        const filesMap = settledResults.reduce(
+                            (acc, settledResult) => {
+                                if (settledResult.status === 'rejected') {
+                                    currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
+                                    failure = true;
+                                } else if (settledResult.status === 'fulfilled') {
+                                    const {
+                                        connection, error,
+                                        serial, content, created_at, updated_at
+                                    } = settledResult.value;
+                                    if (connection !== true) {
+                                        currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
+                                        failure = true;
+                                    } else if (error !== undefined) { // has error
+                                        currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
+                                        failure = true;
+                                    } else if (
+                                        typeof serial !== 'string' || serial.length === 0 ||
+                                        typeof content !== 'string' ||
+                                        typeof created_at !== 'string' || created_at.length === 0 ||
+                                        typeof updated_at !== 'string' || updated_at.length === 0
+                                    ) {
+                                        currentTabRecord.terminalCore.printToWindow('A file is illegal.\n', false, true);
+                                        failure = true;
+                                    } else {
+                                        acc[serial] = new File(serial, content, created_at, updated_at);
+                                    }
+                                }
+                                return acc;
+                            },
+                            {}
+                        );
+                        if (failure) {
+                            currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false, true);
+                            return;
+                        }
+                        // recover the file system (root folder)
+                        rootFolder.recoverFromRecordsJSON(plainRootFolderObject, filesMap);
+                        currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
                     }
@@ -977,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['ttt'] = {
         // is_async: true,
         executable: (_) => {
-            console.log(currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder().JSON());
+
         },
         description: ''
     }

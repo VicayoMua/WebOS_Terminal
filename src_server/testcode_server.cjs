@@ -27,13 +27,13 @@ function extractDirAndKeyName(path) {
     //
     //
     //      /** @type {Record<string, Folder>} */
-    //      subfolders;          // IN JSON
+    //      subfolders;          // IN getRecordsJSON
     //      /** @type {Record<string, File>} */
-    //      files;                 // IN JSON, name <--> serial
+    //      files;                 // IN getRecordsJSON, name <--> serial
     //      /** @type {Record<string, string>} */
-    //      folderLinks;         // IN JSON
+    //      folderLinks;         // IN getRecordsJSON
     //      /** @type {Record<string, string>} */
-    //      fileLinks;           // IN JSON
+    //      fileLinks;           // IN getRecordsJSON
     //
     //
     //
