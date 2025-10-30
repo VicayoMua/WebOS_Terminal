@@ -71,7 +71,7 @@ body.dark-body-mode {
 
 .header h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: 32px;
     letter-spacing: 0.2px;
 }
 
@@ -125,15 +125,15 @@ body.dark-body-mode {
     background-color: transparent;
     color: var(--text-color);
     border: 1px solid transparent;
-    font-size: 14px;
-    padding: 10px 14px;
+    font-size: 16px;
+    padding: 12px 16px;
     border-radius: 10px;
     margin-right: 0;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
     /* ensure up to 10 per row when space allows; center when fewer */
-    flex: 1 0 clamp(100px, calc((100% - (9 * 8px)) / 10), 160px);
-    max-width: clamp(100px, calc((100% - (9 * 8px)) / 10), 240px);
+    flex: 1 0 clamp(120px, calc((100% - (9 * 8px)) / 10), 220px);
+    max-width: clamp(120px, calc((100% - (9 * 8px)) / 10), 320px);
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
