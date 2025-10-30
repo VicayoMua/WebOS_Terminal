@@ -806,12 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             ' --> Generating the configuration file at /.mycloud_conf.\n'
                             , false, true
                         );
-                        const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
-                        if (rootFolder.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
-                            const file = rootFolder.getFile('.mycloud_conf');
-                            file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                        if (fsRoot.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
+                            fsRoot.getFile('.mycloud_conf').setContent(`${parameters[0]}\n${parameters[1]}`);
                         } else {
-                            const [file, _] = rootFolder.createFile(false, '.mycloud_conf', serialLake.generateNext());
+                            const [file, _] = fsRoot.createFile(false, '.mycloud_conf', serialLake.generateNext());
                             file.setContent(`${parameters[0]}\n${parameters[1]}`);
                         }
                         currentTabRecord.terminalCore.printToWindow(
@@ -826,13 +824,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (parameters.length === 1) {
                 // get the configuration file
-                const rootFolder = currentTabRecord.terminalCore.getNewFolderPointer().getCurrentFolder();
-                if (!rootFolder.hasFile('.mycloud_conf')) {
+                if (!fsRoot.hasFile('.mycloud_conf')) {
                     currentTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false, true);
                     return;
                 }
                 const
-                    confContent = rootFolder.getFile('.mycloud_conf').getContent(),
+                    confContent = fsRoot.getFile('.mycloud_conf').getContent(),
                     ippIndex = confContent.indexOf('-ipp='),
                     enterIndex = confContent.indexOf('\n'),
                     keyIndex = confContent.indexOf('-key=');
@@ -855,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-backup') { // Command: mycloud -b
                     currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false, true);
                     try {
-                        const jsonFetches = rootFolder.getFilesAsList().map((file) =>
+                        const jsonFetches = fsRoot.getFilesAsList().map((file) =>
                             fetch( // {connection, error}
                                 `http://${ipp}/mycloud/files/`,
                                 {
@@ -890,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         aim: 'backup',
                                         user_key: user_key,
                                         serial: 'ROOT',
-                                        content: rootFolder.getRecordsJSON(),
+                                        content: fsRoot.getRecordsJSON(),
                                         created_at: getISOTimeString(),
                                         updated_at: getISOTimeString()
                                     })
@@ -1050,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             return;
                         }
                         // recover the file system (root folder)
-                        rootFolder.recoverFromRecordsJSON(plainRootFolderObject, filesMap);
+                        fsRoot.recoverFromRecordsJSON(plainRootFolderObject, filesMap);
                         currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
