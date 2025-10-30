@@ -924,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (parameters[0] === '-recover') { // Command: mycloud -recover
-                    currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".\n`, false, true);
                     try {
                         // get the ROOT map
                         const bodyROOT = await fetch( // {connection=true, error, __serial__IGNORED__, content, __created_at__IGNORED__, __updated_at__IGNORED__}
