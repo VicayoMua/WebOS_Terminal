@@ -26,7 +26,8 @@ const
  * This regular expression checks whether a string is a legal key-name in the file system.
  * */
 const
-    legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/;
+    legalFileSystemKeyNameRegExp = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/,
+    legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/;
 
 /**
  * This structure represents the space, which serial numers are picked from.
@@ -56,8 +57,8 @@ class SerialLake {
      * @throws {TypeError}
      * */
     recover(fileSerials) {
-        if (!Array.isArray(fileSerials) || fileSerials.some((fs) => (typeof fs !== 'string' || fs.length === 0)))
-            throw new TypeError('File serials must be an array of non-empty strings.');
+        if (!Array.isArray(fileSerials) || fileSerials.some((fs) => (typeof fs !== 'string' || !legalFileSerialRegExp.test(fs))))
+            throw new TypeError('File serials must be an array of strings that follow the keyname requirements.');
         this.#serialSet = new Set(fileSerials);
         return this;
     }
@@ -71,6 +72,8 @@ class SerialLake {
             let fileSerial = '';
             do {
                 fileSerial = this.#serialGenerator();
+                if (!legalFileSerialRegExp.test(fileSerial))
+                    throw new Error('fileSerialGenerator must return a string that follows the keyname requirements.');
             } while (this.#serialSet.has(fileSerial));
             this.#serialSet.add(fileSerial);
             return fileSerial;
@@ -103,8 +106,8 @@ class File {
      * @throws {TypeError}
      * */
     constructor(fileSerial, content, created_at = undefined, updated_at = undefined) {
-        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-            throw new TypeError('File serial must be a non-empty string.');
+        if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
+            throw new TypeError('File serial must be a string that follows the keyname requirements.');
         if (typeof content !== 'string')
             throw new TypeError('Content must be a string.');
         if ((typeof created_at !== 'string' || created_at.length === 0) && created_at !== undefined)
@@ -123,8 +126,8 @@ class File {
      * @throws {TypeError}
      * */
     duplicate(fileSerial) {
-        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-            throw new TypeError('File serial must be a non-empty string.');
+        if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
+            throw new TypeError('File serial must be a string that follows the keyname requirements.');
         return new File(fileSerial, this.#content);
     }
 
@@ -226,7 +229,7 @@ class Folder {
      * @throws {TypeError}
      * */
     hasSubfolder(subfolderName) {
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
         return this.#subfolders[subfolderName] instanceof Folder;
     }
@@ -237,7 +240,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     getSubfolder(subfolderName) {
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
         const subfolder = this.#subfolders[subfolderName];
         if (!(subfolder instanceof Folder))
@@ -254,7 +257,7 @@ class Folder {
     createSubfolder(fix_duplicated_subfolderName, subfolderName) {
         if (typeof fix_duplicated_subfolderName !== 'boolean')
             throw new TypeError('fix_duplicated_subfolderName must be a boolean.');
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
         if (this.#subfolders[subfolderName] instanceof Folder) { // keep this low level implementation to boost runtime
             if (!fix_duplicated_subfolderName)
@@ -273,7 +276,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     deleteSubfolder(subfolderName) {
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
         if (!(this.#subfolders[subfolderName] instanceof Folder))
             throw new Error(`Subfolder ${subfolderName} not found.`);
@@ -295,7 +298,7 @@ class Folder {
      * @throws {TypeError}
      * */
     hasFile(fileName) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
             throw new TypeError('File name must be a string and follow the keyname requirements.');
         return this.#files[fileName] instanceof File;
     }
@@ -306,7 +309,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     getFile(fileName) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
             throw new TypeError('File name must be a string and follow the keyname requirements.');
         const file = this.#files[fileName];
         if (!(file instanceof File))
@@ -324,10 +327,10 @@ class Folder {
     createFile(fix_duplicated_filename, fileName, fileSerial) {
         if (typeof fix_duplicated_filename !== 'boolean')
             throw new TypeError('fix_duplicated_filename must be a boolean.');
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
             throw new TypeError('File name must be a string and follow the keyname requirements.');
-        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-            throw new TypeError('File serial must be a non-empty string.');
+        if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
+            throw new TypeError('File serial must be a string that follows the keyname requirements.');
         if (this.#files[fileName] instanceof File) { // keep this low level implementation to boost runtime
             if (!fix_duplicated_filename)
                 throw new Error(`File ${fileName} already existing.`);
@@ -348,7 +351,7 @@ class Folder {
      * @throws {TypeError}
      * */
     createFileDangerous(fileName, file) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
             throw new TypeError('File name must be a string and follow the keyname requirements.');
         if (!(file instanceof File))
             throw new TypeError('File must be a File.');
@@ -361,7 +364,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     deleteFile(fileName) {
-        if (typeof fileName !== 'string' || !legalKeyNameInFileSystem.test(fileName))
+        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
             throw new TypeError('File name must be a string and follow the keyname requirements.');
         if (!(this.#files[fileName] instanceof File))
             throw new Error(`File ${fileName} not found.`);
@@ -402,7 +405,7 @@ class Folder {
      * @throws {TypeError}
      * */
     hasFolderLink(folderLinkName) {
-        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         return typeof this.#folderLinks[folderLinkName] === 'string';
     }
@@ -413,7 +416,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     getFolderLink(folderLinkName) {
-        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         const folderLink = this.#folderLinks[folderLinkName];
         if (typeof folderLink !== 'string')
@@ -428,7 +431,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     createFolderLink(folderLinkName, link) {
-        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         if (typeof link !== 'string' || link.length === 0)
             throw new TypeError('Link must be a non-empty string.');
@@ -444,7 +447,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     setFolderLink(folderLinkName, newLink) {
-        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         if (typeof newLink !== 'string' || newLink.length === 0)
             throw new TypeError('New link must be a non-empty string.');
@@ -459,7 +462,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     deleteFolderLink(folderLinkName) {
-        if (typeof folderLinkName !== 'string' || !legalKeyNameInFileSystem.test(folderLinkName))
+        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
             throw new TypeError('Folder link name must be a string and follow the keyname requirements.');
         const folderLink = this.#folderLinks[folderLinkName];
         if (typeof folderLink !== 'string')
@@ -481,7 +484,7 @@ class Folder {
      * @throws {TypeError}
      * */
     hasFileLink(fileLinkName) {
-        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
             throw new TypeError('File link name must be a string and follow the keyname requirements.');
         return typeof this.#fileLinks[fileLinkName] === 'string';
     }
@@ -492,7 +495,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     getFileLink(fileLinkName) {
-        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
             throw new TypeError('File link name must be a string and follow the keyname requirements.');
         const fileLink = this.#fileLinks[fileLinkName];
         if (typeof fileLink !== 'string')
@@ -507,7 +510,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     createFileLink(fileLinkName, link) {
-        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
             throw new TypeError('File link name must be a string and follow the keyname requirements.');
         if (typeof link !== 'string' || link.length === 0)
             throw new Error('Link must be a non-empty string.');
@@ -523,7 +526,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     setFileLink(fileLinkName, newLink) {
-        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
             throw new TypeError('File link name must be a string and follow the keyname requirements.');
         if (typeof newLink !== 'string' || newLink.length === 0)
             throw new TypeError('New link must be a non-empty string.');
@@ -538,7 +541,7 @@ class Folder {
      * @throws {TypeError | Error}
      * */
     deleteFileLink(fileLinkName) {
-        if (typeof fileLinkName !== 'string' || !legalKeyNameInFileSystem.test(fileLinkName))
+        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
             throw new TypeError('File link name must be a string and follow the keyname requirements.');
         const fileLink = this.#fileLinks[fileLinkName];
         if (typeof fileLink !== 'string')
@@ -846,7 +849,7 @@ class TerminalFolderPointer {
     #gotoSubfolder(subfolderName, include_link = false) {
         if (typeof include_link !== 'boolean')
             throw new TypeError('include_link must be a boolean.');
-        if (typeof subfolderName !== 'string' || !legalKeyNameInFileSystem.test(subfolderName))
+        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
             throw new TypeError('Subfolder name must be a string and follow the keyname requirements.');
 
         if (this.#currentFolder.hasSubfolder(subfolderName)) {
@@ -929,7 +932,7 @@ class TerminalFolderPointer {
         }
         const pathStack = path.split('/').filter((s) => s.length > 0);
         // check the availability of path for creation; otherwise, need to reverse all the edits
-        if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalKeyNameInFileSystem.test(folderName)))
+        if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalFileSystemKeyNameRegExp.test(folderName)))
             throw new Error(`Path ${path} must follow the keyname requirements.`);
         try {
             // do the creation of path

@@ -5,7 +5,7 @@ const mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
 
 const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
 
-// console.log(legalKeyNameInFileSystem.test('\r'));
+// console.log(legalFileSystemKeyNameRegExp.test('\r'));
 
 
 /**

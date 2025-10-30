@@ -35,8 +35,8 @@ db.serialize(() => {
 const
     express = require('express'),
     app = express(),
-    validUserKeyRegEx = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
-    validSerialRegEx = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
+    legalUserKeyRegExp = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
+    legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
     cors = require('cors'),
     getISOTimeString = () => new Date().toISOString(),
     // MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
@@ -79,7 +79,7 @@ app.post('/mycloud/users/', (req, res) => {
         aim = req.body.aim,
         /** @type {string} */
         user_key = req.body.user_key;
-    if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
+    if (typeof user_key !== 'string' || !legalUserKeyRegExp.test(user_key)) {
         return res.status(400).json({
             connection: true,
             error: `"${user_key}" is not a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
@@ -205,13 +205,13 @@ app.post('/mycloud/files/', (req, res) => {
         user_key = req.body.user_key,
         /** @type {string} */
         serial = req.body.serial;
-    if (typeof user_key !== 'string' || !validUserKeyRegEx.test(user_key)) {
+    if (typeof user_key !== 'string' || !legalUserKeyRegExp.test(user_key)) {
         return res.status(400).json({
             connection: true,
             error: `"${user_key}" is not a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
         });
     }
-    if (typeof serial !== 'string' || !validSerialRegEx.test(serial)) {
+    if (typeof serial !== 'string' || !legalFileSerialRegExp.test(serial)) {
         return res.status(400).json({
             connection: true,
             error: `"${user_key}" is not a valid user_key ([A-Za-z_][A-Za-z0-9_]{128,4096}). Please check the client implementation.`

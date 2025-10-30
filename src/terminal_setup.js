@@ -838,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ippIndex === -1 || enterIndex === -1 || keyIndex === -1 ||
                     ippIndex + 4 >= enterIndex || enterIndex >= keyIndex || keyIndex + 4 >= confContent.length - 1
                 ) {
-                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false, true);
                     return;
                 }
                 const
@@ -846,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_key = confContent.substring(keyIndex + 5);
                 // check the content of <ipp> and <user_key>
                 if (ipp.length === 0 || user_key.length === 0) {
-                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is invalid.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false, true);
                     return;
                 }
                 if (parameters[0] === '-backup') { // Command: mycloud -backup
@@ -953,32 +953,76 @@ document.addEventListener('DOMContentLoaded', () => {
                             return;
                         }
                         if (typeof bodyROOT.content !== 'string') {
-                            currentTabRecord.terminalCore.printToWindow('The ROOT map is invalid.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('The ROOT map is illegal.', false, true);
                             return;
                         }
-                        // get all file serials
+                        // check the information in <plainRootFolderObject>
                         const
                             /** @type {Object} */
                             plainRootFolderObject = JSON.parse(bodyROOT.content),
-                            /** @type {string[]} */
-                            fileSerials = [],
                             /**
+                             * This implementation maximizes the compatibility of received JSON.
                              * @param {Object} plainFolderObject
                              * @returns {void}
                              * @throws {TypeError}
                              * */
+                            checkPlainFolderObject = (plainFolderObject) => {
+                                if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
+                                    Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
+                                        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
+                                            throw new TypeError('Subfolder name in the plain folder object must be legal.');
+                                        if (typeof psfo !== 'object')
+                                            throw new TypeError('Plain subfolder object in the plain folder object must be an object.');
+                                        checkPlainFolderObject(psfo);
+                                    });
+                                }
+                                if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
+                                    Object.entries(plainFolderObject.files).forEach(([fileName, fileSerial]) => {
+                                        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
+                                            throw new TypeError('File name in the plain folder object must be legal.');
+                                        if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
+                                            throw new TypeError('File serial in the plain folder object must be legal.');
+                                    });
+                                }
+                                if (typeof plainFolderObject.created_at === 'string') { // string
+                                    if (plainFolderObject.created_at.length === 0)
+                                        throw new TypeError('created_at in the plain folder object must be a non-empty string.');
+                                }
+                                if (typeof plainFolderObject.folderLinks === 'object') { // {name: link}
+                                    Object.entries(plainFolderObject.folderLinks).forEach(([folderLinkName, folderLink]) => {
+                                        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
+                                            throw new TypeError('Folder link name in the plain folder object must be legal');
+                                        if (typeof folderLink !== 'string' || folderLink.length === 0)
+                                            throw new TypeError('Folder link in the plain folder object must be a non-empty string.');
+                                    });
+                                }
+                                if (typeof plainFolderObject.fileLinks === 'object') { // {name: link}
+                                    Object.entries(plainFolderObject.fileLinks).forEach(([fileLinkName, fileLink]) => {
+                                        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
+                                            throw new TypeError('File link name in the plain folder object must be legal.');
+                                        if (typeof fileLink !== 'string' || fileLink.length === 0)
+                                            throw new TypeError('File link in the plain folder object must be a non-empty string.');
+                                    });
+                                }
+                            };
+                        checkPlainFolderObject(plainRootFolderObject);
+                        // get all file serials
+                        const
+                            /** @type {string[]} */
+                            fileSerials = [],
+                            /**
+                             * This implementation maximizes the compatibility of received JSON.
+                             * @param {Object} plainFolderObject
+                             * @returns {void}
+                             * */
                             getFileSerialsFromPlainFolderObject = (plainFolderObject) => {
                                 if (typeof plainFolderObject.subfolders === 'object') {
                                     Object.values(plainFolderObject.subfolders).forEach((psfo) => {
-                                        if (typeof psfo !== 'object')
-                                            throw new TypeError('Plain subfolder object in the plain folder object is not an object.');
                                         getFileSerialsFromPlainFolderObject(psfo);
                                     });
                                 }
                                 if (typeof plainFolderObject.files === 'object') {
                                     Object.values(plainFolderObject.files).forEach((fileSerial) => {
-                                        if (typeof fileSerial !== 'string' || fileSerial.length === 0)
-                                            throw new TypeError('File serial in the plain folder object is not a non-empty string.');
                                         fileSerials.push(fileSerial);
                                     });
                                 }
@@ -1042,26 +1086,35 @@ document.addEventListener('DOMContentLoaded', () => {
                                 {}
                             ),
                             /**
+                             * This implementation maximizes the compatibility of received JSON.
                              * @param {Object} plainFolderObject
                              * @param {Folder} destFolder
                              * @returns {void}
-                             * @throws {TypeError}
+                             * @throws {TypeError | Error}
                              * */
                             recoverFSRoot = (plainFolderObject, destFolder) => {
                                 if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
-
+                                    Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
+                                        recoverFSRoot(psfo, destFolder.createSubfolder(false, subfolderName));
+                                    });
                                 }
                                 if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
-
+                                    Object.entries(plainFolderObject.files).forEach(([fileName, fileSerial]) => {
+                                        destFolder.createFileDangerous(fileName, filesMap[fileSerial]);
+                                    });
                                 }
                                 if (typeof plainFolderObject.created_at === 'string') { // string
                                     destFolder.setCreatedAt(plainFolderObject.created_at);
                                 }
                                 if (typeof plainFolderObject.folderLinks === 'object') { // {name: link}
-
+                                    Object.entries(plainFolderObject.folderLinks).forEach(([folderLinkName, folderLink]) => {
+                                        destFolder.createFolderLink(folderLinkName, folderLink);
+                                    });
                                 }
                                 if (typeof plainFolderObject.fileLinks === 'object') { // {name: link}
-
+                                    Object.entries(plainFolderObject.fileLinks).forEach((fileLinkName, fileLink) => {
+                                        destFolder.createFileLink(fileLinkName, fileLink);
+                                    });
                                 }
                             };
                         if (failure) {
