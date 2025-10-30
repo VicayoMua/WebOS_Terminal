@@ -1043,11 +1043,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             ),
                             /**
                              * @param {Object} plainFolderObject
-                             * @param {Folder} folder
+                             * @param {Folder} destFolder
                              * @returns {void}
                              * @throws {TypeError}
                              * */
-                            recoverFSRoot = (plainFolderObject, folder) => {
+                            recoverFSRoot = (plainFolderObject, destFolder) => {
                                 if (typeof plainFolderObject.subfolders === 'object') {
 
                                 }
@@ -1071,8 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // recover <serialLake> with <fileSerials>
                         serialLake.recover(fileSerials);
                         // recover fsRoot with <plainRootFolderObject> and <filesMap>
-                        currentTabRecord.terminalCore.getCurrentFolderPointer().deletePath('directory', '/');
-                        recoverFSRoot(plainRootFolderObject, fsRoot);
+                        recoverFSRoot(plainRootFolderObject, fsRoot.clear());
                         currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);

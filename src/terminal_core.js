@@ -538,12 +538,14 @@ class Folder {
     /**
      * This method clears all the contents previously-saved in <this> folder.
      * Also used for initialization in <constructor>
+     * @returns {Folder}
      * */
     clear() {
         this.#subfolders = {};
         this.#files = {};
         this.#folderLinks = {};
         this.#fileLinks = {};
+        return this;
     }
 
     /**
@@ -1098,9 +1100,6 @@ class TerminalFolderPointer {
             return this;
         }
         if (type === 'directory') {
-            // if (oldPath === '/')
-            //     throw new Error('Old path cannot be ROOT.');
-
             /**
              * This function deep-copies <srcFolder> to <destFolder>.
              * Before the movement, <destFolder> should be set up.
