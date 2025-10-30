@@ -1048,19 +1048,19 @@ document.addEventListener('DOMContentLoaded', () => {
                              * @throws {TypeError}
                              * */
                             recoverFSRoot = (plainFolderObject, destFolder) => {
-                                if (typeof plainFolderObject.subfolders === 'object') {
+                                if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
 
                                 }
-                                if (typeof plainFolderObject.files === 'object') {
+                                if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
 
                                 }
-                                if (typeof plainFolderObject.created_at === 'string') {
+                                if (typeof plainFolderObject.created_at === 'string') { // string
+                                    destFolder.setCreatedAt(plainFolderObject.created_at);
+                                }
+                                if (typeof plainFolderObject.folderLinks === 'object') { // {name: link}
 
                                 }
-                                if (typeof plainFolderObject.folderLinks === 'object') {
-
-                                }
-                                if (typeof plainFolderObject.fileLinks === 'object') {
+                                if (typeof plainFolderObject.fileLinks === 'object') { // {name: link}
 
                                 }
                             };

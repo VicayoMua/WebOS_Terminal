@@ -378,6 +378,18 @@ class Folder {
     }
 
     /**
+     * @param {string} created_at
+     * @returns {Folder}
+     * @throws {TypeError}
+     * */
+    setCreatedAt(created_at) {
+        if (typeof created_at !== 'string' || created_at.length === 0)
+            throw new TypeError('created_at must be a non-empty string.');
+        this.#created_at = created_at;
+        return this;
+    }
+
+    /**
      * @returns {Record<string, string>}
      * */
     getFolderLinks() {
