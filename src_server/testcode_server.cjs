@@ -1,10 +1,10 @@
-
 const mask = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789';
 
 // console.log(mask.length);
 
 
 const legalKeyNameInFileSystem = /^(?!\.{1,2}$)[^\/\0]{1,1024}$/;
+
 // console.log(legalKeyNameInFileSystem.test('\r'));
 
 
@@ -22,24 +22,24 @@ function extractDirAndKeyName(path) {
     return [path.substring(0, index), path.substring(index + 1)];
 }
 
-    //
-    //
-    //
-    //
-    //      /** @type {Record<string, Folder>} */
-    //      subfolders;          // IN getRecordsJSON
-    //      /** @type {Record<string, File>} */
-    //      files;                 // IN getRecordsJSON, name <--> serial
-    //      /** @type {Record<string, string>} */
-    //      folderLinks;         // IN getRecordsJSON
-    //      /** @type {Record<string, string>} */
-    //      fileLinks;           // IN getRecordsJSON
-    //
-    //
-    //
+//
+//
+//
+//
+//      /** @type {Record<string, Folder>} */
+//      subfolders;          // IN getRecordsJSON
+//      /** @type {Record<string, File>} */
+//      files;                 // IN getRecordsJSON, name <--> serial
+//      /** @type {Record<string, string>} */
+//      folderLinks;         // IN getRecordsJSON
+//      /** @type {Record<string, string>} */
+//      fileLinks;           // IN getRecordsJSON
+//
+//
+//
 
-// const a = [];
-// console.log(Array.isArray(a));
-const [dirParentPath, dirName] = extractDirAndKeyName('/');
-console.log(dirParentPath);
-console.log(dirName);
+const path = '/';
+const pathStack = path.split('/').filter((s) => s.length > 0);
+if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalKeyNameInFileSystem.test(folderName)))
+    throw new Error(`Path ${path} must follow the keyname requirements.`);
+console.log(pathStack);

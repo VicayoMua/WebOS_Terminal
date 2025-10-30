@@ -902,8 +902,6 @@ class TerminalFolderPointer {
             throw new TypeError('Path must be a non-empty string.');
         if (typeof goto_new_folder !== 'boolean')
             throw new TypeError('goto_new_folder must be a boolean.');
-        if (path === '/')
-            throw new Error('Path cannot be ROOT (ROOT cannot be created).');
         const fp = this.duplicate();
         if (path.startsWith('/')) {
             fp.gotoRoot();
@@ -982,7 +980,7 @@ class TerminalFolderPointer {
         }
         if (type === 'directory') {
             if (oldPath === '/')
-                throw new Error('Old path cannot be ROOT.');
+                throw new Error('Old path cannot be ROOT (ROOT cannot be moved).');
 
             /**
              * This function shallow-moves <srcFolder> to <destFolder>.

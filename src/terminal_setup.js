@@ -391,14 +391,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             currentTabRecord.terminalCore.printToWindow(
                 'Wrong grammar!\n' +
-                'Usage: mv -f [old_file_path] [new_file_path]\n' +
-                '       mv -d [old_directory_path] [new_directory_path]',
+                'Usage: mv -f [original_file_path] [destination_file_path]\n' +
+                '       mv -d [original_directory_path] [destination_directory_path]',
                 false, true
             );
         },
         description: 'mv an existing file or directory.\n' +
-            'Usage: mv -f [old_file_path] [new_file_path]\n' +
-            '       mv -d [old_directory_path] [new_directory_path]'
+            'Usage: mv -f [original_file_path] [destination_file_path]\n' +
+            '       mv -d [original_directory_path] [destination_directory_path]'
     };
 
     // Finished
