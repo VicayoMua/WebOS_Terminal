@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Update Needed
-    supportedCommands['mc'] = {
+    supportedCommands['mycloud'] = {
         is_async: true,
         executable: async (parameters) => {
             if (

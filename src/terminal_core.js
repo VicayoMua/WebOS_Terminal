@@ -68,18 +68,18 @@ class SerialLake {
      * @throws {Error}
      * */
     generateNext() {
-        try {
-            let fileSerial = '';
-            do {
-                fileSerial = this.#serialGenerator();
-                if (!legalFileSerialRegExp.test(fileSerial))
-                    throw new Error('fileSerialGenerator must return a string that follows the keyname requirements.');
-            } while (this.#serialSet.has(fileSerial));
-            this.#serialSet.add(fileSerial);
-            return fileSerial;
-        } catch (error) {
-            throw new Error(`Failed to generate the next serial number. <-- ${error}`);
-        }
+        let fileSerial = '';
+        do {
+            try {
+                fileSerial = this.#serialGenerator(); // may throw Error
+            } catch (error) {
+                throw new Error(`Failed to generate the next serial number. <-- ${error}`);
+            }
+            if (!legalFileSerialRegExp.test(fileSerial))
+                throw new Error('fileSerialGenerator must return a string that follows the keyname requirements.');
+        } while (this.#serialSet.has(fileSerial));
+        this.#serialSet.add(fileSerial);
+        return fileSerial;
     }
 }
 
