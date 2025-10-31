@@ -2,6 +2,8 @@ import {
     Terminal,
     FitAddon,
     SerializeAddon,
+    // JSZip,
+    ace,
     getISOTimeString,
     randomInt,
     legalFileSystemKeyNameRegExp,

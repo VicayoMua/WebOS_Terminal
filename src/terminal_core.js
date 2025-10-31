@@ -8,10 +8,16 @@
 * **************************************************************************************************************
 * */
 
-// import XTerm-related Classes
-import {Terminal} from "https://cdn.jsdelivr.net/npm/@xterm/xterm/+esm";
-import {FitAddon} from "https://cdn.jsdelivr.net/npm/@xterm/addon-fit/+esm";
-import {SerializeAddon} from "https://cdn.jsdelivr.net/npm/@xterm/addon-serialize/+esm";
+// import XTerm-related classes
+import {Terminal} from "./lib/xterm.js";
+import {FitAddon} from "./lib/xterm-addon-fit.js";
+import {SerializeAddon} from "./lib/xterm-addon-serialize.js";
+
+// import JSZip class
+import JSZip from "./lib/jszip.js";
+
+// import ACE-Editor class
+import ace from './lib/ace-editor.js';
 
 const
     /**
@@ -1664,6 +1670,8 @@ export {
     Terminal,
     FitAddon,
     SerializeAddon,
+    // JSZip,
+    ace,
     getISOTimeString,
     randomInt,
     legalFileSystemKeyNameRegExp,
