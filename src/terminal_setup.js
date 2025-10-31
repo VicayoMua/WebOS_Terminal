@@ -1171,18 +1171,27 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     }
 
-    supportedCommands['ttt'] = {
+    // // Update Needed
+    supportedCommands['ping'] = {
         is_async: true,
-        executable: async (_) => {
+        executable: async (parameters) => {
             //
         },
         description: ''
     }
 
     // // Update Needed
-    supportedCommands['ping'] = {
+    supportedCommands['wget'] = {
         is_async: true,
         executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    supportedCommands['ttt'] = {
+        is_async: true,
+        executable: async (_) => {
             //
         },
         description: ''
