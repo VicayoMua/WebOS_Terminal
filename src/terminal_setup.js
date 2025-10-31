@@ -938,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (failure) {
                             currentTabRecord.terminalCore.printToWindow('Failed to back up the file system.', false);
                         } else {
-                            currentTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system.', false);
+                            currentTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system to MyCloud server.', false);
                         }
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -1147,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         serialLake.recover(fileSerials);
                         // recover fsRoot with <plainRootFolderObject> and <filesMap>
                         recoverFSRoot(plainRootFolderObject, fsRoot.clear());
-                        currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false);
+                        currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system from MyCloud server.', false);
                     } catch (error) {
                         currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
