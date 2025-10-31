@@ -1663,10 +1663,10 @@ class TerminalCore {
         return this.#currentTerminalFolderPointer;
     }
 
-    /**
-     * @returns {TerminalFolderPointer}
-     * */
-    getNewFolderPointer() {
-        return new TerminalFolderPointer(this.#fsRoot);
-    }
+    // /**
+    //  * @returns {TerminalFolderPointer}
+    //  * */
+    // getNewFolderPointer() {
+    //     return new TerminalFolderPointer(this.#fsRoot);
+    // }
 }
