@@ -1,6 +1,26 @@
+import {
+    Terminal,
+    FitAddon,
+    SerializeAddon,
+    getISOTimeString,
+    randomInt,
+    legalFileSystemKeyNameRegExp,
+    legalFileSerialRegExp,
+    SerialLake,
+    File,
+    Folder,
+    extractDirAndKeyName,
+    TerminalFolderPointer,
+    CommandInputHandler,
+    MinimizedWindowRecords,
+    TerminalCore
+} from './terminal_core.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const
+        /** @type {number} */
         MAX_TAB_COUNT = 40,
+        /** @type {Object} */
         XTermSetup = {
             fontFamily: '"Fira Code", monospace',
             cursorBlink: true,
@@ -28,12 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
             },
         };
     let
+        /** @type {number} */
         tabCount = 0, // Initialize the total tab count
         /** @type {{divTerminal: HTMLDivElement, terminalCore: TerminalCore, buttonViewSwitch: HTMLButtonElement} | null} */
         currentTabRecord = null;
     const
+        /** @type {Folder} */
         fsRoot = new Folder(true), // Initialize File System Root
+        /** @type {string} */
         serialMusk = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789',
+        /** @type {SerialLake} */
         serialLake = new SerialLake(() => {
             const serialLen = Math.floor(Math.random() * 3968) + 129; // 4096-128=3968, <serialLen> is within [129,4096]
             let str = '';
@@ -75,9 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
         div_terminal_container.appendChild(divNewTerminal);
         // Create a new terminal core on the new div
         const
-            newXTermObject = new window.Terminal(XTermSetup),
+            newXTermObject = new Terminal(XTermSetup),
             newTerminalCore = new TerminalCore(
-                // newTerminalCore = generateTerminalCore(
                 newXTermObject,
                 divNewTerminal,
                 fsRoot,
@@ -190,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     supportedCommands['hello'] = {
         is_async: false,
         executable: (_) => {
-            currentTabRecord.terminalCore.printToWindow(`Hello World!`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Hello World!`, false);
         },
         description: `Say 'Hello World!'`
     };
@@ -209,8 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         null
                     )
                 }.\nFor more details, please use the command 'man [command_name]'.`,
-                false,
-                true
+                false
             );
         },
         description: 'A brief manual of the terminal simulator.',
@@ -227,19 +249,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (commandObject === undefined) {
                     currentTabRecord.terminalCore.printToWindow(
                         `The command '${commandName}' is not supported!`,
-                        true,
                         true
                     );
                 } else {
                     currentTabRecord.terminalCore.printToWindow(
                         commandObject.description,
-                        false,
-                        true
+                        false
                     );
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false);
         },
         description: 'A detailed manual of the terminal simulator.\n' +
             'Usage: man [command_name]',
@@ -258,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             currentTabRecord.terminalCore.printToWindow(
                 result.length > 0 ? result : `''`,
-                false, true
+                false
             );
         },
         description: 'Simply print all the parameters.\n' +
@@ -272,13 +292,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 1) {
                 try {
                     currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createFile(false, parameters[0], serialLake.generateNext());
-                    currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false);
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false);
         },
         description: 'Make a new file in the current directory.\n' +
             'Usage: touch [file_name]'
@@ -293,14 +313,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0], false);
                     currentTabRecord.terminalCore.printToWindow(
                         `Successfully created a directory. (Note that the directory may be already existing!)`,
-                        false, true
+                        false
                     );
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false);
         },
         description: 'Make a new directory.\n' +
             'Usage: mkdir [folder_path]'
@@ -313,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 0) {
                 currentTabRecord.terminalCore.printToWindow(
                     currentTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().getContentListAsString(),
-                    false, true
+                    false
                 );
                 return;
             }
@@ -321,14 +341,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     currentTabRecord.terminalCore.printToWindow(
                         currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(parameters[0]).getContentListAsString(),
-                        false, true
+                        false
                     );
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false);
         },
         description: 'List all the folders and files.\n' +
             'Usage: ls [folder_path]'
@@ -341,13 +361,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 1) {
                 try {
                     currentTabRecord.terminalCore.getCurrentFolderPointer().gotoPath(parameters[0]);
-                    currentTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false);
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false);
         },
         description: 'Goto the given folder.\n' +
             'Usage: cd [folder_path]'
@@ -359,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (_) => {
             currentTabRecord.terminalCore.printToWindow(
                 currentTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
-                false, true
+                false
             );
         },
         description: 'Print the current full path.'
@@ -374,18 +394,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-f') {
                     try {
                         cfp.movePath('file', parameters[1], parameters[2]);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the file.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the file.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
                 if (parameters[0] === '-d') {
                     try {
                         cfp.movePath('directory', parameters[1], parameters[2]);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the directory.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully moved the directory.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -394,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: mv -f [original_file_path] [destination_file_path]\n' +
                 '       mv -d [original_directory_path] [destination_directory_path]',
-                false, true
+                false
             );
         },
         description: 'mv an existing file or directory.\n' +
@@ -411,18 +431,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-f') {
                     try {
                         cfp.copyPath('file', parameters[1], parameters[2], serialLake);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
                 if (parameters[0] === '-d') {
                     try {
                         cfp.copyPath('directory', parameters[1], parameters[2], serialLake);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -431,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: cp -f [original_file_path] [destination_file_path]\n' +
                 '       cp -d [original_directory_path] [destination_directory_path]',
-                false, true
+                false
             );
         },
         description: 'Copy an existing file or directory.\n' +
@@ -448,18 +468,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-f') {
                     try {
                         cfp.deletePath('file', parameters[1]);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the file.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the file.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
                 if (parameters[0] === '-d') {
                     try {
                         cfp.deletePath('directory', parameters[1]);
-                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the directory.`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`Successfully removed the directory.`, false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -468,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: rm -f [file_path]\n' +
                 '       rm -d [directory_path]',
-                false, true
+                false
             );
         },
         description: 'Remove (delete) an existing file or directory.\n' +
@@ -485,14 +505,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
                     currentTabRecord.terminalCore.printToWindow(
                         currentTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
-                        false, true
+                        false
                     );
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false);
         },
         description: 'Print an existing file to the terminal window.\n' +
             'Usage: print [file_path]'
@@ -606,13 +626,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTabRecord.terminalCore.setDefaultKeyboardListener();
                         }
                     );
-                    currentTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false);
                 } catch (error) {
-                    currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false, true);
+            currentTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false);
         },
         description: 'Edit an existing file.\n' +
             'Usage: edit [file_path]'
@@ -625,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 1 && parameters[0] === '-l') { // Command: "mini -l"
                 const cmwrList = currentTabRecord.terminalCore.getMinimizedWindowRecords().getList();
                 if (cmwrList.length === 0) {
-                    currentTabRecord.terminalCore.printToWindow('No window minimized...', false, true);
+                    currentTabRecord.terminalCore.printToWindow('No window minimized...', false);
                 } else {
                     currentTabRecord.terminalCore.printToWindow(
                         'Minimized Windows:' + cmwrList.reduce(
@@ -633,8 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 `${acc}\n                    [${index}] ${description}`,
                             ''
                         ),
-                        false,
-                        true
+                        false
                     );
                 }
                 return;
@@ -644,12 +663,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     cmwr = currentTabRecord.terminalCore.getMinimizedWindowRecords(),
                     result = cmwr.recoverWindow(Number.parseInt(parameters[1], 10));
                 if (result === null) {
-                    currentTabRecord.terminalCore.printToWindow('Wrong index!', false, true);
+                    currentTabRecord.terminalCore.printToWindow('Wrong index!', false);
                 } else if (result === true) {
                     currentTabRecord.terminalCore.printToWindow(
                         'Successfully recovered the window.\n' +
                         'Note: Window indices are refrshed after this operation!',
-                        false, true
+                        false
                     );
                 }
                 return;
@@ -658,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: mini -l\n' +
                 '       mini -r [number]',
-                false, true
+                false
             );
         },
         description: 'List all the minimized windows, or Re-open a minimized window.\n' +
@@ -689,10 +708,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         URL.revokeObjectURL(url);
                         currentTabRecord.terminalCore.printToWindow(
                             'Successfully downloaded the file.',
-                            false, true
+                            false
                         );
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -708,10 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         URL.revokeObjectURL(url);
                         currentTabRecord.terminalCore.printToWindow(
                             'Successfully downloaded the directory.',
-                            false, true
+                            false
                         );
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -720,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Wrong grammar!\n' +
                 'Usage: download -f [file_path]\n' +
                 '       download -d [directory_path]',
-                false, true
+                false
             );
         },
         description: 'Download a single file or a directory (as .zip file) in the terminal file system.\n' +
@@ -759,16 +778,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             (res) => res.json()
                         );
                         if (connection !== true) {
-                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false);
                             return;
                         }
                         if (error !== undefined) { // has error
-                            currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                            currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                             return;
                         }
-                        currentTabRecord.terminalCore.printToWindow(' --> Successfully registered a user key.', false, true);
+                        currentTabRecord.terminalCore.printToWindow(' --> Successfully registered a user key.', false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -791,21 +810,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             (res) => res.json()
                         );
                         if (connection !== true) {
-                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false);
                             return;
                         }
                         if (error !== undefined) { // has error
-                            currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                            currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                             return;
                         }
                         if (result !== true) {
-                            currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('The user key does not exist.', false);
                             return;
                         }
                         currentTabRecord.terminalCore.printToWindow(
                             ' --> The user key is valid.\n' +
                             ' --> Generating the configuration file at /.mycloud_conf.\n'
-                            , false, true
+                            , false
                         );
                         if (fsRoot.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
                             fsRoot.getFile('.mycloud_conf').setContent(`${parameters[0]}\n${parameters[1]}`);
@@ -815,10 +834,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         currentTabRecord.terminalCore.printToWindow(
                             ' --> Successfully configured MyCloud Client.',
-                            false, true
+                            false
                         );
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -826,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 1) {
                 // get the configuration file
                 if (!fsRoot.hasFile('.mycloud_conf')) {
-                    currentTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false);
                     return;
                 }
                 const
@@ -839,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ippIndex === -1 || enterIndex === -1 || keyIndex === -1 ||
                     ippIndex + 4 >= enterIndex || enterIndex >= keyIndex || keyIndex + 4 >= confContent.length - 1
                 ) {
-                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false);
                     return;
                 }
                 const
@@ -847,11 +866,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_key = confContent.substring(keyIndex + 5);
                 // check the content of <ipp> and <user_key>
                 if (ipp.length === 0 || user_key.length === 0) {
-                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false);
                     return;
                 }
                 if (parameters[0] === '-backup') { // Command: mycloud -backup
-                    currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false);
                     try {
                         const jsonFetches = fsRoot.getFilesAsList().map((file) =>
                             fetch( // {connection, error}
@@ -901,31 +920,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         let failure = false;
                         settledResults.forEach((settledResult) => {
                             if (settledResult.status === 'rejected') {
-                                currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
+                                currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
                                 failure = true;
                             } else if (settledResult.status === 'fulfilled') {
                                 const {connection, error} = settledResult.value;
                                 if (connection !== true) {
-                                    currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
+                                    currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false);
                                     failure = true;
                                 } else if (error !== undefined) { // has error
-                                    currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
+                                    currentTabRecord.terminalCore.printToWindow(`${error}\n`, false);
                                     failure = true;
                                 }
                             }
                         });
                         if (failure) {
-                            currentTabRecord.terminalCore.printToWindow('Failed to back up the file system.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('Failed to back up the file system.', false);
                         } else {
-                            currentTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system.', false, true);
+                            currentTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system.', false);
                         }
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
                 if (parameters[0] === '-recover') { // Command: mycloud -recover
-                    currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".\n`, false, true);
+                    currentTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".\n`, false);
                     try {
                         // get the ROOT map
                         const bodyROOT = await fetch( // {connection=true, error, __serial__IGNORED__, content, __created_at__IGNORED__, __updated_at__IGNORED__}
@@ -946,15 +965,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             (res) => res.json()
                         );
                         if (bodyROOT.connection !== true) {
-                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBodyROOT.connection" is not true.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBodyROOT.connection" is not true.', false);
                             return;
                         }
                         if (bodyROOT.error !== undefined) {
-                            currentTabRecord.terminalCore.printToWindow(`${bodyROOT.error}`, false, true);
+                            currentTabRecord.terminalCore.printToWindow(`${bodyROOT.error}`, false);
                             return;
                         }
                         if (typeof bodyROOT.content !== 'string') {
-                            currentTabRecord.terminalCore.printToWindow('The ROOT map is illegal.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('The ROOT map is illegal.', false);
                             return;
                         }
                         // check the information in <plainRootFolderObject>
@@ -1057,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             filesMap = settledResults.reduce(
                                 (acc, settledResult) => {
                                     if (settledResult.status === 'rejected') {
-                                        currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false, true);
+                                        currentTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
                                         failure = true;
                                     } else if (settledResult.status === 'fulfilled') {
                                         const {
@@ -1065,10 +1084,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                             serial, content, created_at, updated_at
                                         } = settledResult.value;
                                         if (connection !== true) {
-                                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false, true);
+                                            currentTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false);
                                             failure = true;
                                         } else if (error !== undefined) { // has error
-                                            currentTabRecord.terminalCore.printToWindow(`${error}\n`, false, true);
+                                            currentTabRecord.terminalCore.printToWindow(`${error}\n`, false);
                                             failure = true;
                                         } else if (
                                             typeof serial !== 'string' || serial.length === 0 ||
@@ -1076,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             typeof created_at !== 'string' || created_at.length === 0 ||
                                             typeof updated_at !== 'string' || updated_at.length === 0
                                         ) {
-                                            currentTabRecord.terminalCore.printToWindow('A file is illegal.\n', false, true);
+                                            currentTabRecord.terminalCore.printToWindow('A file is illegal.\n', false);
                                             failure = true;
                                         } else {
                                             acc[serial] = new File(serial, content, created_at, updated_at);
@@ -1119,16 +1138,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             };
                         if (failure) {
-                            currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false, true);
+                            currentTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false);
                             return;
                         }
                         // recover <serialLake> with <fileSerials>
                         serialLake.recover(fileSerials);
                         // recover fsRoot with <plainRootFolderObject> and <filesMap>
                         recoverFSRoot(plainRootFolderObject, fsRoot.clear());
-                        currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false, true);
+                        currentTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system.', false);
                     } catch (error) {
-                        currentTabRecord.terminalCore.printToWindow(`${error}`, false, true);
+                        currentTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
                     return;
                 }
@@ -1139,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
                 '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
                 '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n',
-                false, true
+                false
             );
         },
         description: 'Backup and recover the terminal file system to MyCloud server.\n' +

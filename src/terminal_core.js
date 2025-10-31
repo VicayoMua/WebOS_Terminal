@@ -8,6 +8,11 @@
 * **************************************************************************************************************
 * */
 
+// import XTerm-related Classes
+import {Terminal} from "https://cdn.jsdelivr.net/npm/@xterm/xterm/+esm";
+import {FitAddon} from "https://cdn.jsdelivr.net/npm/@xterm/addon-fit/+esm";
+import {SerializeAddon} from "https://cdn.jsdelivr.net/npm/@xterm/addon-serialize/+esm";
+
 const
     /**
      * This function returns a string representing this date in the date time string format, UTC.
@@ -1424,17 +1429,17 @@ class MinimizedWindowRecords {
  * This structure represents the core services of the terminal, handling all the terminal interfaces.
  * */
 class TerminalCore {
-    /** @type {window.Terminal} */
+    /** @type {Terminal} */
     #xtermObj;
     /** @type {HTMLDivElement} */
     #terminalWindowContainer;
     /** @type {Folder} */
     #fsRoot;
 
-    /** @type {window.FitAddon.FitAddon | null} */
+    /** @type {SerializeAddon | null} */
+    #serializeAddon;
+    /** @type {FitAddon | null} */
     #fitAddon;
-    /** @type {string[]} */
-    #terminalLog;
     /** @type {Object | null} */
     #currentXTermKeyboardListener;
     /** @type {CommandInputHandler} */
@@ -1481,12 +1486,6 @@ class TerminalCore {
                 case '\x1b[D': { // Left arrow
                     break;
                 }
-                case '\u0003': { // Ctrl+C
-                    this.#commandInputHandler.clear();
-                    this.#xtermObj.write('^C\n\n\r $ ');
-                    this.#terminalLog.push('^C\n\n $ ');
-                    break;
-                }
                 case '\u000C': { // Ctrl+L
                     this.#xtermObj.write(`\x1b[2J\x1b[H $ `);
                     this.#xtermObj.write(this.#commandInputHandler.toString());
@@ -1495,14 +1494,12 @@ class TerminalCore {
                 case '\u007F': { // Backspace
                     if (this.#commandInputHandler.removeChar()) { // if the char is successfully removed from the buffer
                         this.#xtermObj.write('\b \b');
-                        this.#terminalLog.pop(); // because commandInputHandler.removeChar() is success!!
                     }
                     break;
                 }
                 case '\r': { // Enter
                     this.clearKeyboardListener();
                     this.#xtermObj.write('\n\r   ');
-                    this.#terminalLog.push('\n   ');
                     const [statusCode, commandName] = await this.#commandInputHandler.execute();
                     switch (statusCode) {
                         case 0: {
@@ -1511,12 +1508,10 @@ class TerminalCore {
                         }
                         case 1: {
                             this.#xtermObj.write(`${commandName}: command not found`);
-                            this.#terminalLog.push(`${commandName}: command not found`);
                             break;
                         }
                         case 2: {
                             this.#xtermObj.write(`${commandName}: command failed due to uncaught errors in the command implementation`);
-                            this.#terminalLog.push(`${commandName}: command failed due to uncaught errors in the command implementation`);
                             break;
                         }
                         default: {
@@ -1524,7 +1519,6 @@ class TerminalCore {
                     }
                     this.#commandInputHandler.clear();
                     this.#xtermObj.write('\n\n\r $ ');
-                    this.#terminalLog.push('\n\n $ ');
                     this.setDefaultKeyboardListener();
                     break;
                 }
@@ -1533,7 +1527,6 @@ class TerminalCore {
                         // if (char >= String.fromCharCode(0x20) && char <= String.fromCharCode(0x7E) || char >= '\u00a0') {
                         this.#commandInputHandler.addChar(char);
                         this.#xtermObj.write(char);
-                        this.#terminalLog.push(char);
                         // }
                     }
                 }
@@ -1544,7 +1537,7 @@ class TerminalCore {
     /**
      * This method generates a unified terminal interface.
      * Because this is a basic set-up method, type-checks are omitted!!!
-     * @param {window.Terminal} xtermObj
+     * @param {Terminal} xtermObj
      * @param {HTMLDivElement} terminalWindowContainer
      * @param {Folder} fsRoot
      * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
@@ -1557,24 +1550,22 @@ class TerminalCore {
         // Put Terminal Window to Webpage Container
         this.#xtermObj.open(this.#terminalWindowContainer);
 
-        // Create Terminal Log Array
-        this.#terminalLog = [];
-
-        // Initialize Terminal Window Display
-        this.#xtermObj.write(` $ `);
-        this.#terminalLog.push(` $ `);
+        // Enable SerializeAddon
+        try {
+            this.#serializeAddon = new SerializeAddon();
+            this.#xtermObj.loadAddon(this.#serializeAddon);
+        } catch (error) {
+            this.#serializeAddon = null;
+            alert(`Failed to load the serialize-addon (${error}).`);
+        }
 
         // Enabled Fit Addon
-        if ('FitAddon' in window && 'FitAddon' in window.FitAddon) {
-            try {
-                this.#fitAddon = new window.FitAddon.FitAddon(); // Load the Fit Addon
-                this.#xtermObj.loadAddon(this.#fitAddon); // Add the Fit Addon to xtermObj frame
-            } catch (error) {
-                this.#fitAddon = null;
-                alert(`Found fit-addon, but Failed to load the fit-addon (${error})`);
-            }
-        } else {
-            alert('window.FitAddon.FitAddon does not exist.');
+        try {
+            this.#fitAddon = new FitAddon();
+            this.#xtermObj.loadAddon(this.#fitAddon);
+        } catch (error) {
+            this.#fitAddon = null;
+            alert(`Failed to load the fit-addon (${error}).`);
         }
 
         // Initialize Current Keyboard Listener
@@ -1594,26 +1585,24 @@ class TerminalCore {
 
         // Initialize Terminal Global Folder Pointer Object
         this.#currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
+
+        // Initialize Terminal Window Display
+        this.#xtermObj.write(` $ `);
     }
 
     /**
      * @param {string} sentence
      * @param {boolean} if_print_raw_to_window
-     * @param {boolean} if_print_to_log
      * @param {'white' | 'red' | 'green' | 'blue' | 'yellow'} color
      * @returns {void}
      * @throws {TypeError}
      * */
-    printToWindow(sentence, if_print_raw_to_window, if_print_to_log, color = 'white') { // (string, boolean, boolean) => void
+    printToWindow(sentence, if_print_raw_to_window, color = 'white') { // (string, boolean, boolean) => void
         if (typeof sentence !== 'string')
             throw new TypeError('Sentence must be a string.');
         if (typeof if_print_raw_to_window !== 'boolean')
             throw new TypeError('if_print_raw_to_window must be a boolean.');
-        if (typeof if_print_to_log !== 'boolean')
-            throw new TypeError('if_print_to_log must be a boolean.');
         // type check for color is not decided yet!!!
-        if (if_print_to_log)
-            this.#terminalLog.push(sentence);
         if (if_print_raw_to_window) {
             this.#xtermObj.write(sentence); // leave <sentence> as it was
         } else {
@@ -1621,8 +1610,15 @@ class TerminalCore {
         }
     }
 
+    // /**
+    //  * @returns {SerializeAddon | null}
+    //  * */
+    // getSerializeAddon() {
+    //     return this.#serializeAddon;
+    // }
+
     /**
-     * @returns {window.FitAddon.FitAddon | null}
+     * @returns {FitAddon | null}
      * */
     getFitAddon() {
         return this.#fitAddon;
@@ -1632,7 +1628,7 @@ class TerminalCore {
      * @returns {string}
      * */
     getTerminalLogAsString() {
-        return this.#terminalLog.reduce((acc, elem) => acc + elem, '');
+        return this.#serializeAddon.serialize();
     }
 
     /**
@@ -1662,11 +1658,22 @@ class TerminalCore {
     getCurrentFolderPointer() {
         return this.#currentTerminalFolderPointer;
     }
-
-    // /**
-    //  * @returns {TerminalFolderPointer}
-    //  * */
-    // getNewFolderPointer() {
-    //     return new TerminalFolderPointer(this.#fsRoot);
-    // }
 }
+
+export {
+    Terminal,
+    FitAddon,
+    SerializeAddon,
+    getISOTimeString,
+    randomInt,
+    legalFileSystemKeyNameRegExp,
+    legalFileSerialRegExp,
+    SerialLake,
+    File,
+    Folder,
+    extractDirAndKeyName,
+    TerminalFolderPointer,
+    CommandInputHandler,
+    MinimizedWindowRecords,
+    TerminalCore
+};
