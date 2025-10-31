@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const
         button_to_switch_theme = document.getElementById('button_to_switch_theme'),
-        div_terminal_container = document.getElementById('terminal-container'),
+        div_terminal_tabs = document.getElementById('terminal-tabs'),
         nav_view_navigation = document.getElementById('view-navigation'),
         button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
         button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
@@ -94,17 +94,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Record the total tab count & Use it as current tab number
         tabCount++;
         // Create a new <HTMLDivElement> for the new Terminal
-        const divNewTerminal = document.createElement('div');
-        divNewTerminal.setAttribute('class', 'terminal-tab');
-        divNewTerminal.setAttribute('id', `terminal-tab-${tabCount}`);
-        divNewTerminal.style.display = 'none';
-        div_terminal_container.appendChild(divNewTerminal);
+        const divNewTerminalTab = document.createElement('div');
+        divNewTerminalTab.setAttribute('class', 'terminal-tab');
+        divNewTerminalTab.setAttribute('id', `terminal-tab-${tabCount}`);
+        divNewTerminalTab.style.display = 'none';
+        div_terminal_tabs.appendChild(divNewTerminalTab);
         // Create a new terminal core on the new div
         const
             newXTermObject = new Terminal(XTermSetup),
             newTerminalCore = new TerminalCore(
                 newXTermObject,
-                divNewTerminal,
+                divNewTerminalTab,
                 fsRoot,
                 supportedCommands
             );
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // Create a new tab record
         const newTerminalTabRecord = {
-            divTerminal: divNewTerminal,
+            divTerminal: divNewTerminalTab,
             terminalCore: newTerminalCore,
             buttonViewSwitch: buttonNewTerminalViewNavigation,
         };
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tabRecord.buttonViewSwitch.style.fontWeight = 'normal';
                 });
                 buttonNewTerminalViewNavigation.style.fontWeight = 'bold';
-                divNewTerminal.style.display = 'block';
+                divNewTerminalTab.style.display = 'block';
                 // switch the terminal tab record
                 currentTabRecord = newTerminalTabRecord;
             }
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * This function sets up the editor window for the <edit> command.
-     * @param {HTMLDivElement} terminalWindow
+     * @param {HTMLDivElement} terminalWindowTab
      * @param {string} fileName
      * @param {string} orginalFileContent
      * @param {function(windowDescription: string, divAceEditorWindow:HTMLDivElement, aceEditorObject: Object): void} callbackToRecoverMinimizedWindow
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {void}
      * */
     function openFileEditor(
-        terminalWindow,
+        terminalWindowTab,
         fileName, orginalFileContent,
         callbackToRecoverMinimizedWindow, callbackToSaveFile, callbackToCancelEdit
     ) {
@@ -589,15 +589,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             divAceEditorWindow.appendChild(divExitButtons);
         }
-        terminalWindow.appendChild(divAceEditorWindow);
+        terminalWindowTab.appendChild(divAceEditorWindow);
     }
 
     // Finished
     supportedCommands['edit'] = {
         is_async: false,
         executable: (parameters) => {
+            const emptyKBL = (_) => undefined; // empty keyboard listener
             if (parameters.length === 1) {
-                const emptyKBL = (_) => undefined; // empty keyboard listener
                 try {
                     const
                         [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             .getFile(fileName);
                     currentTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                     openFileEditor(
-                        currentTabRecord.terminalCore.getWindowContainer(),
+                        currentTabRecord.terminalCore.getWindowTab(),
                         fileName,
                         file.getContent(),
                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize

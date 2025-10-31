@@ -9,15 +9,13 @@
 * */
 
 // import XTerm-related classes
-import {Terminal} from "./lib/xterm.js";
-import {FitAddon} from "./lib/xterm-addon-fit.js";
-import {SerializeAddon} from "./lib/xterm-addon-serialize.js";
-
+import {Terminal} from "./js_libs/xterm.js";
+import {FitAddon} from "./js_libs/xterm-addon-fit.js";
+import {SerializeAddon} from "./js_libs/xterm-addon-serialize.js";
 // import JSZip class
-import JSZip from "./lib/jszip.js";
-
+import JSZip from "./js_libs/jszip.js";
 // import ACE-Editor class
-import ace from './lib/ace-editor.js';
+import ace from './js_libs/ace-editor.js';
 
 const
     /**
@@ -1438,7 +1436,7 @@ class TerminalCore {
     /** @type {Terminal} */
     #xtermObj;
     /** @type {HTMLDivElement} */
-    #terminalWindowContainer;
+    #terminalWindowTab;
     /** @type {Folder} */
     #fsRoot;
 
@@ -1544,17 +1542,17 @@ class TerminalCore {
      * This method generates a unified terminal interface.
      * Because this is a basic set-up method, type-checks are omitted!!!
      * @param {Terminal} xtermObj
-     * @param {HTMLDivElement} terminalWindowContainer
+     * @param {HTMLDivElement} terminalWindowTab
      * @param {Folder} fsRoot
      * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
      * */
-    constructor(xtermObj, terminalWindowContainer, fsRoot, supportedCommands) {
+    constructor(xtermObj, terminalWindowTab, fsRoot, supportedCommands) {
         this.#xtermObj = xtermObj;
-        this.#terminalWindowContainer = terminalWindowContainer;
+        this.#terminalWindowTab = terminalWindowTab;
         this.#fsRoot = fsRoot;
 
-        // Put Terminal Window to Webpage Container
-        this.#xtermObj.open(this.#terminalWindowContainer);
+        // Set up an XTerminal Window to <terminalWindowTab>
+        this.#xtermObj.open(this.#terminalWindowTab);
 
         // Enable SerializeAddon
         try {
@@ -1640,8 +1638,8 @@ class TerminalCore {
     /**
      * @returns {HTMLDivElement}
      * */
-    getWindowContainer() {
-        return this.#terminalWindowContainer;
+    getWindowTab() {
+        return this.#terminalWindowTab;
     }
 
     /**

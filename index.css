@@ -154,8 +154,8 @@ body.dark-body-mode {
     color: var(--accent-color-contrast);
 }
 
-/* Styles for the <terminal-container> */
-.terminal-container {
+/* Styles for the <terminal-tabs> */
+.terminal-tabs {
     grid-row: 3;
     grid-column: 1;
     display: grid;
