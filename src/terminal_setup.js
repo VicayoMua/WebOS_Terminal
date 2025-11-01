@@ -547,8 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const divAceEditorContainer = document.createElement('div');
             divAceEditorContainer.classList.add('ace-editor-container');
             const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
-                mode: "ace/mode/javascript",
-                selectionStyle: "text"
+                // mode: "ace/mode/javascript",
+                // selectionStyle: "text"
             });
             aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
             aceEditorObject.setOptions({
