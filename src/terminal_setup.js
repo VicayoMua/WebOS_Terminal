@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create a new <HTMLButtonElement> for the view switch for the new terminal core
         const buttonNewTerminalViewNavigation = document.createElement('button');
         buttonNewTerminalViewNavigation.type = 'button';
-        buttonNewTerminalViewNavigation.textContent = `{ Tab #${tabCount} }`;
+        buttonNewTerminalViewNavigation.textContent = `Tab #${tabCount}`;
         buttonNewTerminalViewNavigation.style.fontWeight = 'normal';
         buttonNewTerminalViewNavigation.addEventListener('mouseover', () => {
             buttonNewTerminalViewNavigation.style.textDecoration = 'underline';
