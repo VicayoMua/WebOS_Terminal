@@ -3,7 +3,6 @@ import {
     FitAddon,
     SerializeAddon,
     // JSZip,
-    ace,
     getISOTimeString,
     randomInt,
     legalFileSystemKeyNameRegExp,
@@ -547,7 +546,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ace-Editor container
             const divAceEditorContainer = document.createElement('div');
             divAceEditorContainer.classList.add('ace-editor-container');
-            const aceEditorObject = ace.edit(divAceEditorContainer); // Create Ace editor in the div container
+            const aceEditorObject = ace.edit( // Create Ace editor in the div container
+                divAceEditorContainer,
+                // {
+                //     mode: "ace/mode/javascript",
+                //     selectionStyle: "text"
+                // }
+            );
             aceEditorObject.setValue(orginalFileContent);  // Set the initial content of the file
             aceEditorObject.setOptions({
                 fontSize: "14px",   // Set font size
@@ -556,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             aceEditorObject.focus();
             divAceEditorWindow.appendChild(divAceEditorContainer);
 
-            // exit buttons
+            // exit buttons container
             const divExitButtons = document.createElement('div');
             divExitButtons.classList.add('ace-editor-exit-buttons-container');
             {

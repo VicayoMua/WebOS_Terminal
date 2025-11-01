@@ -14,8 +14,6 @@ import {FitAddon} from "./js_libs/xterm-addon-fit.js";
 import {SerializeAddon} from "./js_libs/xterm-addon-serialize.js";
 // import JSZip class
 import JSZip from "./js_libs/jszip.js";
-// import ACE-Editor class
-import ace from './js_libs/ace-editor.js';
 
 const
     /**
@@ -1669,7 +1667,6 @@ export {
     FitAddon,
     SerializeAddon,
     // JSZip,
-    ace,
     getISOTimeString,
     randomInt,
     legalFileSystemKeyNameRegExp,
