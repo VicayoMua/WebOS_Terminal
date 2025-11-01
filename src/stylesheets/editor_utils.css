@@ -1,31 +1,40 @@
 .ace-editor-window {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 50px 1fr 50px;
+    grid-template-rows: auto 1fr auto;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #1e1e1e;
+    background-color: var(--header-color, #ffffff);
     padding: 20px;
-    border: 2px solid #888;
-    border-radius: 8px;
+    border: 1px solid var(--boarder-color, #e6e8ee);
+    border-radius: 14px;
     z-index: 9999; /* make the window always in the front */
     width: 60%;
     height: 60%;
+    min-width: 400px;
+    min-height: 300px;
+    box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
+    color: var(--text-color, #111317);
 }
 
 .ace-editor-title { /* row 1 */
     grid-column: 1/1;
     grid-row: 1/1;
-    margin-top: 5px;
-    color: #fff;
+    margin: 0 0 16px 0;
+    color: var(--text-color, #111317);
+    font-size: 24px;
+    font-weight: 600;
 }
 
 .ace-editor-container { /* row 2 */
     grid-column: 1/1;
     grid-row: 2/2;
-    margin-top: 0;
+    margin: 0;
+    border: 1px solid var(--boarder-color, #e6e8ee);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .ace-editor-exit-buttons-container { /* row 3 */
@@ -33,35 +42,60 @@
     grid-row: 3/3;
     margin-top: 20px;
     text-align: right; /* the position of save and cancel buttons */
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
 
 .ace-editor-exit-buttons-container button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
     cursor: pointer;
     color: white;
-    transition: transform 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .ace-editor-exit-buttons-container button:hover {
     transform: translateY(-1.5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .ace-editor-exit-buttons-container button:active {
     transform: translateY(0);
 }
 
+.ace-editor-exit-buttons-container button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
+}
+
 .ace-editor-minimize-button {
-    background-color: rebeccapurple;
-    margin-right: 20px; /* the gap between minimize and save buttons */
+    background-color: var(--accent-color, #7c3aed);
+    margin-right: 0;
+}
+
+.ace-editor-minimize-button:hover {
+    filter: brightness(1.05);
 }
 
 .ace-editor-save-button {
     background-color: #4CAF50;
-    margin-right: 20px; /* the gap between save and cancel buttons */
+    margin-right: 0;
+}
+
+.ace-editor-save-button:hover {
+    filter: brightness(1.1);
 }
 
 .ace-editor-cancel-button {
     background-color: #f44336;
+    margin-right: 0;
+}
+
+.ace-editor-cancel-button:hover {
+    filter: brightness(1.1);
 }

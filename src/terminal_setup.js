@@ -560,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const divExitButtons = document.createElement('div');
             divExitButtons.classList.add('ace-editor-exit-buttons-container');
             {
+                // minimize button
                 const minimizeButton = document.createElement('button');
                 minimizeButton.classList.add('ace-editor-minimize-button');
                 minimizeButton.innerText = `🔽 Minimize`;
@@ -569,6 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 divExitButtons.appendChild(minimizeButton);
 
+                // save button
                 const saveButton = document.createElement('button');
                 saveButton.classList.add('ace-editor-save-button');
                 saveButton.innerText = '💾 Save';
@@ -578,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 divExitButtons.appendChild(saveButton);
 
+                // cancel button
                 const cancelButton = document.createElement('button');
                 cancelButton.classList.add('ace-editor-cancel-button');
                 cancelButton.innerText = '✖ Cancel';
