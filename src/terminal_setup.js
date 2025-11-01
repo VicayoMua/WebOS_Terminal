@@ -546,17 +546,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ace-Editor container
             const divAceEditorContainer = document.createElement('div');
             divAceEditorContainer.classList.add('ace-editor-container');
-            const aceEditorObject = ace.edit( // Create Ace editor in the div container
-                divAceEditorContainer,
-                // {
-                //     mode: "ace/mode/javascript",
-                //     selectionStyle: "text"
-                // }
-            );
-            aceEditorObject.setValue(orginalFileContent);  // Set the initial content of the file
+            const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
+                mode: "ace/mode/javascript",
+                selectionStyle: "text"
+            });
+            aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
             aceEditorObject.setOptions({
-                fontSize: "14px",   // Set font size
-                showPrintMargin: false, // Disable the print margin
+                fontSize: "14px",   // set font size
+                showPrintMargin: false, // disable the print margin
             });
             aceEditorObject.focus();
             divAceEditorWindow.appendChild(divAceEditorContainer);
