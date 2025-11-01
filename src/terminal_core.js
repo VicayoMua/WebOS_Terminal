@@ -27,7 +27,9 @@ const
      * @param {number} max
      * @returns {number}
      * */
-    randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+    utf8Decoder = new TextDecoder('utf-8'),
+    utf8Encoder = new TextEncoder();
 
 /**
  * This regular expression checks whether a string is a legal key-name in the file system.
@@ -98,7 +100,7 @@ class SerialLake {
 class File {
     /** @type {string} */
     #fileSerial;
-    /** @type {string} */
+    /** @type {ArrayBuffer} */
     #content;
     /** @type {string} */
     #created_at;
@@ -107,7 +109,7 @@ class File {
 
     /**
      * @param {string} fileSerial
-     * @param {string} content
+     * @param {ArrayBuffer} content
      * @param {string | undefined} created_at
      * @param {string | undefined} updated_at
      * @throws {TypeError}
@@ -115,14 +117,14 @@ class File {
     constructor(fileSerial, content, created_at = undefined, updated_at = undefined) {
         if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
             throw new TypeError('File serial must be a string that follows the keyname requirements.');
-        if (typeof content !== 'string')
-            throw new TypeError('Content must be a string.');
+        if (!(content instanceof ArrayBuffer))
+            throw new TypeError('Content must be an ArrayBuffer.');
         if ((typeof created_at !== 'string' || created_at.length === 0) && created_at !== undefined)
             throw new TypeError('created_at must be either a non-empty string or undefined.');
         if ((typeof updated_at !== 'string' || updated_at.length === 0) && updated_at !== undefined)
             throw new TypeError('updated_at must be either a non-empty string or undefined.');
         this.#fileSerial = fileSerial;
-        this.#content = content;
+        this.#content = content.slice(0);
         this.#created_at = created_at !== undefined ? created_at : getISOTimeString();
         this.#updated_at = updated_at !== undefined ? updated_at : getISOTimeString();
     }
@@ -135,7 +137,7 @@ class File {
     duplicate(fileSerial) {
         if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
             throw new TypeError('File serial must be a string that follows the keyname requirements.');
-        return new File(fileSerial, this.#content);
+        return new File(fileSerial, this.#content.slice(0));
     }
 
     /**
@@ -146,7 +148,7 @@ class File {
     }
 
     /**
-     * @returns {string}
+     * @returns {ArrayBuffer}
      * */
     getContent() {
         return this.#content;
@@ -167,14 +169,17 @@ class File {
     }
 
     /**
-     * @param {string} newContent
+     * @param {ArrayBuffer} newContent
+     * @param {boolean} do_copy
      * @returns {File}
      * @throws {TypeError}
      * */
-    setContent(newContent) {
-        if (typeof newContent !== 'string')
-            throw new TypeError('New content must be a string.');
-        this.#content = newContent;
+    setContent(newContent, do_copy) {
+        if (!(newContent instanceof ArrayBuffer))
+            throw new TypeError('New content must be an ArrayBuffer.');
+        if (typeof do_copy !== 'boolean')
+            throw new TypeError('do_copy must be a boolean.');
+        this.#content = do_copy ? newContent.slice(0) : newContent;
         this.#updated_at = getISOTimeString();
         return this;
     }
@@ -346,7 +351,7 @@ class Folder {
                 i++;
             fileName = `${fileName} ${i}`;
         }
-        return [(this.#files[fileName] = new File(fileSerial, '')), fileName];
+        return [(this.#files[fileName] = new File(fileSerial, new ArrayBuffer(0))), fileName];
     }
 
     /**
@@ -1669,6 +1674,8 @@ export {
     // JSZip,
     getISOTimeString,
     randomInt,
+    utf8Decoder,
+    utf8Encoder,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,

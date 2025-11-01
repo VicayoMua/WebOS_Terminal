@@ -5,6 +5,8 @@ import {
     // JSZip,
     getISOTimeString,
     randomInt,
+    utf8Decoder,
+    utf8Encoder,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -173,34 +175,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '';
-        // set up a reader for __every__ file
-        const reader = new FileReader();
+        input.multiple = true;
         // set up the file input element
-        input.onchange = (input_event) =>
-            Object.values(input_event.target.files).forEach((file) => {
-                if (!file) { // user hit "cancel"
-                    alert('button_to_add_files_to_terminal: no file is added.');
-                    return;
-                }
+        input.addEventListener('change', (input_event) => {
+            if (input_event.target === undefined || input_event.target.files === undefined)
+                return;
+            for (const file of input_event.target.files) {
+                if (!file) continue;
                 if (typeof file.name !== 'string') { // filename is illegal
                     alert('button_to_add_files_to_terminal: file name must be a string.');
                     return;
                 }
-                // set up behaviors on errors
-                reader.onerror = (error) => {
-                    alert(`button_to_add_files_to_terminal: error reading the file '${file.name}', ${error}.`);
-                };
-                // set up behaviors on loading
-                reader.onload = (reader_event) => {
-                    const
-                        fileContent = reader_event.target.result,
-                        [newFile, newFileName] = currentTerminalTabRecord.terminalCore
+                const reader = new FileReader();
+                {
+                    // set up behaviors on errors
+                    reader.onerror = (error) => {
+                        alert(`button_to_add_files_to_terminal: error reading the file "${file.name}". (${error})`);
+                    };
+                    // set up behaviors on loading
+                    reader.onload = (reader_event) => {
+                        const fileContent = reader_event.target.result;
+                        if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
+                            alert(`button_to_add_files_to_terminal: unexpected error when loading "${file.name}".`);
+                            return;
+                        }
+                        const [newFile, _] = currentTerminalTabRecord.terminalCore
                             .getCurrentFolderPointer()
                             .getCurrentFolder()
                             .createFile(true, file.name, serialLake.generateNext());
-                    newFile.setContent(fileContent);
-                    alert(`Successfully added file "${newFileName}" to the current directory.`);
-                };
+                        if (typeof fileContent === 'string') {
+                            newFile.setContent(utf8Encoder.encode(fileContent).buffer, false);
+                        } else if (fileContent instanceof ArrayBuffer) {
+                            newFile.setContent(fileContent, false);
+                        }
+                    };
+                }
                 // Check the file type to determine HOW to read it
                 if (typeof file.type === 'string' && file.type.startsWith('text/')) {
                     // Read as text if the file is a text-based file
@@ -209,7 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Read as binary (ArrayBuffer) for non-text files (e.g., images)
                     reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
                 }
-            });
+            }
+            alert(`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
+        });
         // activate the file input element
         input.click();
     });
@@ -510,11 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    const [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
-                    currentTerminalTabRecord.terminalCore.printToWindow(
-                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent(),
-                        false
-                    );
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
+                        fileContent = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent();
+                    currentTerminalTabRecord.terminalCore.printToWindow(utf8Decoder.decode(fileContent), false, 'green');
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
@@ -617,12 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             .getCurrentFolderPointer()
                             .duplicate()
                             .gotoPath(fileDir)
-                            .getFile(fileName);
+                            .getFile(fileName),
+                        fileContent = file.getContent();
                     currentTerminalTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                     openFileEditor(
                         currentTerminalTabRecord.terminalCore.getWindowTab(),
                         fileName,
-                        file.getContent(),
+                        utf8Decoder.decode(fileContent),
                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
                             const cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords();
                             cmwr.add(windowDescription, () => {
@@ -633,14 +644,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
                         },
                         (newFileContent) => { // save
-                            file.setContent(newFileContent);
+                            file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
                             currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
                         },
                         () => { // cancel
                             currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
                         }
                     );
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Successfully opened an editor.`, false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(`Successfully opened a text editor.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
@@ -841,10 +852,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             , false
                         );
                         if (fsRoot.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
-                            fsRoot.getFile('.mycloud_conf').setContent(`${parameters[0]}\n${parameters[1]}`);
+                            fsRoot.getFile('.mycloud_conf').setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
                         } else {
                             const [file, _] = fsRoot.createFile(false, '.mycloud_conf', serialLake.generateNext());
-                            file.setContent(`${parameters[0]}\n${parameters[1]}`);
+                            file.setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
                         }
                         currentTerminalTabRecord.terminalCore.printToWindow(
                             ' --> Successfully configured MyCloud Client.',
@@ -863,7 +874,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const
-                    confContent = fsRoot.getFile('.mycloud_conf').getContent(),
+                    confFileContent = fsRoot.getFile('.mycloud_conf').getContent(),
+                    confContent = utf8Decoder.decode(confFileContent),
                     ippIndex = confContent.indexOf('-ipp='),
                     enterIndex = confContent.indexOf('\n'),
                     keyIndex = confContent.indexOf('-key=');
@@ -1112,7 +1124,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                             currentTerminalTabRecord.terminalCore.printToWindow('A file is illegal.\n', false);
                                             failure = true;
                                         } else {
-                                            acc[serial] = new File(serial, content, created_at, updated_at);
+                                            const uint8 = utf8Encoder.encode(content);
+                                            acc[serial] = new File(serial, uint8.buffer, created_at, updated_at);
                                         }
                                     }
                                     return acc;
@@ -1194,6 +1207,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // // Update Needed
     supportedCommands['wget'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // // Update Needed
+    supportedCommands['zip'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // // Update Needed
+    supportedCommands['unzip'] = {
         is_async: true,
         executable: async (parameters) => {
             //
