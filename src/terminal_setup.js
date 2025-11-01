@@ -564,30 +564,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const minimizeButton = document.createElement('button');
                 minimizeButton.classList.add('ace-editor-minimize-button');
                 minimizeButton.innerText = `🔽 Minimize`;
-                minimizeButton.onclick = () => {
+                minimizeButton.addEventListener('click', () => {
                     callbackToRecoverMinimizedWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
                     divAceEditorWindow.style.display = 'none'; // hide but not remove
-                };
+                });
                 divExitButtons.appendChild(minimizeButton);
 
                 // save button
                 const saveButton = document.createElement('button');
                 saveButton.classList.add('ace-editor-save-button');
                 saveButton.innerText = '💾 Save';
-                saveButton.onclick = () => {
+                saveButton.addEventListener('click', () => {
                     callbackToSaveFile(aceEditorObject.getValue());
                     divAceEditorWindow.remove();
-                };
+                });
                 divExitButtons.appendChild(saveButton);
 
                 // cancel button
                 const cancelButton = document.createElement('button');
                 cancelButton.classList.add('ace-editor-cancel-button');
                 cancelButton.innerText = '✖ Cancel';
-                cancelButton.onclick = () => {
+                cancelButton.addEventListener('click', () => {
                     callbackToCancelEdit();
                     divAceEditorWindow.remove();
-                };
+                });
                 divExitButtons.appendChild(cancelButton);
             }
             divAceEditorWindow.appendChild(divExitButtons);
