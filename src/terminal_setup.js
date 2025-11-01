@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .duplicate()
-                        .gotoPath(fileDir)
+                        .createPath(fileDir, true)
                         .createFile(false, fileName, serialLake.generateNext());
                     currentTerminalTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false);
                 } catch (error) {
@@ -670,8 +670,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             .duplicate()
                             .gotoPath(fileDir)
                             .getFile(fileName)
-                            .getContent();
-                    currentTerminalTabRecord.terminalCore.printToWindow(utf8Decoder.decode(fileContent), false, 'green');
+                            .getContent(),
+                        fileString = utf8Decoder.decode(fileContent);
+                    currentTerminalTabRecord.terminalCore.printToWindow(
+                        fileString.length === 0 ? '<EMPTY FILE>' : fileString,
+                        false, 'green'
+                    );
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
