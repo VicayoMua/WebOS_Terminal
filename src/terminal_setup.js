@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['print'] = {
+    supportedCommands['fprint'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -530,10 +530,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: print [file_path]`, false);
+            currentTerminalTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: fprint [file_path]',
+                false
+            );
         },
         description: 'Print an existing file to the terminal window.\n' +
-            'Usage: print [file_path]'
+            'Usage: fprint [file_path]'
     };
 
     /**
