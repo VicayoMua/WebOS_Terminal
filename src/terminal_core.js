@@ -1395,8 +1395,8 @@ class MinimizedWindowRecords {
      * @throws {TypeError}
      * */
     recoverWindow(index) {
-        if (typeof index !== 'number')
-            throw new TypeError('Index must be a number.');
+        if (typeof index !== 'number' || !Number.isInteger(index) || index < 0)
+            throw new TypeError('Index must be a natural number.');
         if (this.#records[index] === undefined)
             return null;
         const [_, windowRecoverCallback] = this.#records[index];

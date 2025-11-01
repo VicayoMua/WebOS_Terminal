@@ -310,17 +310,22 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().createFile(false, parameters[0], serialLake.generateNext());
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .duplicate()
+                        .gotoPath(fileDir)
+                        .createFile(false, fileName, serialLake.generateNext());
                     currentTerminalTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_name]`, false);
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_path]`, false);
         },
         description: 'Make a new file in the current directory.\n' +
-            'Usage: touch [file_name]'
+            'Usage: touch [file_path]'
     };
 
     // Finished
@@ -329,7 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().createPath(parameters[0], false);
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .createPath(parameters[0], false);
                     currentTerminalTabRecord.terminalCore.printToWindow(
                         `Successfully created a directory. (Note that the directory may be already existing!)`,
                         false
@@ -351,7 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 0) {
                 currentTerminalTabRecord.terminalCore.printToWindow(
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getCurrentFolder().getContentListAsString(),
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .getCurrentFolder()
+                        .getContentListAsString(),
                     false
                 );
                 return;
@@ -359,7 +367,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 1) {
                 try {
                     currentTerminalTabRecord.terminalCore.printToWindow(
-                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(parameters[0]).getContentListAsString(),
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(parameters[0])
+                            .getContentListAsString(),
                         false
                     );
                 } catch (error) {
@@ -379,7 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().gotoPath(parameters[0]);
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .gotoPath(parameters[0]);
                     currentTerminalTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -397,11 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
-                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
+                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                    .getFullPath(),
                 false
             );
         },
-        description: 'Print the current full path.'
+        description: 'Print the full path of the current folder.'
     };
 
     // Finished
@@ -409,10 +422,10 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 3) {
-                const cfp = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') {
                     try {
-                        cfp.movePath('file', parameters[1], parameters[2]);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .movePath('file', parameters[1], parameters[2]);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully moved the file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -421,7 +434,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[0] === '-d') {
                     try {
-                        cfp.movePath('directory', parameters[1], parameters[2]);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .movePath('directory', parameters[1], parameters[2]);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully moved the directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -446,10 +460,10 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 3) {
-                const cfp = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') {
                     try {
-                        cfp.copyPath('file', parameters[1], parameters[2], serialLake);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .copyPath('file', parameters[1], parameters[2], serialLake);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -458,7 +472,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[0] === '-d') {
                     try {
-                        cfp.copyPath('directory', parameters[1], parameters[2], serialLake);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .copyPath('directory', parameters[1], parameters[2], serialLake);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -483,10 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 2) {
-                const cfp = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer();
                 if (parameters[0] === '-f') {
                     try {
-                        cfp.deletePath('file', parameters[1]);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .deletePath('file', parameters[1]);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully removed the file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -495,7 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[0] === '-d') {
                     try {
-                        cfp.deletePath('directory', parameters[1]);
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .deletePath('directory', parameters[1]);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully removed the directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -513,31 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
         description: 'Remove (delete) an existing file or directory.\n' +
             'Usage: rm -f [file_path]\n' +
             '       rm -d [directory_path]'
-    };
-
-    // Finished
-    supportedCommands['fprint'] = {
-        is_async: false,
-        executable: (parameters) => {
-            if (parameters.length === 1) {
-                try {
-                    const
-                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
-                        fileContent = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().duplicate().gotoPath(fileDir).getFile(fileName).getContent();
-                    currentTerminalTabRecord.terminalCore.printToWindow(utf8Decoder.decode(fileContent), false, 'green');
-                } catch (error) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-                }
-                return;
-            }
-            currentTerminalTabRecord.terminalCore.printToWindow(
-                'Wrong grammar!\n' +
-                'Usage: fprint [file_path]',
-                false
-            );
-        },
-        description: 'Print an existing file to the terminal window.\n' +
-            'Usage: fprint [file_path]'
     };
 
     /**
@@ -668,39 +659,76 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['mini'] = {
+    supportedCommands['fprint'] = {
         is_async: false,
         executable: (parameters) => {
-            if (parameters.length === 1 && parameters[0] === '-l') { // Command: "mini -l"
-                const cmwrList = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().getList();
-                if (cmwrList.length === 0) {
-                    currentTerminalTabRecord.terminalCore.printToWindow('No window minimized...', false);
-                } else {
-                    currentTerminalTabRecord.terminalCore.printToWindow(
-                        'Minimized Windows:' + cmwrList.reduce(
-                            (acc, [index, description]) =>
-                                `${acc}\n                    [${index}] ${description}`,
-                            ''
-                        ),
-                        false
-                    );
+            if (parameters.length === 1) {
+                try {
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
+                        fileContent = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(fileDir)
+                            .getFile(fileName)
+                            .getContent();
+                    currentTerminalTabRecord.terminalCore.printToWindow(utf8Decoder.decode(fileContent), false, 'green');
+                } catch (error) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
                 return;
             }
-            if (parameters.length === 2 && parameters[0] === '-r') { // Command: "mini -r [number]"
-                const
-                    cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords(),
-                    result = cmwr.recoverWindow(Number.parseInt(parameters[1], 10));
-                if (result === null) {
-                    currentTerminalTabRecord.terminalCore.printToWindow('Wrong index!', false);
-                } else if (result === true) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(
-                        'Successfully recovered the window.\n' +
-                        'Note: Window indices are refrshed after this operation!',
-                        false
-                    );
+            currentTerminalTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: fprint [file_path]',
+                false
+            );
+        },
+        description: 'Print an existing file to the terminal window.\n' +
+            'Usage: fprint [file_path]'
+    };
+
+    // Finished
+    supportedCommands['mini'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                if (parameters[0] === '-l') { // Command: mini -l
+                    const cmwrList = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().getList();
+                    if (cmwrList.length === 0) {
+                        currentTerminalTabRecord.terminalCore.printToWindow('No window minimized...', false);
+                    } else {
+                        currentTerminalTabRecord.terminalCore.printToWindow(
+                            'Minimized Windows:' + cmwrList.reduce(
+                                (acc, [index, description]) =>
+                                    `${acc}\n                    [${index}] ${description}`,
+                                ''
+                            ),
+                            false
+                        );
+                    }
+                    return;
                 }
-                return;
+            }
+            if (parameters.length === 2) {
+                if (parameters[0] === '-r') { // Command: mini -r [number]
+                    try {
+                        const
+                            cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords(),
+                            result = cmwr.recoverWindow(Number.parseInt(parameters[1], 10));
+                        if (result === null) {
+                            currentTerminalTabRecord.terminalCore.printToWindow('Wrong index!', false);
+                        } else if (result === true) {
+                            currentTerminalTabRecord.terminalCore.printToWindow(
+                                'Successfully recovered the window.\n' +
+                                'Note: Window indices are refrshed after this operation!',
+                                false
+                            );
+                        }
+                    } catch (error) {
+                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+                    }
+                    return;
+                }
             }
             currentTerminalTabRecord.terminalCore.printToWindow(
                 'Wrong grammar!\n' +
