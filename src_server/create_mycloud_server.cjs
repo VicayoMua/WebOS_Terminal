@@ -87,7 +87,7 @@ const
     getISOTimeString = () => new Date().toISOString(),
     utf8Decoder = new TextDecoder('utf-8'),
     utf8Encoder = new TextEncoder(),
-    // MAX_CONTENT_CHARS = 1024 * 1024 * 1024 * 1024, // 1T.
+    // MAX_TEMP_FILE_SIZE = 1024 * 1024 * 1024 * 1024, // 1T.
     // path = require('path');
     HOST = '127.0.0.1',
     PORT = 80;
@@ -317,7 +317,6 @@ app.post('/mycloud/files/backup/', multerUpload.single('content'), async (req, r
         }
     );
 });
-
 
 /**
  * This POST request
