@@ -29,7 +29,26 @@ const
      * */
     randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
     utf8Decoder = new TextDecoder('utf-8'),
-    utf8Encoder = new TextEncoder();
+    utf8Encoder = new TextEncoder(),
+    /**
+     * This function converts <object> to <FormData>
+     * @param {Object} object
+     * @returns {FormData}
+     * @throws {TypeError}
+     * */
+    formData = (object) => {
+        if (typeof object !== 'object')
+            throw new TypeError('Object must be an object.');
+        const formData = new FormData();
+        Object.entries(object).forEach(([key, value]) => {
+            if (typeof key !== 'string')
+                throw new TypeError('Object key must be a string.');
+            if (typeof value !== 'string' && !(value instanceof Blob))
+                throw new TypeError('Object value must be either a string or a FormData.');
+            formData.append(key, value);
+        });
+        return formData;
+    };
 
 /**
  * This regular expression checks whether a string is a legal key-name in the file system.
@@ -1676,6 +1695,7 @@ export {
     randomInt,
     utf8Decoder,
     utf8Encoder,
+    formData,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,

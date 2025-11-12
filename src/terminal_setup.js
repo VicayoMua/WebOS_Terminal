@@ -7,6 +7,7 @@ import {
     randomInt,
     utf8Decoder,
     utf8Encoder,
+    formData,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -77,11 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTerminalTabRecord = null;
     const
         /** @type {Folder} */
-        fsRoot = new Folder(true), // Initialize File System Root
+        _fsRoot_ = new Folder(true), // Initialize File System Root
         /** @type {string} */
         serialMusk = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789',
         /** @type {SerialLake} */
-        serialLake = new SerialLake(() => {
+        _serialLake_ = new SerialLake(() => {
             const serialLen = Math.floor(Math.random() * 3968) + 129; // 4096-128=3968, <serialLen> is within [129,4096]
             let str = '';
             str += serialMusk[randomInt(0, 52)];
@@ -90,146 +91,148 @@ document.addEventListener('DOMContentLoaded', () => {
             return str;
         }),
         /** @type {TerminalTabRecord[]} */
-        terminalTabRecords = [],
+        _terminalTabRecords_ = [],
         /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
-        supportedCommands = {}; // Initialize Supported Commands
-
-    const
-        button_to_switch_theme = document.getElementById('button_to_switch_theme'),
-        div_terminal_tabs = document.getElementById('terminal-tabs'),
-        nav_view_navigation = document.getElementById('view-navigation'),
-        button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
-        button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
-        button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal');
+        _supportedCommands_ = {}; // Initialize Supported Commands
 
     // Set Up Button Functions Links
-    button_to_switch_theme.addEventListener('click', () => {
-        button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
-    });
-    button_to_open_new_terminal_tab.addEventListener('click', () => {
-        // check the tab count limit
-        if (tabCount >= MAX_TAB_COUNT) {
-            alert(`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
-            return;
-        }
-        // record the total tab count & use it as current tab number
-        tabCount++;
-        // create a new <HTMLDivElement> for the new Terminal
-        const divNewTerminalTab = document.createElement('div');
-        divNewTerminalTab.setAttribute('class', 'terminal-tab');
-        divNewTerminalTab.setAttribute('id', `terminal-tab-${tabCount}`);
-        div_terminal_tabs.appendChild(divNewTerminalTab);
-        const newTerminalCore = new TerminalCore(
-            new Terminal(XTermSetup),
-            divNewTerminalTab,
-            fsRoot,
-            supportedCommands
-        );
-        // create a new <HTMLButtonElement> for the view switch for the new terminal core
-        const buttonNewTerminalViewSwitch = document.createElement('button');
-        buttonNewTerminalViewSwitch.type = 'button';
-        buttonNewTerminalViewSwitch.textContent = `Tab #${tabCount}`;
-        nav_view_navigation.appendChild(buttonNewTerminalViewSwitch);
-        // create a new tab record
-        const newTerminalTabRecord = new TerminalTabRecord(
-            divNewTerminalTab,
-            buttonNewTerminalViewSwitch,
-            newTerminalCore
-        );
-        buttonNewTerminalViewSwitch.addEventListener('click', () => {
-            if (currentTerminalTabRecord === null || currentTerminalTabRecord !== newTerminalTabRecord) { // make sure the switch is necessary
-                // change the nav button style and the terminal tab view
-                terminalTabRecords.forEach((tabRecord) => {
-                    tabRecord.divTerminalTab.classList.remove('current-tab');
-                    tabRecord.buttonTerminalViewSwitch.classList.remove('current-tab');
-                });
-                divNewTerminalTab.classList.add('current-tab');
-                buttonNewTerminalViewSwitch.classList.add('current-tab');
-                // switch the terminal tab record
-                currentTerminalTabRecord = newTerminalTabRecord;
-            }
-            setTimeout(() => {
-                const fitAddon = newTerminalCore.getFitAddon();
-                if (fitAddon !== null) fitAddon.fit();
-            }, 100);
-        });
-        terminalTabRecords.push(newTerminalTabRecord);
-        if (currentTerminalTabRecord === null) // if newly-created terminal tab is <Tab #1>
-            buttonNewTerminalViewSwitch.click();
-        window.addEventListener('resize', () => {
-            const fitAddon = newTerminalCore.getFitAddon();
-            if (fitAddon !== null)
-                fitAddon.fit();
-        });
-    });
-    button_to_save_terminal_log.addEventListener('click', () => {
+    {
         const
-            url = URL.createObjectURL(new Blob([currentTerminalTabRecord.terminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
-            link = document.createElement('a');
-        link.href = url;
-        link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
-        link.click();
-        URL.revokeObjectURL(url);
-    });
-    button_to_add_files_to_terminal.addEventListener('click', () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '';
-        input.multiple = true;
-        // set up the file input element
-        input.addEventListener('change', (input_event) => {
-            if (input_event.target === undefined || input_event.target.files === undefined)
-                return;
-            for (const file of input_event.target.files) {
-                if (!file) continue;
-                if (typeof file.name !== 'string') { // filename is illegal
-                    alert('button_to_add_files_to_terminal: file name must be a string.');
-                    return;
-                }
-                const reader = new FileReader();
-                {
-                    // set up behaviors on errors
-                    reader.onerror = (error) => {
-                        alert(`button_to_add_files_to_terminal: error reading the file "${file.name}". (${error})`);
-                    };
-                    // set up behaviors on loading
-                    reader.onload = (reader_event) => {
-                        const fileContent = reader_event.target.result;
-                        if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
-                            alert(`button_to_add_files_to_terminal: unexpected error when loading "${file.name}".`);
-                            return;
-                        }
-                        const [newFile, _] = currentTerminalTabRecord.terminalCore
-                            .getCurrentFolderPointer()
-                            .getCurrentFolder()
-                            .createFile(true, file.name, serialLake.generateNext());
-                        if (typeof fileContent === 'string') {
-                            newFile.setContent(utf8Encoder.encode(fileContent).buffer, false);
-                        } else if (fileContent instanceof ArrayBuffer) {
-                            newFile.setContent(fileContent, false);
-                        }
-                    };
-                }
-                // Check the file type to determine HOW to read it
-                if (typeof file.type === 'string' && file.type.startsWith('text/')) {
-                    // Read as text if the file is a text-based file
-                    reader.readAsText(file);
-                } else {
-                    // Read as binary (ArrayBuffer) for non-text files (e.g., images)
-                    reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
-                }
-            }
-            alert(`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
-        });
-        // activate the file input element
-        input.click();
-    });
+            button_to_switch_theme = document.getElementById('button_to_switch_theme'),
+            div_terminal_tabs = document.getElementById('terminal-tabs'),
+            nav_view_navigation = document.getElementById('view-navigation'),
+            button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
+            button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
+            button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal');
 
-    // Automatically Open Window #1
-    for (let i = 0; i < 20; i++) button_to_open_new_terminal_tab.click();
+        button_to_switch_theme.addEventListener('click', () => {
+            button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+        });
+        button_to_open_new_terminal_tab.addEventListener('click', () => {
+            // check the tab count limit
+            if (tabCount >= MAX_TAB_COUNT) {
+                alert(`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
+                return;
+            }
+            // record the total tab count & use it as current tab number
+            tabCount++;
+            // create a new <HTMLDivElement> for the new Terminal
+            const divNewTerminalTab = document.createElement('div');
+            divNewTerminalTab.setAttribute('class', 'terminal-tab');
+            divNewTerminalTab.setAttribute('id', `terminal-tab-${tabCount}`);
+            div_terminal_tabs.appendChild(divNewTerminalTab);
+            const newTerminalCore = new TerminalCore(
+                new Terminal(XTermSetup),
+                divNewTerminalTab,
+                _fsRoot_,
+                _supportedCommands_
+            );
+            // create a new <HTMLButtonElement> for the view switch for the new terminal core
+            const buttonNewTerminalViewSwitch = document.createElement('button');
+            buttonNewTerminalViewSwitch.type = 'button';
+            buttonNewTerminalViewSwitch.textContent = `Tab #${tabCount}`;
+            nav_view_navigation.appendChild(buttonNewTerminalViewSwitch);
+            // create a new tab record
+            const newTerminalTabRecord = new TerminalTabRecord(
+                divNewTerminalTab,
+                buttonNewTerminalViewSwitch,
+                newTerminalCore
+            );
+            buttonNewTerminalViewSwitch.addEventListener('click', () => {
+                if (currentTerminalTabRecord === null || currentTerminalTabRecord !== newTerminalTabRecord) { // make sure the switch is necessary
+                    // change the nav button style and the terminal tab view
+                    _terminalTabRecords_.forEach((tabRecord) => {
+                        tabRecord.divTerminalTab.classList.remove('current-tab');
+                        tabRecord.buttonTerminalViewSwitch.classList.remove('current-tab');
+                    });
+                    divNewTerminalTab.classList.add('current-tab');
+                    buttonNewTerminalViewSwitch.classList.add('current-tab');
+                    // switch the terminal tab record
+                    currentTerminalTabRecord = newTerminalTabRecord;
+                }
+                setTimeout(() => {
+                    const fitAddon = newTerminalCore.getFitAddon();
+                    if (fitAddon !== null) fitAddon.fit();
+                }, 100);
+            });
+            _terminalTabRecords_.push(newTerminalTabRecord);
+            if (currentTerminalTabRecord === null) // if newly-created terminal tab is <Tab #1>
+                buttonNewTerminalViewSwitch.click();
+            window.addEventListener('resize', () => {
+                const fitAddon = newTerminalCore.getFitAddon();
+                if (fitAddon !== null)
+                    fitAddon.fit();
+            });
+        });
+        button_to_save_terminal_log.addEventListener('click', () => {
+            const
+                url = URL.createObjectURL(new Blob([currentTerminalTabRecord.terminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
+                link = document.createElement('a');
+            link.href = url;
+            link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+        button_to_add_files_to_terminal.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '';
+            input.multiple = true;
+            // set up the file input element
+            input.addEventListener('change', (input_event) => {
+                if (input_event.target === undefined || input_event.target.files === undefined)
+                    return;
+                for (const file of input_event.target.files) {
+                    if (!file) continue;
+                    if (typeof file.name !== 'string') { // filename is illegal
+                        alert('button_to_add_files_to_terminal: file name must be a string.');
+                        return;
+                    }
+                    const reader = new FileReader();
+                    {
+                        // set up behaviors on errors
+                        reader.onerror = (error) => {
+                            alert(`button_to_add_files_to_terminal: error reading the file "${file.name}". (${error})`);
+                        };
+                        // set up behaviors on loading
+                        reader.onload = (reader_event) => {
+                            const fileContent = reader_event.target.result;
+                            if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
+                                alert(`button_to_add_files_to_terminal: unexpected error when loading "${file.name}".`);
+                                return;
+                            }
+                            const [newFile, _] = currentTerminalTabRecord.terminalCore
+                                .getCurrentFolderPointer()
+                                .getCurrentFolder()
+                                .createFile(true, file.name, _serialLake_.generateNext());
+                            if (typeof fileContent === 'string') {
+                                newFile.setContent(utf8Encoder.encode(fileContent).buffer, false);
+                            } else if (fileContent instanceof ArrayBuffer) {
+                                newFile.setContent(fileContent, false);
+                            }
+                        };
+                    }
+                    // Check the file type to determine HOW to read it
+                    if (typeof file.type === 'string' && file.type.startsWith('text/')) {
+                        // Read as text if the file is a text-based file
+                        reader.readAsText(file);
+                    } else {
+                        // Read as binary (ArrayBuffer) for non-text files (e.g., images)
+                        reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
+                    }
+                }
+                alert(`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
+            });
+            // activate the file input element
+            input.click();
+        });
+
+        // Automatically Open Window #1
+        button_to_open_new_terminal_tab.click();
+    }
 
     // Finished
-    supportedCommands['hello'] = {
+    _supportedCommands_['hello'] = {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`, false);
@@ -238,12 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['help'] = {
+    _supportedCommands_['help'] = {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
                 `This terminal supports: ${
-                    Object.keys(supportedCommands).reduce(
+                    Object.keys(_supportedCommands_).reduce(
                         (acc, elem, index) => {
                             if (index === 0) return `\n     ${elem}`;
                             return (index % 6 === 0) ? `${acc},\n     ${elem}` : `${acc}, ${elem}`;
@@ -258,13 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['man'] = {
+    _supportedCommands_['man'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
                 const
                     commandName = parameters[0],
-                    commandObject = supportedCommands[commandName];
+                    commandObject = _supportedCommands_[commandName];
                 if (commandObject === undefined) {
                     currentTerminalTabRecord.terminalCore.printToWindow(
                         `The command '${commandName}' is not supported!`,
@@ -285,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['echo'] = {
+    _supportedCommands_['echo'] = {
         is_async: false,
         executable: (parameters) => {
             const result = parameters.reduce(
@@ -305,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['touch'] = {
+    _supportedCommands_['touch'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -315,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .duplicate()
                         .createPath(fileDir, true)
-                        .createFile(false, fileName, serialLake.generateNext());
+                        .createFile(false, fileName, _serialLake_.generateNext());
                     currentTerminalTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -329,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['mkdir'] = {
+    _supportedCommands_['mkdir'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -352,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['ls'] = {
+    _supportedCommands_['ls'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 0) {
@@ -385,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['cd'] = {
+    _supportedCommands_['cd'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -405,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['pwd'] = {
+    _supportedCommands_['pwd'] = {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
@@ -418,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['mv'] = {
+    _supportedCommands_['mv'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 3) {
@@ -456,14 +459,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['cp'] = {
+    _supportedCommands_['cp'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 3) {
                 if (parameters[0] === '-f') {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-                            .copyPath('file', parameters[1], parameters[2], serialLake);
+                            .copyPath('file', parameters[1], parameters[2], _serialLake_);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -473,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-d') {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-                            .copyPath('directory', parameters[1], parameters[2], serialLake);
+                            .copyPath('directory', parameters[1], parameters[2], _serialLake_);
                         currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -494,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['rm'] = {
+    _supportedCommands_['rm'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 2) {
@@ -610,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Finished
-    supportedCommands['edit'] = {
+    _supportedCommands_['edit'] = {
         is_async: false,
         executable: (parameters) => {
             const emptyKBL = (_) => undefined; // empty keyboard listener
@@ -659,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['fprint'] = {
+    _supportedCommands_['fprint'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -692,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['mini'] = {
+    _supportedCommands_['mini'] = {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 1) {
@@ -747,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Finished
-    supportedCommands['download'] = {
+    _supportedCommands_['download'] = {
         is_async: true,
         executable: async (parameters) => {
             if (parameters.length === 2) {
@@ -809,7 +812,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Update Needed
-    supportedCommands['mycloud'] = {
+    _supportedCommands_['ping'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['wget'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['zip'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['unzip'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['mycloud'] = {
         is_async: true,
         executable: async (parameters) => {
             if (
@@ -822,27 +861,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     user_key = parameters[1].substring(5);
                 if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
                     try {
-                        const {connection, error} = await fetch( // {connection, error}
-                            `http://${ipp}/mycloud/users/`,
+                        const [status, stream] = await fetch(
+                            `http://${ipp}/mycloud/users/register/`,
                             {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    aim: 'new_account',
+                                body: formData({ // short enough so we can use JSON
                                     user_key: user_key
                                 })
                             }
                         ).then(
-                            (res) => res.json()
+                            async (res) => [res.status, await res.json()]
                         );
-                        if (connection !== true) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false);
-                            return;
-                        }
-                        if (error !== undefined) { // has error
+                        if (status !== 200) {
+                            const {error: error} = stream; // stream here is a json object
                             currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                             return;
                         }
@@ -854,30 +885,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[2] === '-conf') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -conf
                     try {
-                        const {connection, error, result} = await fetch( // {connection, error, result=true/false}
-                            `http://${ipp}/mycloud/users/`,
+                        const [status, stream] = await fetch(
+                            `http://${ipp}/mycloud/users/validate/`,
                             {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    aim: 'conf_account',
+                                body: formData({ // short enough so we can use JSON
                                     user_key: user_key
                                 })
                             }
                         ).then(
-                            (res) => res.json()
+                            async (res) => [res.status, await res.json()]
                         );
-                        if (connection !== true) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.', false);
-                            return;
-                        }
-                        if (error !== undefined) { // has error
+                        if (status !== 200) {
+                            const {error: error} = stream; // stream here is a json object
                             currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                             return;
                         }
+                        const {result: result} = stream; // stream here is a json object
                         if (result !== true) {
                             currentTerminalTabRecord.terminalCore.printToWindow('The user key does not exist.', false);
                             return;
@@ -887,10 +911,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             ' --> Generating the configuration file at /.mycloud_conf.\n'
                             , false
                         );
-                        if (fsRoot.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
-                            fsRoot.getFile('.mycloud_conf').setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
+                        if (_fsRoot_.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
+                            _fsRoot_.getFile('.mycloud_conf').setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
                         } else {
-                            const [file, _] = fsRoot.createFile(false, '.mycloud_conf', serialLake.generateNext());
+                            const [file, _] = _fsRoot_.createFile(false, '.mycloud_conf', _serialLake_.generateNext());
                             file.setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
                         }
                         currentTerminalTabRecord.terminalCore.printToWindow(
@@ -905,12 +929,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (parameters.length === 1) {
                 // get the configuration file
-                if (!fsRoot.hasFile('.mycloud_conf')) {
+                if (!_fsRoot_.hasFile('.mycloud_conf')) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false);
                     return;
                 }
                 const
-                    confFileContent = fsRoot.getFile('.mycloud_conf').getContent(),
+                    confFileContent = _fsRoot_.getFile('.mycloud_conf').getContent(),
                     confContent = utf8Decoder.decode(confFileContent),
                     ippIndex = confContent.indexOf('-ipp='),
                     enterIndex = confContent.indexOf('\n'),
@@ -932,74 +956,71 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (parameters[0] === '-backup') { // Command: mycloud -backup
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`, false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(
+                        `Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`,
+                        false
+                    );
                     try {
-                        const jsonFetches = fsRoot.getFilesAsList().map((file) =>
-                            fetch( // {connection, error}
-                                `http://${ipp}/mycloud/files/`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        aim: 'backup',
-                                        user_key: user_key,
-                                        serial: file.getSerial(),
-                                        content: file.getContent(),
-                                        created_at: file.getCreatedAt(),
-                                        updated_at: file.getUpdatedAt()
-                                    })
+                        const
+                            settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
+                                fetch(
+                                    `http://${ipp}/mycloud/files/backup/`,
+                                    {
+                                        method: 'POST',
+                                        body: formData({
+                                            user_key: user_key,
+                                            serial: file.getSerial(),
+                                            content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
+                                            created_at: file.getCreatedAt(),
+                                            updated_at: file.getUpdatedAt()
+                                        })
+                                    }
+                                ).then(
+                                    async (res) => [res.status, await res.json()]
+                                )
+                            )),
+                            anyFailure = settledResults.some((settledResult) => {
+                                if (settledResult.status === 'rejected') {
+                                    currentTerminalTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
+                                    return true; // failure
                                 }
-                            ).then(
-                                (res) => res.json()
-                            )
-                        );
-                        jsonFetches.push(
-                            fetch( // {connection, error}
-                                `http://${ipp}/mycloud/files/`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        aim: 'backup',
-                                        user_key: user_key,
-                                        serial: 'ROOT',
-                                        content: fsRoot.getRecordsJSON(),
-                                        created_at: getISOTimeString(),
-                                        updated_at: getISOTimeString()
-                                    })
+                                if (settledResult.status === 'fulfilled') {
+                                    const [status, stream] = settledResult.value;
+                                    if (status !== 200) {
+                                        const {error: error} = stream; // stream here is a json object
+                                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+                                        return true; // failure
+                                    }
+                                    return false; // success
                                 }
-                            ).then(
-                                (res) => res.json()
-                            )
-                        );
-                        const settledResults = await Promise.allSettled(jsonFetches);
-                        let failure = false;
-                        settledResults.forEach((settledResult) => {
-                            if (settledResult.status === 'rejected') {
-                                currentTerminalTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
-                                failure = true;
-                            } else if (settledResult.status === 'fulfilled') {
-                                const {connection, error} = settledResult.value;
-                                if (connection !== true) {
-                                    currentTerminalTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false);
-                                    failure = true;
-                                } else if (error !== undefined) { // has error
-                                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
-                                    failure = true;
-                                }
-                            }
-                        });
-                        if (failure) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Failed to back up the file system.', false);
-                        } else {
-                            currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system to MyCloud server.', false);
+                                return true;
+                            });
+                        if (anyFailure) {
+                            currentTerminalTabRecord.terminalCore.printToWindow('Failed to back up the files.', false);
+                            return;
                         }
+                        const [status, stream] = await fetch(
+                            `http://${ipp}/mycloud/files/backup/`,
+                            {
+                                method: 'POST',
+                                body: formData({
+                                    user_key: user_key,
+                                    serial: 'ROOT',
+                                    content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
+                                    created_at: getISOTimeString(),
+                                    updated_at: getISOTimeString()
+                                })
+                            }
+                        ).then(
+                            async (res) => [res.status, await res.json()]
+                        );
+                        if (status !== 200) {
+                            const {error: error} = stream; // stream here is a json object
+                            currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+                            currentTerminalTabRecord.terminalCore.printToWindow(`Failed to back up the ROOT map.`, false);
+                            return;
+                        }
+                        currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system to MyCloud server.', false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -1009,53 +1030,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTerminalTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".\n`, false);
                     try {
                         // get the ROOT map
-                        const bodyROOT = await fetch( // {connection=true, error, __serial__IGNORED__, content, __created_at__IGNORED__, __updated_at__IGNORED__}
-                            `http://${ipp}/mycloud/files/`,
+                        const [statusROOT, streamROOT] = await fetch(
+                            `http://${ipp}/mycloud/files/recover/`,
                             {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    aim: 'recover',
+                                body: formData({
                                     user_key: user_key,
                                     serial: 'ROOT'
                                 })
                             }
                         ).then(
-                            (res) => res.json()
+                            async (res) => {
+                                const status = res.status;
+                                return [status, status === 200 ? await res.arrayBuffer() : await res.json()];
+                            }
                         );
-                        if (bodyROOT.connection !== true) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Bad connection: "responseBodyROOT.connection" is not true.', false);
+                        if (statusROOT !== 200) {
+                            const {error: error} = streamROOT; // stream here is a json object
+                            currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+                            currentTerminalTabRecord.terminalCore.printToWindow(`Failed to recover the ROOT map.`, false);
                             return;
                         }
-                        if (bodyROOT.error !== undefined) {
-                            currentTerminalTabRecord.terminalCore.printToWindow(`${bodyROOT.error}`, false);
-                            return;
-                        }
-                        if (typeof bodyROOT.content !== 'string') {
-                            currentTerminalTabRecord.terminalCore.printToWindow('The ROOT map is illegal.', false);
-                            return;
-                        }
-                        // check the information in <plainRootFolderObject>
                         const
                             /** @type {Object} */
-                            plainRootFolderObject = JSON.parse(bodyROOT.content),
+                            plainRootFolderObject = JSON.parse(utf8Decoder.decode(streamROOT)), // stream here is an arrayBuffer
+                            /** @type {string[]} */
+                            fileSerials = [];
+                        // check the information in <plainRootFolderObject>, while getting all file serials
+                        {
                             /**
                              * This implementation maximizes the compatibility of received JSON.
+                             * This function is ONLY immediately-called.
                              * @param {Object} plainFolderObject
                              * @returns {void}
                              * @throws {TypeError}
                              * */
-                            checkPlainFolderObject = (plainFolderObject) => {
+                            (function checkPlainFolderObject_gettingFileSerials(plainFolderObject) {
                                 if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
                                     Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
                                         if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
                                             throw new TypeError('Subfolder name in the plain folder object must be legal.');
                                         if (typeof psfo !== 'object')
                                             throw new TypeError('Plain subfolder object in the plain folder object must be an object.');
-                                        checkPlainFolderObject(psfo);
+                                        checkPlainFolderObject_gettingFileSerials(psfo);
                                     });
                                 }
                                 if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
@@ -1064,6 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                             throw new TypeError('File name in the plain folder object must be legal.');
                                         if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
                                             throw new TypeError('File serial in the plain folder object must be legal.');
+                                        fileSerials.push(fileSerial);
                                     });
                                 }
                                 if (typeof plainFolderObject.created_at === 'string') { // string
@@ -1086,96 +1104,78 @@ document.addEventListener('DOMContentLoaded', () => {
                                             throw new TypeError('File link in the plain folder object must be a non-empty string.');
                                     });
                                 }
-                            };
-                        checkPlainFolderObject(plainRootFolderObject);
-                        // get all file serials
+                            })(plainRootFolderObject);
+                        }
+                        // get the files and construct files map
                         const
-                            /** @type {string[]} */
-                            fileSerials = [],
-                            /**
-                             * This implementation maximizes the compatibility of received JSON.
-                             * @param {Object} plainFolderObject
-                             * @returns {void}
-                             * */
-                            getFileSerialsFromPlainFolderObject = (plainFolderObject) => {
-                                if (typeof plainFolderObject.subfolders === 'object') {
-                                    Object.values(plainFolderObject.subfolders).forEach((psfo) => {
-                                        getFileSerialsFromPlainFolderObject(psfo);
-                                    });
-                                }
-                                if (typeof plainFolderObject.files === 'object') {
-                                    Object.values(plainFolderObject.files).forEach((fileSerial) => {
-                                        fileSerials.push(fileSerial);
-                                    });
-                                }
-                            };
-                        getFileSerialsFromPlainFolderObject(plainRootFolderObject);
-                        // construct files map
-                        const
-                            jsonFetches = fileSerials.map((fileSerial) =>
-                                fetch( // {connection=true, error, content, created_at, updated_at}
-                                    `http://${ipp}/mycloud/files/`,
+                            settledResults = await Promise.allSettled(fileSerials.map((fileSerial) =>
+                                fetch( // {error, content, created_at, updated_at}
+                                    `http://${ipp}/mycloud/files/recover/`,
                                     {
                                         method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Accept': 'application/json'
-                                        },
-                                        body: JSON.stringify({
-                                            aim: 'recover',
+                                        body: formData({
                                             user_key: user_key,
                                             serial: fileSerial
                                         })
                                     }
                                 ).then(
-                                    (res) => res.json()
+                                    async (res) => {
+                                        const status = res.status;
+                                        const headers = {
+                                            serial: res.headers.get('X_serial'),
+                                            created_at: res.headers.get('X_created_at'),
+                                            updated_at: res.headers.get('X_updated_at'),
+                                            file_size: res.headers.get('X_file_size')
+                                        };
+                                        return [status, headers, status === 200 ? await res.arrayBuffer() : await res.json()];
+                                    }
                                 )
-                            ),
-                            settledResults = await Promise.allSettled(jsonFetches);
-                        let failure = false;
-                        /** @type {Record<string, File>} */
-                        const
-                            filesMap = settledResults.reduce(
-                                (acc, settledResult) => {
+                            )),
+                            [anyFailure, filesMap] = settledResults.reduce(
+                                ([af, fm], settledResult) => {
                                     if (settledResult.status === 'rejected') {
                                         currentTerminalTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
-                                        failure = true;
-                                    } else if (settledResult.status === 'fulfilled') {
-                                        const {
-                                            connection, error,
-                                            serial, content, created_at, updated_at
-                                        } = settledResult.value;
-                                        if (connection !== true) {
-                                            currentTerminalTabRecord.terminalCore.printToWindow('Bad connection: "responseBody.connection" is not true.\n', false);
-                                            failure = true;
-                                        } else if (error !== undefined) { // has error
-                                            currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
-                                            failure = true;
-                                        } else if (
-                                            typeof serial !== 'string' || serial.length === 0 ||
-                                            typeof content !== 'string' ||
-                                            typeof created_at !== 'string' || created_at.length === 0 ||
-                                            typeof updated_at !== 'string' || updated_at.length === 0
-                                        ) {
-                                            currentTerminalTabRecord.terminalCore.printToWindow('A file is illegal.\n', false);
-                                            failure = true;
-                                        } else {
-                                            const uint8 = utf8Encoder.encode(content);
-                                            acc[serial] = new File(serial, uint8.buffer, created_at, updated_at);
-                                        }
+                                        return [true, fm]; // failure
                                     }
-                                    return acc;
+                                    if (settledResult.status === 'fulfilled') {
+                                        const [
+                                            status,
+                                            {serial, created_at, updated_at, file_size},
+                                            stream
+                                        ] = settledResult.value;
+                                        if (status !== 200) {
+                                            const {error: error} = stream; // stream here is a json object
+                                            currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+                                            return [true, fm]; // failure
+                                        }
+                                        if (serial.length === 0 || created_at.length === 0 || updated_at.length === 0) {
+                                            currentTerminalTabRecord.terminalCore.printToWindow('A file is illegal.\n', false);
+                                            return [true, fm]; // failure
+                                        }
+                                        fm[serial] = new File(serial, stream, created_at, updated_at); // stream here is an arrayBuffer
+                                        return [af, fm]; // success
+                                    }
+                                    return [true, fm];
                                 },
-                                {}
-                            ),
+                                [false, {}]
+                            );
+                        if (anyFailure) {
+                            currentTerminalTabRecord.terminalCore.printToWindow('Failed to recover the files.', false);
+                            return;
+                        }
+                        // recover <_serialLake_> with <fileSerials>
+                        _serialLake_.recover(fileSerials);
+                        // recover _fsRoot_ with <plainRootFolderObject> and <filesMap>
+                        {
                             /**
                              * This implementation maximizes the compatibility of received JSON.
+                             * This function is ONLY immediately-called.
                              * @param {Object} plainFolderObject
                              * @param {Folder} destFolder
                              * @returns {void}
                              * @throws {TypeError | Error}
                              * */
-                            recoverFSRoot = (plainFolderObject, destFolder) => {
+                            (function recoverFSRoot(plainFolderObject, destFolder) {
                                 if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
                                     Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
                                         recoverFSRoot(psfo, destFolder.createSubfolder(false, subfolderName));
@@ -1199,15 +1199,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                         destFolder.createFileLink(fileLinkName, fileLink);
                                     });
                                 }
-                            };
-                        if (failure) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Failed to recover the file system.', false);
-                            return;
+                            })(plainRootFolderObject, _fsRoot_.clear());
                         }
-                        // recover <serialLake> with <fileSerials>
-                        serialLake.recover(fileSerials);
-                        // recover fsRoot with <plainRootFolderObject> and <filesMap>
-                        recoverFSRoot(plainRootFolderObject, fsRoot.clear());
                         currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system from MyCloud server.', false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -1232,52 +1225,16 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     }
 
-    // // Update Needed
-    supportedCommands['ping'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            //
-        },
-        description: ''
-    }
-
-    // // Update Needed
-    supportedCommands['wget'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            //
-        },
-        description: ''
-    }
-
-    // // Update Needed
-    supportedCommands['zip'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            //
-        },
-        description: ''
-    }
-
-    // // Update Needed
-    supportedCommands['unzip'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            //
-        },
-        description: ''
-    }
-
-    supportedCommands['ttt'] = {
+    _supportedCommands_['ttt'] = {
         is_async: true,
         executable: async (_) => {
-            //
+            currentTerminalTabRecord.terminalCore.printToWindow(`${Date.now()}`, false);
         },
         description: ''
     }
 
     // // Update Needed
-    // supportedCommands['ctow'] = {
+    // _supportedCommands_['ctow'] = {
     //     executable: (parameters) => {
     //     },
     //     description: ''
@@ -1285,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //
     //
     // // Update Needed
-    // supportedCommands['pytow'] = {
+    // _supportedCommands_['pytow'] = {
     //     executable: (parameters) => {
     //     },
     //     description: ''
@@ -1293,13 +1250,13 @@ document.addEventListener('DOMContentLoaded', () => {
     //
     //
     // // Update Needed
-    // supportedCommands['wasm'] = {
+    // _supportedCommands_['wasm'] = {
     //     executable: (parameters) => {
     //     },
     //     description: ''
     // }
 
-    // supportedCommands[''] = {
+    // _supportedCommands_[''] = {
     //     executable: (parameters) => {},
     //     description: ''
     // }
