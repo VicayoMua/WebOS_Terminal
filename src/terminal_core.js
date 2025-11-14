@@ -1539,13 +1539,13 @@ class TerminalCore {
                     break;
                 }
                 case '\u000C': { // Ctrl+L
-                    this.#xtermObj.write(`\x1b[2J\x1b[H $ `);
-                    this.#xtermObj.write(bufferToString());
+                    this.printToWindow('\x1b[2J\x1b[H $ ', true, 'white');
+                    this.printToWindow(bufferToString(), true, 'white');
                     break;
                 }
                 case '\u007F': { // Backspace
                     if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
-                        this.#xtermObj.write('\b \b');
+                        this.printToWindow('\b \b', true, 'white');
                     }
                     break;
                 }
@@ -1556,9 +1556,9 @@ class TerminalCore {
                         [commandName, commandParameters] = bufferAnalyzeCommandNameParameters(),
                         commandObject = this.#supportedCommands[commandName];
                     this.clearKeyboardListener();
-                    this.#xtermObj.write('\n\r   ');
+                    this.printToWindow('\n\r   ', true, 'white');
                     if (commandObject === undefined) {
-                        this.#xtermObj.write(`Command "${commandName}" is not found.`);
+                        this.printToWindow(`Command "${commandName}" is not found.`, true, 'white');
                     } else {
                         try {
                             if (commandObject.is_async) {
@@ -1567,11 +1567,11 @@ class TerminalCore {
                                 commandObject.executable(commandParameters);
                             }
                         } catch (error) {
-                            this.#xtermObj.write(`Command "${commandName}" failed due to __uncaught_errors__: ${error}`);
+                            this.printToWindow(`Command "${commandName}" failed due to __uncaught_errors__: ${error}`, true, 'white');
                         }
                     }
                     bufferReset();
-                    this.#xtermObj.write('\n\n\r $ ');
+                    this.printToWindow('\n\n\r $ ', true, 'white');
                     this.setDefaultKeyboardListener();
                     break;
                 }
@@ -1579,7 +1579,7 @@ class TerminalCore {
                     for (const char of keyboardInput) {
                         // if (char >= String.fromCharCode(0x20) && char <= String.fromCharCode(0x7E) || char >= '\u00a0') {
                         bufferAddChar(char);
-                        this.#xtermObj.write(char);
+                        this.printToWindow(char, true, 'white');
                         // }
                     }
                 }
@@ -1640,7 +1640,7 @@ class TerminalCore {
         this.#currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
 
         // Initialize Terminal Window Display
-        this.#xtermObj.write(` $ `);
+        this.printToWindow(' $ ', true, 'white');
     }
 
     /**
@@ -1656,11 +1656,11 @@ class TerminalCore {
         if (typeof if_print_raw_to_window !== 'boolean')
             throw new TypeError('if_print_raw_to_window must be a boolean.');
         // type check for color is not decided yet!!!
-        if (if_print_raw_to_window) {
-            this.#xtermObj.write(sentence); // leave <sentence> as it was
-        } else {
-            this.#xtermObj.write(sentence.replaceAll('\n', '\n\r   ')); // replace all '\n' in <sentence> with '\n\r   '
-        }
+        this.#xtermObj.write(
+            if_print_raw_to_window ?
+                sentence : // leave <sentence> as it was
+                sentence.replaceAll('\n', '\n\r   ') // replace all '\n' in <sentence> with '\n\r   '
+        );
     }
 
     // /**
