@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         button_to_upload_to_mycloud_server.addEventListener('click', () => {
             // Create overlay
-            const overlay = document.createElement('div');
-            overlay.classList.add('mycloud-popup-overlay');
+            const divOverlay = document.createElement('div');
+            divOverlay.classList.add('mycloud-popup-overlay');
 
             // Create a modal input box for IP:Port and User Key
             const modal = document.createElement('div');
@@ -363,21 +363,21 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonContainer.appendChild(submitButton);
             modal.appendChild(buttonContainer);
 
-            document.body.appendChild(overlay);
+            document.body.appendChild(divOverlay);
             document.body.appendChild(modal);
             ippInput.focus();
 
-            overlay.onclick = () => {
+            divOverlay.onclick = () => {
                 closeModal();
             };
 
             // Helper function to close the modal with fade-out animation
             closeModal = () => {
                 modal.classList.add('fade-out');
-                overlay.classList.add('fade-out');
+                divOverlay.classList.add('fade-out');
                 setTimeout(() => {
                     modal.remove();
-                    overlay.remove();
+                    divOverlay.remove();
                 }, 200); // Match animation duration
             };
 
