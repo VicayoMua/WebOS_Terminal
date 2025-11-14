@@ -228,46 +228,55 @@ document.addEventListener('DOMContentLoaded', () => {
             input.click();
         });
         button_to_upload_to_mycloud_server.addEventListener('click', () => {
-            // Create overlay
+            // create overlay
             const divOverlay = document.createElement('div');
             divOverlay.classList.add('mycloud-popup-overlay');
 
-            // Create a modal input box for IP:Port and User Key
-            const modal = document.createElement('div');
-            modal.classList.add('mycloud-popup');
+            // create a divMyCloudPopup input box for IP:Port and User Key
+            const divMyCloudPopup = document.createElement('div');
+            divMyCloudPopup.classList.add('mycloud-popup');
 
-            const title = document.createElement('h3');
-            title.textContent = 'Upload to MyCloud Server';
-            modal.appendChild(title);
+            const h3Title = document.createElement('h3');
+            h3Title.textContent = 'Upload to MyCloud Server';
+            divMyCloudPopup.appendChild(h3Title);
 
-            // IP:Port input container
-            const ippInputContainer = document.createElement('div');
-            ippInputContainer.classList.add('mycloud-popup-input-container');
-
+            // ip:port input container
+            const divIppInputContainer = document.createElement('div');
+            divIppInputContainer.classList.add('mycloud-popup-input-container');
             const ippInput = document.createElement('input');
             ippInput.type = 'text';
             ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
             ippInput.classList.add('mycloud-popup-input');
-            ippInputContainer.appendChild(ippInput);
-            modal.appendChild(ippInputContainer);
+            divIppInputContainer.appendChild(ippInput);
+            divMyCloudPopup.appendChild(divIppInputContainer);
 
-            // User Key input container
-            const userKeyInputContainer = document.createElement('div');
-            userKeyInputContainer.classList.add('mycloud-popup-input-container');
-
+            // user key input container
+            const divUserKeyInputContainer = document.createElement('div');
+            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
             const userKeyInput = document.createElement('input');
             userKeyInput.type = 'text';
             userKeyInput.placeholder = 'User Key';
             userKeyInput.classList.add('mycloud-popup-input');
-            userKeyInputContainer.appendChild(userKeyInput);
-            modal.appendChild(userKeyInputContainer);
+            divUserKeyInputContainer.appendChild(userKeyInput);
+            divMyCloudPopup.appendChild(divUserKeyInputContainer);
 
-            const buttonContainer = document.createElement('div');
-            buttonContainer.classList.add('mycloud-popup-button-container');
+            // helper function to close the divMyCloudPopup with fade-out animation
+            const closeModal = () => {
+                divMyCloudPopup.classList.add('fade-out');
+                divOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    divMyCloudPopup.remove();
+                    divOverlay.remove();
+                }, 200); // Match animation duration
+            };
 
-            // Helper function will be defined after overlay is created
-            let closeModal;
+            divOverlay.onclick = () => {
+                closeModal();
+            };
 
+            // exit buttons container
+            const divExitButtonsContainer = document.createElement('div');
+            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
             const submitButton = document.createElement('button');
             submitButton.textContent = '💾 Upload';
             submitButton.classList.add('mycloud-popup-submit-button');
@@ -351,34 +360,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(`Upload failed: ${error}`);
                 }
             };
-            buttonContainer.appendChild(submitButton);
-            modal.appendChild(buttonContainer);
-
+            divExitButtonsContainer.appendChild(submitButton);
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
             cancelButton.classList.add('mycloud-popup-cancel-button');
             cancelButton.onclick = () => {
                 closeModal();
             };
-            buttonContainer.appendChild(cancelButton);
-
-            document.body.appendChild(divOverlay);
-            document.body.appendChild(modal);
-            ippInput.focus();
-
-            divOverlay.onclick = () => {
-                closeModal();
-            };
-
-            // Helper function to close the modal with fade-out animation
-            closeModal = () => {
-                modal.classList.add('fade-out');
-                divOverlay.classList.add('fade-out');
-                setTimeout(() => {
-                    modal.remove();
-                    divOverlay.remove();
-                }, 200); // Match animation duration
-            };
+            divExitButtonsContainer.appendChild(cancelButton);
+            divMyCloudPopup.appendChild(divExitButtonsContainer);
 
             // Handle Enter key - move to next input or submit
             ippInput.onkeydown = (e) => {
@@ -398,6 +388,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     cancelButton.click();
                 }
             };
+
+            document.body.appendChild(divOverlay);
+            document.body.appendChild(divMyCloudPopup);
+
+            ippInput.focus();
         });
 
         // Automatically Open Window #1

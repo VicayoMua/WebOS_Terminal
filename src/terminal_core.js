@@ -91,52 +91,45 @@ const
             divAceEditorWindow.appendChild(divAceEditorContainer);
 
             // exit buttons container
-            const divExitButtons = document.createElement('div');
-            divExitButtons.classList.add('ace-editor-exit-buttons-container');
-            {
-                // minimize button
-                const minimizeButton = document.createElement('button');
-                minimizeButton.classList.add('ace-editor-minimize-button');
-                minimizeButton.innerText = `🔽 Minimize`;
-                minimizeButton.addEventListener('click', () => {
-                    callbackToBackupEditorWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
-                    divAceEditorWindow.classList.add('fade-out');
-                    setTimeout(() => {
-                        divAceEditorWindow.style.display = 'none'; // hide but not remove
-                    }, 200); // Match animation duration
-                    promiseResolver();
-                });
-                divExitButtons.appendChild(minimizeButton);
-
-                // save button
-                const saveButton = document.createElement('button');
-                saveButton.classList.add('ace-editor-save-button');
-                saveButton.innerText = '💾 Save';
-                saveButton.addEventListener('click', () => {
-                    callbackToSaveFile(aceEditorObject.getValue());
-                    divAceEditorWindow.classList.add('fade-out');
-                    setTimeout(() => {
-                        divAceEditorWindow.remove();
-                    }, 200); // Match animation duration
-                    promiseResolver();
-                });
-                divExitButtons.appendChild(saveButton);
-
-                // cancel button
-                const cancelButton = document.createElement('button');
-                cancelButton.classList.add('ace-editor-cancel-button');
-                cancelButton.innerText = '✖ Cancel';
-                cancelButton.addEventListener('click', () => {
-                    callbackToCancelEdit();
-                    divAceEditorWindow.classList.add('fade-out');
-                    setTimeout(() => {
-                        divAceEditorWindow.remove();
-                    }, 200); // Match animation duration
-                    promiseResolver();
-                });
-                divExitButtons.appendChild(cancelButton);
-            }
-            divAceEditorWindow.appendChild(divExitButtons);
+            const divExitButtonsContainer = document.createElement('div');
+            divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
+            const minimizeButton = document.createElement('button');
+            minimizeButton.classList.add('ace-editor-minimize-button');
+            minimizeButton.innerText = `🔽 Minimize`;
+            minimizeButton.addEventListener('click', () => {
+                callbackToBackupEditorWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
+                divAceEditorWindow.classList.add('fade-out');
+                setTimeout(() => {
+                    divAceEditorWindow.style.display = 'none'; // hide but not remove
+                }, 200); // Match animation duration
+                promiseResolver();
+            });
+            divExitButtonsContainer.appendChild(minimizeButton);
+            const saveButton = document.createElement('button');
+            saveButton.classList.add('ace-editor-save-button');
+            saveButton.innerText = '💾 Save';
+            saveButton.addEventListener('click', () => {
+                callbackToSaveFile(aceEditorObject.getValue());
+                divAceEditorWindow.classList.add('fade-out');
+                setTimeout(() => {
+                    divAceEditorWindow.remove();
+                }, 200); // Match animation duration
+                promiseResolver();
+            });
+            divExitButtonsContainer.appendChild(saveButton);
+            const cancelButton = document.createElement('button');
+            cancelButton.classList.add('ace-editor-cancel-button');
+            cancelButton.innerText = '✖ Cancel';
+            cancelButton.addEventListener('click', () => {
+                callbackToCancelEdit();
+                divAceEditorWindow.classList.add('fade-out');
+                setTimeout(() => {
+                    divAceEditorWindow.remove();
+                }, 200); // Match animation duration
+                promiseResolver();
+            });
+            divExitButtonsContainer.appendChild(cancelButton);
+            divAceEditorWindow.appendChild(divExitButtonsContainer);
         }
         terminalWindowTab.appendChild(divAceEditorWindow);
         return (newPromiseResolver) => {
