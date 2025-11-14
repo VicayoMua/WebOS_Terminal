@@ -441,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
             const recoverButton = document.createElement('button');
             recoverButton.textContent = '💾 Recover';
-            recoverButton.classList.add('mycloud-popup-submit-button');
+            recoverButton.classList.add('mycloud-popup-recover-button');
             recoverButton.addEventListener('click', async () => {
                 const ipp = ippInput.value.trim();
                 const userKey = userKeyInput.value.trim();
