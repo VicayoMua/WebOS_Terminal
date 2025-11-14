@@ -193,13 +193,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         // set up behaviors on errors
                         reader.onerror = (error) => {
-                            alert(`button_to_add_files_to_terminal: error reading the file "${file.name}". (${error})`);
+                            alert(`button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
                         };
                         // set up behaviors on loading
                         reader.onload = (reader_event) => {
                             const fileContent = reader_event.target.result;
                             if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
-                                alert(`button_to_add_files_to_terminal: unexpected error when loading "${file.name}".`);
+                                alert(`button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
                                 return;
                             }
                             const [newFile, _] = currentTerminalTabRecord.terminalCore
@@ -1057,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (parameters[0] === '-backup') { // Command: mycloud -backup
                     currentTerminalTabRecord.terminalCore.printToWindow(
-                        `Backing up the file system to ${ipp} as "${user_key.substring(0, 6)}..".\n`,
+                        `Backing up the file system to ${ipp} as '${user_key.substring(0, 6)}..'\n`,
                         false
                     );
                     try {
@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (parameters[0] === '-recover') { // Command: mycloud -recover
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as "${user_key.substring(0, 6)}...".\n`, false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as '${user_key.substring(0, 6)}..'\n`, false);
                     try {
                         // get the ROOT map
                         const [statusROOT, streamROOT] = await fetch(
@@ -1311,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTerminalTabRecord.terminalCore.printToWindow(
                 'Wrong grammar!\n' +
                 'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
-                '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
+                '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file \'/.mycloud_conf\')\n' +
                 '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
                 '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n',
                 false
@@ -1320,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         description: 'Backup and recover the terminal file system to MyCloud server.\n' +
             'Wrong grammar!\n' +
             'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
-            '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file "/.mycloud_conf")\n' +
+            '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file \'/.mycloud_conf\')\n' +
             '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
             '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     }
