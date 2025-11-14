@@ -238,7 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const title = document.createElement('h3');
             title.textContent = 'Upload to MyCloud Server';
-            title.classList.add('mycloud-popup-title');
             modal.appendChild(title);
 
             // IP:Port input container
@@ -258,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userKeyInput = document.createElement('input');
             userKeyInput.type = 'text';
-            userKeyInput.placeholder = 'User key';
+            userKeyInput.placeholder = 'User Key';
             userKeyInput.classList.add('mycloud-popup-input');
             userKeyInputContainer.appendChild(userKeyInput);
             modal.appendChild(userKeyInputContainer);
@@ -269,16 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Helper function will be defined after overlay is created
             let closeModal;
 
-            const cancelButton = document.createElement('button');
-            cancelButton.textContent = 'Cancel';
-            cancelButton.classList.add('mycloud-popup-cancel-button');
-            cancelButton.onclick = () => {
-                closeModal();
-            };
-            buttonContainer.appendChild(cancelButton);
-
             const submitButton = document.createElement('button');
-            submitButton.textContent = 'Upload';
+            submitButton.textContent = '💾 Upload';
             submitButton.classList.add('mycloud-popup-submit-button');
             submitButton.onclick = async () => {
                 const ipp = ippInput.value.trim();
@@ -362,6 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             buttonContainer.appendChild(submitButton);
             modal.appendChild(buttonContainer);
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = '✖ Cancel';
+            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.onclick = () => {
+                closeModal();
+            };
+            buttonContainer.appendChild(cancelButton);
 
             document.body.appendChild(divOverlay);
             document.body.appendChild(modal);
