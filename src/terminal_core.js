@@ -95,7 +95,7 @@ const
             divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
             const minimizeButton = document.createElement('button');
             minimizeButton.classList.add('ace-editor-minimize-button');
-            minimizeButton.innerText = `🔽 Minimize`;
+            minimizeButton.textContent = `🔽 Minimize`;
             minimizeButton.addEventListener('click', () => {
                 callbackToBackupEditorWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
                 divAceEditorWindow.classList.add('fade-out');
@@ -107,7 +107,7 @@ const
             divExitButtonsContainer.appendChild(minimizeButton);
             const saveButton = document.createElement('button');
             saveButton.classList.add('ace-editor-save-button');
-            saveButton.innerText = '💾 Save';
+            saveButton.textContent = '💾 Save';
             saveButton.addEventListener('click', () => {
                 callbackToSaveFile(aceEditorObject.getValue());
                 divAceEditorWindow.classList.add('fade-out');
@@ -119,7 +119,7 @@ const
             divExitButtonsContainer.appendChild(saveButton);
             const cancelButton = document.createElement('button');
             cancelButton.classList.add('ace-editor-cancel-button');
-            cancelButton.innerText = '✖ Cancel';
+            cancelButton.textContent = '✖ Cancel';
             cancelButton.addEventListener('click', () => {
                 callbackToCancelEdit();
                 divAceEditorWindow.classList.add('fade-out');

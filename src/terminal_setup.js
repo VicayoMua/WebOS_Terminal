@@ -231,164 +231,161 @@ document.addEventListener('DOMContentLoaded', () => {
             // create overlay
             const divOverlay = document.createElement('div');
             divOverlay.classList.add('mycloud-popup-overlay');
+            divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key
             const divMyCloudPopup = document.createElement('div');
             divMyCloudPopup.classList.add('mycloud-popup');
+            {
+                const h3Title = document.createElement('h3');
+                h3Title.textContent = 'Upload to MyCloud Server';
+                divMyCloudPopup.appendChild(h3Title);
 
-            const h3Title = document.createElement('h3');
-            h3Title.textContent = 'Upload to MyCloud Server';
-            divMyCloudPopup.appendChild(h3Title);
+                // ip:port input container
+                const divIppInputContainer = document.createElement('div');
+                divIppInputContainer.classList.add('mycloud-popup-input-container');
+                const ippInput = document.createElement('input');
+                ippInput.type = 'text';
+                ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
+                ippInput.classList.add('mycloud-popup-input');
+                divIppInputContainer.appendChild(ippInput);
+                divMyCloudPopup.appendChild(divIppInputContainer);
 
-            // ip:port input container
-            const divIppInputContainer = document.createElement('div');
-            divIppInputContainer.classList.add('mycloud-popup-input-container');
-            const ippInput = document.createElement('input');
-            ippInput.type = 'text';
-            ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
-            ippInput.classList.add('mycloud-popup-input');
-            divIppInputContainer.appendChild(ippInput);
-            divMyCloudPopup.appendChild(divIppInputContainer);
+                // user key input container
+                const divUserKeyInputContainer = document.createElement('div');
+                divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
+                const userKeyInput = document.createElement('input');
+                userKeyInput.type = 'text';
+                userKeyInput.placeholder = 'User Key';
+                userKeyInput.classList.add('mycloud-popup-input');
+                divUserKeyInputContainer.appendChild(userKeyInput);
+                divMyCloudPopup.appendChild(divUserKeyInputContainer);
 
-            // user key input container
-            const divUserKeyInputContainer = document.createElement('div');
-            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
-            const userKeyInput = document.createElement('input');
-            userKeyInput.type = 'text';
-            userKeyInput.placeholder = 'User Key';
-            userKeyInput.classList.add('mycloud-popup-input');
-            divUserKeyInputContainer.appendChild(userKeyInput);
-            divMyCloudPopup.appendChild(divUserKeyInputContainer);
+                // helper function to close the divMyCloudPopup with fade-out animation
+                const closePopup = () => {
+                    divMyCloudPopup.classList.add('fade-out');
+                    divOverlay.classList.add('fade-out');
+                    setTimeout(() => {
+                        divMyCloudPopup.remove();
+                        divOverlay.remove();
+                    }, 200); // Match animation duration
+                };
 
-            // helper function to close the divMyCloudPopup with fade-out animation
-            const closeModal = () => {
-                divMyCloudPopup.classList.add('fade-out');
-                divOverlay.classList.add('fade-out');
-                setTimeout(() => {
-                    divMyCloudPopup.remove();
-                    divOverlay.remove();
-                }, 200); // Match animation duration
-            };
+                // exit buttons container
+                const divExitButtonsContainer = document.createElement('div');
+                divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+                const submitButton = document.createElement('button');
+                submitButton.textContent = '💾 Upload';
+                submitButton.classList.add('mycloud-popup-submit-button');
+                submitButton.addEventListener('click', async () => {
+                    const ipp = ippInput.value.trim();
+                    const userKey = userKeyInput.value.trim();
 
-            divOverlay.onclick = () => {
-                closeModal();
-            };
-
-            // exit buttons container
-            const divExitButtonsContainer = document.createElement('div');
-            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
-            const submitButton = document.createElement('button');
-            submitButton.textContent = '💾 Upload';
-            submitButton.classList.add('mycloud-popup-submit-button');
-            submitButton.onclick = async () => {
-                const ipp = ippInput.value.trim();
-                const userKey = userKeyInput.value.trim();
-
-                if (!ipp) {
-                    alert('Please enter IP:Port.');
-                    return;
-                }
-                if (!userKey) {
-                    alert('Please enter a user key.');
-                    return;
-                }
-                closeModal();
-                // Execute the upload/backup operation using the provided IP:Port and User Key
-                try {
-                    // Backup files using the provided user key
-                    const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
-                        fetch(
+                    if (!ipp) {
+                        alert('Please enter IP:Port.');
+                        return;
+                    }
+                    if (!userKey) {
+                        alert('Please enter a user key.');
+                        return;
+                    }
+                    closePopup();
+                    // Execute the upload/backup operation using the provided IP:Port and User Key
+                    try {
+                        // Backup files using the provided user key
+                        const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
+                            fetch(
+                                `http://${ipp}/mycloud/files/backup/`,
+                                {
+                                    method: 'POST',
+                                    body: formData({
+                                        user_key: userKey,
+                                        serial: file.getSerial(),
+                                        content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
+                                        created_at: file.getCreatedAt(),
+                                        updated_at: file.getUpdatedAt()
+                                    })
+                                }
+                            ).then(
+                                async (res) => [res.status, await res.json()]
+                            )
+                        ));
+                        let errorMessage = '';
+                        const anyFailure = settledResults.some((settledResult) => {
+                            if (settledResult.status === 'rejected') {
+                                errorMessage += `${settledResult.reason}\n`;
+                                return true;
+                            }
+                            if (settledResult.status === 'fulfilled') {
+                                const [status, stream] = settledResult.value;
+                                if (status !== 200) {
+                                    const {error: error} = stream;
+                                    errorMessage += `${error}\n`;
+                                    return true;
+                                }
+                                return false;
+                            }
+                            return true;
+                        });
+                        if (anyFailure) {
+                            alert(`Failed to upload files.\n${errorMessage}`);
+                            return;
+                        }
+                        // Backup ROOT map
+                        const [status, stream] = await fetch(
                             `http://${ipp}/mycloud/files/backup/`,
                             {
                                 method: 'POST',
                                 body: formData({
                                     user_key: userKey,
-                                    serial: file.getSerial(),
-                                    content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
-                                    created_at: file.getCreatedAt(),
-                                    updated_at: file.getUpdatedAt()
+                                    serial: 'ROOT',
+                                    content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
+                                    created_at: getISOTimeString(),
+                                    updated_at: getISOTimeString()
                                 })
                             }
                         ).then(
                             async (res) => [res.status, await res.json()]
-                        )
-                    ));
-                    let errorMessage = '';
-                    const anyFailure = settledResults.some((settledResult) => {
-                        if (settledResult.status === 'rejected') {
-                            errorMessage += `${settledResult.reason}\n`;
-                            return true;
+                        );
+                        if (status !== 200) {
+                            const {error: error} = stream;
+                            alert(`Failed to upload the ROOT map.\n${error}`);
+                            return;
                         }
-                        if (settledResult.status === 'fulfilled') {
-                            const [status, stream] = settledResult.value;
-                            if (status !== 200) {
-                                const {error: error} = stream;
-                                errorMessage += `${error}\n`;
-                                return true;
-                            }
-                            return false;
-                        }
-                        return true;
-                    });
-                    if (anyFailure) {
-                        alert(`Failed to upload files.\n${errorMessage}`);
-                        return;
+                        alert('Successfully uploaded the file system to MyCloud server.');
+                    } catch (error) {
+                        alert(`Upload failed: ${error}`);
                     }
-                    // Backup ROOT map
-                    const [status, stream] = await fetch(
-                        `http://${ipp}/mycloud/files/backup/`,
-                        {
-                            method: 'POST',
-                            body: formData({
-                                user_key: userKey,
-                                serial: 'ROOT',
-                                content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
-                                created_at: getISOTimeString(),
-                                updated_at: getISOTimeString()
-                            })
-                        }
-                    ).then(
-                        async (res) => [res.status, await res.json()]
-                    );
-                    if (status !== 200) {
-                        const {error: error} = stream;
-                        alert(`Failed to upload the ROOT map.\n${error}`);
-                        return;
+                });
+                divExitButtonsContainer.appendChild(submitButton);
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = '✖ Cancel';
+                cancelButton.classList.add('mycloud-popup-cancel-button');
+                cancelButton.addEventListener('click', () => {
+                    closePopup();
+                });
+                divExitButtonsContainer.appendChild(cancelButton);
+                divMyCloudPopup.appendChild(divExitButtonsContainer);
+
+                // Handle Enter key - move to next input or submit
+                ippInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        userKeyInput.focus();
+                    } else if (e.key === 'Escape') {
+                        cancelButton.click();
                     }
-                    alert('Successfully uploaded the file system to MyCloud server.');
-                } catch (error) {
-                    alert(`Upload failed: ${error}`);
-                }
-            };
-            divExitButtonsContainer.appendChild(submitButton);
-            const cancelButton = document.createElement('button');
-            cancelButton.textContent = '✖ Cancel';
-            cancelButton.classList.add('mycloud-popup-cancel-button');
-            cancelButton.onclick = () => {
-                closeModal();
-            };
-            divExitButtonsContainer.appendChild(cancelButton);
-            divMyCloudPopup.appendChild(divExitButtonsContainer);
+                };
 
-            // Handle Enter key - move to next input or submit
-            ippInput.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    userKeyInput.focus();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            };
-
-            userKeyInput.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitButton.click();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            };
-
+                userKeyInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitButton.click();
+                    } else if (e.key === 'Escape') {
+                        cancelButton.click();
+                    }
+                };
+            }
             document.body.appendChild(divOverlay);
             document.body.appendChild(divMyCloudPopup);
 
