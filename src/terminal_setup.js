@@ -8,6 +8,7 @@ import {
     utf8Decoder,
     utf8Encoder,
     formData,
+    openFileEditor,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -15,7 +16,6 @@ import {
     Folder,
     extractDirAndKeyName,
     TerminalFolderPointer,
-    CommandInputHandler,
     MinimizedWindowRecords,
     TerminalCore
 } from './terminal_core.js';
@@ -103,7 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nav_view_navigation = document.getElementById('view-navigation'),
             button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
             button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
-            button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal');
+            button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal'),
+            button_to_upload_to_mycloud_server = document.getElementById('button_to_upload_to_mycloud_server');
 
         button_to_switch_theme.addEventListener('click', () => {
             button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
@@ -225,6 +226,170 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             // activate the file input element
             input.click();
+        });
+        button_to_upload_to_mycloud_server.addEventListener('click', () => {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.classList.add('mycloud-popup-overlay');
+
+            // Create a modal input box for user key
+            const modal = document.createElement('div');
+            modal.classList.add('mycloud-popup');
+
+            const title = document.createElement('h3');
+            title.textContent = 'Enter User Key';
+            title.classList.add('mycloud-popup-title');
+            modal.appendChild(title);
+
+            const inputContainer = document.createElement('div');
+            inputContainer.classList.add('mycloud-popup-input-container');
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'User key';
+            input.classList.add('mycloud-popup-input');
+            inputContainer.appendChild(input);
+            modal.appendChild(inputContainer);
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.classList.add('mycloud-popup-button-container');
+
+            // Helper function will be defined after overlay is created
+            let closeModal;
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.onclick = () => {
+                closeModal();
+            };
+            buttonContainer.appendChild(cancelButton);
+
+            const submitButton = document.createElement('button');
+            submitButton.textContent = 'Upload';
+            submitButton.classList.add('mycloud-popup-submit-button');
+            submitButton.onclick = async () => {
+                const userKey = input.value.trim();
+                if (!userKey) {
+                    alert('Please enter a user key.');
+                    return;
+                }
+                closeModal();
+                // Execute the upload/backup operation
+                // Check if configuration file exists
+                if (!_fsRoot_.hasFile('.mycloud_conf')) {
+                    alert('Configuration file not found. Please configure MyCloud first using the "mycloud" command.');
+                    return;
+                }
+                const confFileContent = _fsRoot_.getFile('.mycloud_conf').getContent();
+                const confContent = utf8Decoder.decode(confFileContent);
+                const ippIndex = confContent.indexOf('-ipp=');
+                const enterIndex = confContent.indexOf('\n');
+                if (ippIndex === -1 || enterIndex === -1 || ippIndex + 4 >= enterIndex) {
+                    alert('Invalid configuration file. Please reconfigure MyCloud.');
+                    return;
+                }
+                const ipp = confContent.substring(ippIndex + 5, enterIndex);
+                if (ipp.length === 0) {
+                    alert('Invalid IP:Port in configuration file.');
+                    return;
+                }
+                // Use the provided user key instead of the one from config
+                try {
+                    // Backup files using the provided user key
+                    const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
+                        fetch(
+                            `http://${ipp}/mycloud/files/backup/`,
+                            {
+                                method: 'POST',
+                                body: formData({
+                                    user_key: userKey,
+                                    serial: file.getSerial(),
+                                    content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
+                                    created_at: file.getCreatedAt(),
+                                    updated_at: file.getUpdatedAt()
+                                })
+                            }
+                        ).then(
+                            async (res) => [res.status, await res.json()]
+                        )
+                    ));
+                    let errorMessage = '';
+                    const anyFailure = settledResults.some((settledResult) => {
+                        if (settledResult.status === 'rejected') {
+                            errorMessage += `${settledResult.reason}\n`;
+                            return true;
+                        }
+                        if (settledResult.status === 'fulfilled') {
+                            const [status, stream] = settledResult.value;
+                            if (status !== 200) {
+                                const {error: error} = stream;
+                                errorMessage += `${error}\n`;
+                                return true;
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (anyFailure) {
+                        alert(`Failed to upload files.\n${errorMessage}`);
+                        return;
+                    }
+                    // Backup ROOT map
+                    const [status, stream] = await fetch(
+                        `http://${ipp}/mycloud/files/backup/`,
+                        {
+                            method: 'POST',
+                            body: formData({
+                                user_key: userKey,
+                                serial: 'ROOT',
+                                content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
+                                created_at: getISOTimeString(),
+                                updated_at: getISOTimeString()
+                            })
+                        }
+                    ).then(
+                        async (res) => [res.status, await res.json()]
+                    );
+                    if (status !== 200) {
+                        const {error: error} = stream;
+                        alert(`Failed to upload the ROOT map.\n${error}`);
+                        return;
+                    }
+                    alert('Successfully uploaded the file system to MyCloud server.');
+                } catch (error) {
+                    alert(`Upload failed: ${error}`);
+                }
+            };
+            buttonContainer.appendChild(submitButton);
+            modal.appendChild(buttonContainer);
+
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+            input.focus();
+
+            overlay.onclick = () => {
+                closeModal();
+            };
+
+            // Helper function to close the modal with fade-out animation
+            closeModal = () => {
+                modal.classList.add('fade-out');
+                overlay.classList.add('fade-out');
+                setTimeout(() => {
+                    modal.remove();
+                    overlay.remove();
+                }, 200); // Match animation duration
+            };
+
+            // Handle Enter key
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    submitButton.click();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            };
         });
 
         // Automatically Open Window #1
@@ -534,84 +699,6 @@ document.addEventListener('DOMContentLoaded', () => {
             '       rm -d [directory_path]'
     };
 
-    /**
-     * This function sets up the editor window for the <edit> command.
-     * @param {HTMLDivElement} terminalWindowTab
-     * @param {string} fileName
-     * @param {string} orginalFileContent
-     * @param {function(windowDescription: string, divAceEditorWindow:HTMLDivElement, aceEditorObject: Object): void} callbackToRecoverMinimizedWindow
-     * @param {function(newFileContent: string): void} callbackToSaveFile
-     * @param {function():void} callbackToCancelEdit
-     * @returns {void}
-     * */
-    function openFileEditor(
-        terminalWindowTab,
-        fileName, orginalFileContent,
-        callbackToRecoverMinimizedWindow, callbackToSaveFile, callbackToCancelEdit
-    ) {
-        const divAceEditorWindow = document.createElement('div');
-        divAceEditorWindow.classList.add('ace-editor-window');
-        {
-            // the title of the editor window
-            const h3Title = document.createElement('h3');
-            h3Title.classList.add('ace-editor-title');
-            h3Title.innerText = `Editing File: ${fileName}`;
-            divAceEditorWindow.appendChild(h3Title);
-
-            // Ace-Editor container
-            const divAceEditorContainer = document.createElement('div');
-            divAceEditorContainer.classList.add('ace-editor-container');
-            const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
-                // mode: "ace/mode/javascript",
-                // selectionStyle: "text"
-            });
-            aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
-            aceEditorObject.setOptions({
-                fontSize: "14px",   // set font size
-                showPrintMargin: false, // disable the print margin
-            });
-            aceEditorObject.focus();
-            divAceEditorWindow.appendChild(divAceEditorContainer);
-
-            // exit buttons container
-            const divExitButtons = document.createElement('div');
-            divExitButtons.classList.add('ace-editor-exit-buttons-container');
-            {
-                // minimize button
-                const minimizeButton = document.createElement('button');
-                minimizeButton.classList.add('ace-editor-minimize-button');
-                minimizeButton.innerText = `🔽 Minimize`;
-                minimizeButton.addEventListener('click', () => {
-                    callbackToRecoverMinimizedWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
-                    divAceEditorWindow.style.display = 'none'; // hide but not remove
-                });
-                divExitButtons.appendChild(minimizeButton);
-
-                // save button
-                const saveButton = document.createElement('button');
-                saveButton.classList.add('ace-editor-save-button');
-                saveButton.innerText = '💾 Save';
-                saveButton.addEventListener('click', () => {
-                    callbackToSaveFile(aceEditorObject.getValue());
-                    divAceEditorWindow.remove();
-                });
-                divExitButtons.appendChild(saveButton);
-
-                // cancel button
-                const cancelButton = document.createElement('button');
-                cancelButton.classList.add('ace-editor-cancel-button');
-                cancelButton.innerText = '✖ Cancel';
-                cancelButton.addEventListener('click', () => {
-                    callbackToCancelEdit();
-                    divAceEditorWindow.remove();
-                });
-                divExitButtons.appendChild(cancelButton);
-            }
-            divAceEditorWindow.appendChild(divExitButtons);
-        }
-        terminalWindowTab.appendChild(divAceEditorWindow);
-    }
-
     // Finished
     _supportedCommands_['edit'] = {
         is_async: false,
@@ -627,15 +714,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             .gotoPath(fileDir)
                             .getFile(fileName),
                         fileContent = file.getContent();
-                    currentTerminalTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
                     openFileEditor(
                         currentTerminalTabRecord.terminalCore.getWindowTab(),
                         fileName,
                         utf8Decoder.decode(fileContent),
                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-                            const cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords();
-                            cmwr.add(windowDescription, () => {
-                                currentTerminalTabRecord.terminalCore.setNewKeyboardListener(emptyKBL);
+                            currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().add(windowDescription, () => {
+                                divAceEditorWindow.classList.remove('fade-out');
                                 divAceEditorWindow.style.display = '';
                                 aceEditorObject.focus();
                             });
@@ -702,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-l') { // Command: mini -l
                     const cmwrList = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().getList();
                     if (cmwrList.length === 0) {
-                        currentTerminalTabRecord.terminalCore.printToWindow('No window minimized...', false);
+                        currentTerminalTabRecord.terminalCore.printToWindow('No minimized window...', false);
                     } else {
                         currentTerminalTabRecord.terminalCore.printToWindow(
                             'Minimized Windows:' + cmwrList.reduce(
