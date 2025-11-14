@@ -232,24 +232,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.createElement('div');
             overlay.classList.add('mycloud-popup-overlay');
 
-            // Create a modal input box for user key
+            // Create a modal input box for IP:Port and User Key
             const modal = document.createElement('div');
             modal.classList.add('mycloud-popup');
 
             const title = document.createElement('h3');
-            title.textContent = 'Enter User Key';
+            title.textContent = 'Upload to MyCloud Server';
             title.classList.add('mycloud-popup-title');
             modal.appendChild(title);
 
-            const inputContainer = document.createElement('div');
-            inputContainer.classList.add('mycloud-popup-input-container');
+            // IP:Port input container
+            const ippInputContainer = document.createElement('div');
+            ippInputContainer.classList.add('mycloud-popup-input-container');
 
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = 'User key';
-            input.classList.add('mycloud-popup-input');
-            inputContainer.appendChild(input);
-            modal.appendChild(inputContainer);
+            const ippInput = document.createElement('input');
+            ippInput.type = 'text';
+            ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
+            ippInput.classList.add('mycloud-popup-input');
+            ippInputContainer.appendChild(ippInput);
+            modal.appendChild(ippInputContainer);
+
+            // User Key input container
+            const userKeyInputContainer = document.createElement('div');
+            userKeyInputContainer.classList.add('mycloud-popup-input-container');
+
+            const userKeyInput = document.createElement('input');
+            userKeyInput.type = 'text';
+            userKeyInput.placeholder = 'User key';
+            userKeyInput.classList.add('mycloud-popup-input');
+            userKeyInputContainer.appendChild(userKeyInput);
+            modal.appendChild(userKeyInputContainer);
 
             const buttonContainer = document.createElement('div');
             buttonContainer.classList.add('mycloud-popup-button-container');
@@ -269,32 +281,19 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Upload';
             submitButton.classList.add('mycloud-popup-submit-button');
             submitButton.onclick = async () => {
-                const userKey = input.value.trim();
+                const ipp = ippInput.value.trim();
+                const userKey = userKeyInput.value.trim();
+                
+                if (!ipp) {
+                    alert('Please enter IP:Port.');
+                    return;
+                }
                 if (!userKey) {
                     alert('Please enter a user key.');
                     return;
                 }
                 closeModal();
-                // Execute the upload/backup operation
-                // Check if configuration file exists
-                if (!_fsRoot_.hasFile('.mycloud_conf')) {
-                    alert('Configuration file not found. Please configure MyCloud first using the "mycloud" command.');
-                    return;
-                }
-                const confFileContent = _fsRoot_.getFile('.mycloud_conf').getContent();
-                const confContent = utf8Decoder.decode(confFileContent);
-                const ippIndex = confContent.indexOf('-ipp=');
-                const enterIndex = confContent.indexOf('\n');
-                if (ippIndex === -1 || enterIndex === -1 || ippIndex + 4 >= enterIndex) {
-                    alert('Invalid configuration file. Please reconfigure MyCloud.');
-                    return;
-                }
-                const ipp = confContent.substring(ippIndex + 5, enterIndex);
-                if (ipp.length === 0) {
-                    alert('Invalid IP:Port in configuration file.');
-                    return;
-                }
-                // Use the provided user key instead of the one from config
+                // Execute the upload/backup operation using the provided IP:Port and User Key
                 try {
                     // Backup files using the provided user key
                     const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
@@ -366,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.body.appendChild(overlay);
             document.body.appendChild(modal);
-            input.focus();
+            ippInput.focus();
 
             overlay.onclick = () => {
                 closeModal();
@@ -382,9 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 200); // Match animation duration
             };
 
-            // Handle Enter key
-            input.onkeydown = (e) => {
+            // Handle Enter key - move to next input or submit
+            ippInput.onkeydown = (e) => {
                 if (e.key === 'Enter') {
+                    e.preventDefault();
+                    userKeyInput.focus();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            };
+
+            userKeyInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
                     submitButton.click();
                 } else if (e.key === 'Escape') {
                     cancelButton.click();
