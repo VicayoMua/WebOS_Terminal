@@ -701,9 +701,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     _supportedCommands_['edit'] = {
-        is_async: false,
-        executable: (parameters) => {
-            const emptyKBL = (_) => undefined; // empty keyboard listener
+        is_async: true,
+        executable: async (parameters) => {
             if (parameters.length === 1) {
                 try {
                     const
@@ -714,27 +713,31 @@ document.addEventListener('DOMContentLoaded', () => {
                             .gotoPath(fileDir)
                             .getFile(fileName),
                         fileContent = file.getContent();
-                    openFileEditor(
-                        currentTerminalTabRecord.terminalCore.getWindowTab(),
-                        fileName,
-                        utf8Decoder.decode(fileContent),
-                        (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-                            currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().add(windowDescription, () => {
-                                divAceEditorWindow.classList.remove('fade-out');
-                                divAceEditorWindow.style.display = '';
-                                aceEditorObject.focus();
-                            });
-                            currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
-                        },
-                        (newFileContent) => { // save
-                            file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
-                            currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
-                        },
-                        () => { // cancel
-                            currentTerminalTabRecord.terminalCore.setDefaultKeyboardListener();
-                        }
-                    );
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Successfully opened a text editor.`, false);
+                    await new Promise((resolve) => {
+                        const setPromiseResolver = openFileEditor(
+                            currentTerminalTabRecord.terminalCore.getWindowTab(),
+                            fileName,
+                            utf8Decoder.decode(fileContent),
+                            (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
+                                currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().add(windowDescription, (promiseResolver) => {
+                                    divAceEditorWindow.classList.remove('fade-out');
+                                    divAceEditorWindow.style.display = '';
+                                    aceEditorObject.focus();
+                                    setPromiseResolver(promiseResolver);
+                                });
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Minimized the editor window.`, false);
+                            },
+                            (newFileContent) => { // save
+                                file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Saved the text file.`, false);
+                            },
+                            () => { // cancel
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Canceled the change of the text file.`, false);
+                            },
+                            () => resolve(undefined)
+                        );
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Opened a text editor.\n`, false);
+                    });
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
@@ -781,16 +784,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Finished
     _supportedCommands_['mini'] = {
-        is_async: false,
-        executable: (parameters) => {
+        is_async: true,
+        executable: async (parameters) => {
             if (parameters.length === 1) {
                 if (parameters[0] === '-l') { // Command: mini -l
                     const cmwrList = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().getList();
                     if (cmwrList.length === 0) {
-                        currentTerminalTabRecord.terminalCore.printToWindow('No minimized window...', false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(' --> No minimized window...', false);
                     } else {
                         currentTerminalTabRecord.terminalCore.printToWindow(
-                            'Minimized Windows:' + cmwrList.reduce(
+                            ' --> Window List:' + cmwrList.reduce(
                                 (acc, [index, description]) =>
                                     `${acc}\n                    [${index}] ${description}`,
                                 ''
@@ -806,15 +809,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const
                             cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords(),
-                            result = cmwr.recoverWindow(Number.parseInt(parameters[1], 10));
-                        if (result === null) {
-                            currentTerminalTabRecord.terminalCore.printToWindow('Wrong index!', false);
-                        } else if (result === true) {
-                            currentTerminalTabRecord.terminalCore.printToWindow(
-                                'Successfully recovered the window.\n' +
-                                'Note: Window indices are refrshed after this operation!',
-                                false
-                            );
+                            windowRecoverCallback = cmwr.getWindowRecoverCallback(Number.parseInt(parameters[1], 10));
+                        if (windowRecoverCallback === null) {
+                            currentTerminalTabRecord.terminalCore.printToWindow(' --> Wrong index!', false);
+                        } else {
+                            await new Promise((resolve) => {
+                                windowRecoverCallback(resolve);
+                                currentTerminalTabRecord.terminalCore.printToWindow(
+                                    ' --> Recovered the window.\n' +
+                                    '     Note: Window indices are refrshed after this operation!\n',
+                                    false
+                                );
+                            });
                         }
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
