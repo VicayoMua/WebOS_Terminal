@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.onclick = async () => {
                 const ipp = ippInput.value.trim();
                 const userKey = userKeyInput.value.trim();
-                
+
                 if (!ipp) {
                     alert('Please enter IP:Port.');
                     return;
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['hello'] = {
         is_async: false,
         executable: (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`, false);
+            currentTerminalTabRecord.terminalCore.printToWindow(` --> Hello World!`, false);
         },
         description: `Say 'Hello World!'`
     };
@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
-                `This terminal supports: ${
+                ` --> This terminal supports: ${
                     Object.keys(_supportedCommands_).reduce(
                         (acc, elem, index) => {
                             if (index === 0) return `\n     ${elem}`;
@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         },
                         null
                     )
-                }.\nFor more details, please use the command 'man [command_name]'.`,
+                }.\n --> For more details, please use the command 'man [command_name]'.`,
                 false
             );
         },
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     commandObject = _supportedCommands_[commandName];
                 if (commandObject === undefined) {
                     currentTerminalTabRecord.terminalCore.printToWindow(
-                        `The command '${commandName}' is not supported!`,
+                        ` --> Command '${commandName}' is not supported!`,
                         true
                     );
                 } else {
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ''
             );
             currentTerminalTabRecord.terminalCore.printToWindow(
-                result.length > 0 ? result : `''`,
+                ` --> ${result.length > 0 ? result : `''`}`,
                 false
             );
         },
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         .duplicate()
                         .createPath(fileDir, true)
                         .createFile(false, fileName, _serialLake_.generateNext());
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Successfully create a file.`, false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .createPath(parameters[0], false);
                     currentTerminalTabRecord.terminalCore.printToWindow(
-                        `Successfully created a directory. (Note that the directory may be already existing!)`,
+                        ` --> Created a directory, OR the directory may already exist.`,
                         false
                     );
                 } catch (error) {
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: mkdir [folder_path]'
     };
 
-    // Finished
+    // Update!!!
     _supportedCommands_['ls'] = {
         is_async: false,
         executable: (parameters) => {
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .gotoPath(parameters[0]);
-                    currentTerminalTabRecord.terminalCore.printToWindow(`Successfully went to the directory.`, false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`, false);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                 }
@@ -586,8 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
-                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-                    .getFullPath(),
+                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
                 false
             );
         },
@@ -603,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .movePath('file', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully moved the file.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -613,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .movePath('directory', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully moved the directory.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -641,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .copyPath('file', parameters[1], parameters[2], _serialLake_);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the file.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Copied a file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -651,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .copyPath('directory', parameters[1], parameters[2], _serialLake_);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully copied the directory.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Copied a directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -679,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .deletePath('file', parameters[1]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully removed the file.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Removed a file.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -689,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .deletePath('directory', parameters[1]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(`Successfully removed the directory.`, false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Removed a directory.`, false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
@@ -734,14 +733,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     aceEditorObject.focus();
                                     setPromiseResolver(promiseResolver);
                                 });
-                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Minimized the editor window.`, false);
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Minimized a editor window.`, false);
                             },
                             (newFileContent) => { // save
                                 file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
-                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Saved the text file.`, false);
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Saved a text file.`, false);
                             },
                             () => { // cancel
-                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Canceled the change of the text file.`, false);
+                                currentTerminalTabRecord.terminalCore.printToWindow(` --> Discarded the change of a text file.`, false);
                             },
                             () => resolve(undefined)
                         );
@@ -774,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fileString = utf8Decoder.decode(fileContent);
                     currentTerminalTabRecord.terminalCore.printToWindow(
                         fileString.length === 0 ? '<EMPTY FILE>' : fileString,
-                        false, 'green'
+                        false
                     );
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
@@ -825,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             await new Promise((resolve) => {
                                 windowRecoverCallback(resolve);
                                 currentTerminalTabRecord.terminalCore.printToWindow(
-                                    ' --> Recovered the window.\n' +
+                                    ' --> Recovered a window.\n' +
                                     '     Note: Window indices are refrshed after this operation!\n',
                                     false
                                 );
@@ -871,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         link.click();
                         URL.revokeObjectURL(url);
                         currentTerminalTabRecord.terminalCore.printToWindow(
-                            'Successfully downloaded the file.',
+                            ' --> Downloaded a file.',
                             false
                         );
                     } catch (error) {
@@ -890,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         link.click();
                         URL.revokeObjectURL(url);
                         currentTerminalTabRecord.terminalCore.printToWindow(
-                            'Successfully downloaded the directory.',
+                            ' --> downloaded a directory.',
                             false
                         );
                     } catch (error) {
@@ -911,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '       download -d [directory_path]'
     };
 
-    // Update Needed
+    // Update!!!
     _supportedCommands_['ping'] = {
         is_async: true,
         executable: async (parameters) => {
@@ -920,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    // Update Needed
+    // Update!!!
     _supportedCommands_['wget'] = {
         is_async: true,
         executable: async (parameters) => {
@@ -929,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    // Update Needed
+    // Update!!!
     _supportedCommands_['zip'] = {
         is_async: true,
         executable: async (parameters) => {
@@ -938,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    // Update Needed
+    // Update!!!
     _supportedCommands_['unzip'] = {
         is_async: true,
         executable: async (parameters) => {
@@ -947,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    // Update Needed
+    // Update!!!
     _supportedCommands_['mycloud'] = {
         is_async: true,
         executable: async (parameters) => {
@@ -977,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                             return;
                         }
-                        currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully registered a user key.', false);
+                        currentTerminalTabRecord.terminalCore.printToWindow(' --> Registered a user key.', false);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
                     }
