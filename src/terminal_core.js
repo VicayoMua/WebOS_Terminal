@@ -48,6 +48,93 @@ const
             formData.append(key, value);
         });
         return formData;
+    },
+    /**
+     * This function sets up the editor window for the <edit> command.
+     * @param {HTMLDivElement} terminalWindowTab
+     * @param {string} fileName
+     * @param {string} orginalFileContent
+     * @param {function(windowDescription: string, divAceEditorWindow:HTMLDivElement, aceEditorObject: Object): void} callbackToBackupEditorWindow
+     * @param {function(newFileContent: string): void} callbackToSaveFile
+     * @param {function():void} callbackToCancelEdit
+     * @returns {void}
+     * */
+    openFileEditor = (
+        terminalWindowTab,
+        fileName, orginalFileContent,
+        callbackToBackupEditorWindow, callbackToSaveFile, callbackToCancelEdit
+    ) => {
+        const divAceEditorWindow = document.createElement('div');
+        divAceEditorWindow.classList.add('ace-editor-window');
+        {
+            // the title of the editor window
+            const h3Title = document.createElement('h3');
+            h3Title.classList.add('ace-editor-title');
+            h3Title.innerText = `Editing File: ${fileName}`;
+            divAceEditorWindow.appendChild(h3Title);
+
+            // Ace-Editor container
+            const divAceEditorContainer = document.createElement('div');
+            divAceEditorContainer.classList.add('ace-editor-container');
+            const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
+                // mode: "ace/mode/javascript",
+                // selectionStyle: "text"
+            });
+            aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
+            aceEditorObject.setOptions({
+                fontSize: "14px",   // set font size
+                showPrintMargin: false, // disable the print margin
+            });
+            aceEditorObject.focus();
+            divAceEditorWindow.appendChild(divAceEditorContainer);
+
+            // exit buttons container
+            const divExitButtons = document.createElement('div');
+            divExitButtons.classList.add('ace-editor-exit-buttons-container');
+            {
+                // minimize button
+                const minimizeButton = document.createElement('button');
+                minimizeButton.classList.add('ace-editor-minimize-button');
+                minimizeButton.innerText = `🔽 Minimize`;
+                minimizeButton.addEventListener('click', () => {
+                    callbackToBackupEditorWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
+                    divAceEditorWindow.classList.add('fade-out');
+                    setTimeout(() => {
+                        divAceEditorWindow.style.display = 'none'; // hide but not remove
+                    }, 200); // Match animation duration
+                });
+                divExitButtons.appendChild(minimizeButton);
+
+                // save button
+                const saveButton = document.createElement('button');
+                saveButton.classList.add('ace-editor-save-button');
+                saveButton.innerText = '💾 Save';
+                saveButton.addEventListener('click', () => {
+                    callbackToSaveFile(aceEditorObject.getValue());
+                    divAceEditorWindow.classList.add('fade-out');
+                    setTimeout(() => {
+                        divAceEditorWindow.remove();
+                    }, 200); // Match animation duration
+
+                });
+                divExitButtons.appendChild(saveButton);
+
+                // cancel button
+                const cancelButton = document.createElement('button');
+                cancelButton.classList.add('ace-editor-cancel-button');
+                cancelButton.innerText = '✖ Cancel';
+                cancelButton.addEventListener('click', () => {
+                    callbackToCancelEdit();
+                    divAceEditorWindow.classList.add('fade-out');
+                    setTimeout(() => {
+                        divAceEditorWindow.remove();
+                    }, 200); // Match animation duration
+                });
+                divExitButtons.appendChild(cancelButton);
+            }
+            divAceEditorWindow.appendChild(divExitButtons);
+        }
+        terminalWindowTab.appendChild(divAceEditorWindow);
     };
 
 /**
@@ -1250,132 +1337,6 @@ class TerminalFolderPointer {
 }
 
 /**
- * This structure represents the "stdin" for the command window.
- * SHOULD BE UPDATED TO BETTER SUPPORT USER INPUT HANDLERS.
- * */
-class CommandInputHandler {
-    /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
-    #supportedCommands;
-    /** @type {string[]} */
-    #buffer;
-
-    /**
-     * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
-     * */
-    constructor(supportedCommands) {
-        this.#supportedCommands = supportedCommands;
-        this.#buffer = [];
-    }
-
-    /**
-     * @returns {string}
-     * */
-    toString() {
-        return this.#buffer.reduce((acc, char) => `${acc}${char}`, '');
-    }
-
-    /**
-     * @returns {void}
-     * */
-    clear() {
-        this.#buffer = [];
-    }
-
-    /**
-     * @param {string} newChar
-     * @returns {void}
-     * */
-    addChar(newChar) { // returns void
-        this.#buffer.push(newChar);
-    }
-
-    /**
-     * @returns {boolean}
-     * */
-    removeChar() {
-        if (this.#buffer.length > 0) {
-            this.#buffer.pop();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * possible returns:
-     *       [ -1, ''          ] ---> Error: (Empty) Command is not executable.
-     *       [  0, commandName ] ---> Success!
-     *       [  1, commandName ] ---> Error: Command is not supported.
-     *       [  2, commandName ] ---> Error: Command exists but throws exceptions during execution.
-     * @returns {Promise<[number, string]>}
-     * */
-    async execute() {
-        // check the buffer length
-        if (this.#buffer.length === 0)
-            return [-1, '']; // Error: (Empty) Command is not executable.
-        let index = 0;
-        /**
-         * @returns {string}
-         * */
-        const parseNextWord = () => { // returns string
-            let word = '';
-            while (index < this.#buffer.length && this.#buffer[index] === ` `)
-                index++;
-            if (this.#buffer[index] === `"` || this.#buffer[index] === `'`) { // if quote marks makes a phase
-                const quoteIndex = index;
-                index++;
-                let hasClosingQuote = false;
-                while (index < this.#buffer.length) {
-                    if (this.#buffer[index] === this.#buffer[quoteIndex]) {
-                        hasClosingQuote = true;
-                        index++;
-                        break;
-                    }
-                    word += this.#buffer[index];
-                    index++;
-                }
-                if (!hasClosingQuote) // if no closing quote
-                    word = this.#buffer[quoteIndex] + word; // recover the beginning quote
-                return word;
-            } else { // if the next word is common
-                while (index < this.#buffer.length) {
-                    if (this.#buffer[index] === ` `) {
-                        index++;
-                        break;
-                    }
-                    word += this.#buffer[index];
-                    index++;
-                }
-                return word;
-            }
-        };
-        // get command name
-        const commandName = parseNextWord();
-        if (commandName.length === 0)
-            return [-1, '']; // Error: (Empty) Command is not executable.
-        // get command parameters
-        const commandParameters = [];
-        while (index < this.#buffer.length) {
-            const param = parseNextWord();
-            if (param.length > 0) commandParameters.push(param);
-        }
-        // try to execute the command
-        const commandObject = this.#supportedCommands[commandName];
-        if (commandObject === undefined)
-            return [1, commandName]; // Error: Command is not supported.
-        try {
-            if (commandObject.is_async === true) {
-                await commandObject.executable(commandParameters);
-            } else {
-                commandObject.executable(commandParameters);
-            }
-            return [0, commandName]; // Success!
-        } catch (_) {
-            return [2, commandName]; // Error: Command exists but throws exceptions.
-        }
-    }
-}
-
-/**
  * This structure represents the records of all minimized windows in a tab.
  * All its instances should appear in a terminal core.
  * */
@@ -1468,8 +1429,8 @@ class TerminalCore {
     #fitAddon;
     /** @type {Object | null} */
     #currentXTermKeyboardListener;
-    /** @type {CommandInputHandler} */
-    #commandInputHandler;
+    /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
+    #supportedCommands;
     /** @type {MinimizedWindowRecords} */
     #minimizedWindowRecords;
     /** @type {Record<any, any>} */
@@ -1498,6 +1459,71 @@ class TerminalCore {
      * @returns {void}
      * */
     setDefaultKeyboardListener() {
+        let
+            /** @type {string[]} */
+            buffer = [];
+        const
+            /** @returns {string} */
+            bufferToString = () => buffer.reduce((acc, char) => `${acc}${char}`, ''),
+            /** @param {string} newChar @returns {void} */
+            bufferAddChar = (newChar) => {
+                buffer.push(newChar);
+            },
+            /** @returns {boolean} */
+            bufferRemoveChar = () => {
+                if (buffer.length <= 0)
+                    return false;
+                buffer.pop();
+                return true;
+            },
+            /** @returns {void} */
+            bufferReset = () => {
+                buffer = [];
+            },
+            /** @returns {[string, string[]]} */
+            bufferAnalyzeCommandNameParameters = () => {
+                let index = 0;
+                const
+                    parseNextWord = () => {
+                        // clear leading white spaces
+                        while (index < buffer.length && buffer[index] === ' ') index++;
+                        let word = '';
+                        if (buffer[index] === `"` || buffer[index] === `'`) { // if quote marks makes a phase
+                            const quoteIndex = index;
+                            index++;
+                            let hasClosingQuote = false;
+                            while (index < buffer.length) {
+                                if (buffer[index] === buffer[quoteIndex]) { // closing quote marks the end
+                                    hasClosingQuote = true;
+                                    index++;
+                                    break;
+                                }
+                                word += buffer[index];
+                                index++;
+                            }
+                            if (!hasClosingQuote)
+                                word = buffer[quoteIndex] + word;
+                            return word;
+                        } else { // if the next word is common
+                            while (index < buffer.length) {
+                                if (buffer[index] === ' ') { // white spaces marks the end
+                                    index++;
+                                    break;
+                                }
+                                word += buffer[index];
+                                index++;
+                            }
+                            return word;
+                        }
+                    },
+                    commandName = parseNextWord(),
+                    commandParameters = [];
+                while (index < buffer.length) {
+                    const param = parseNextWord();
+                    if (param.length > 0) commandParameters.push(param);
+                }
+                return [commandName, commandParameters];
+            };
         this.setNewKeyboardListener(async (keyboardInput) => {
             switch (keyboardInput) {
                 case '\x1b[A': { // Up arrow
@@ -1514,36 +1540,37 @@ class TerminalCore {
                 }
                 case '\u000C': { // Ctrl+L
                     this.#xtermObj.write(`\x1b[2J\x1b[H $ `);
-                    this.#xtermObj.write(this.#commandInputHandler.toString());
+                    this.#xtermObj.write(bufferToString());
                     break;
                 }
                 case '\u007F': { // Backspace
-                    if (this.#commandInputHandler.removeChar()) { // if the char is successfully removed from the buffer
+                    if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
                         this.#xtermObj.write('\b \b');
                     }
                     break;
                 }
                 case '\r': { // Enter
+                    if (buffer.length <= 0)
+                        break;
+                    const
+                        [commandName, commandParameters] = bufferAnalyzeCommandNameParameters(),
+                        commandObject = this.#supportedCommands[commandName];
                     this.clearKeyboardListener();
                     this.#xtermObj.write('\n\r   ');
-                    const [statusCode, commandName] = await this.#commandInputHandler.execute();
-                    switch (statusCode) {
-                        case 0: {
-                            // success execution
-                            break;
-                        }
-                        case 1: {
-                            this.#xtermObj.write(`${commandName}: command not found`);
-                            break;
-                        }
-                        case 2: {
-                            this.#xtermObj.write(`${commandName}: command failed due to uncaught errors in the command implementation`);
-                            break;
-                        }
-                        default: {
+                    if (commandObject === undefined) {
+                        this.#xtermObj.write(`Command "${commandName}" is not found.`);
+                    } else {
+                        try {
+                            if (commandObject.is_async) {
+                                await commandObject.executable(commandParameters);
+                            } else {
+                                commandObject.executable(commandParameters);
+                            }
+                        } catch (error) {
+                            this.#xtermObj.write(`Command "${commandName}" failed due to __uncaught_errors__: ${error}`);
                         }
                     }
-                    this.#commandInputHandler.clear();
+                    bufferReset();
                     this.#xtermObj.write('\n\n\r $ ');
                     this.setDefaultKeyboardListener();
                     break;
@@ -1551,7 +1578,7 @@ class TerminalCore {
                 default: { // paste from the clipboard
                     for (const char of keyboardInput) {
                         // if (char >= String.fromCharCode(0x20) && char <= String.fromCharCode(0x7E) || char >= '\u00a0') {
-                        this.#commandInputHandler.addChar(char);
+                        bufferAddChar(char);
                         this.#xtermObj.write(char);
                         // }
                     }
@@ -1597,8 +1624,8 @@ class TerminalCore {
         // Initialize Current Keyboard Listener
         this.#currentXTermKeyboardListener = null;
 
-        // Initialize Command Input Handler
-        this.#commandInputHandler = new CommandInputHandler(supportedCommands);
+        // Initialize Supported Commands
+        this.#supportedCommands = supportedCommands;
 
         // Initialize Default Terminal Window's Listening to Keyboard Input
         this.setDefaultKeyboardListener();
@@ -1696,6 +1723,7 @@ export {
     utf8Decoder,
     utf8Encoder,
     formData,
+    openFileEditor,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -1703,7 +1731,6 @@ export {
     Folder,
     extractDirAndKeyName,
     TerminalFolderPointer,
-    CommandInputHandler,
     MinimizedWindowRecords,
     TerminalCore
 };
