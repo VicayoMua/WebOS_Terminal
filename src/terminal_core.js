@@ -1543,15 +1543,51 @@ class TerminalCore {
                 case '\x1b[D': { // Left arrow
                     break;
                 }
+                case '\x1bOP': { // F1
+                    break;
+                }
+                case '\x1bOQ': { // F2
+                    break;
+                }
+                case '\x1bOR': { // F3
+                    break;
+                }
+                case '\x1bOS': { // F4
+                    break;
+                }
+                case '\x1b[15~': { // F5
+                    break;
+                }
+                case '\x1b[17~': { // F6
+                    break;
+                }
+                case '\x1b[18~': { // F7
+                    break;
+                }
+                case '\x1b[19~': { // F8
+                    break;
+                }
+                case '\x1b[20~': { // F9
+                    break;
+                }
+                case '\x1b[21~': { // F10
+                    break;
+                }
+                case '\x1b[23~': { // F11
+                    break;
+                }
+                case '\x1b[24~': { // F12
+                    break;
+                }
                 case '\u000C': { // Ctrl+L
                     this.printToWindow('\x1b[2J\x1b[H $ ', true, 'white');
                     this.printToWindow(bufferToString(), true, 'white');
                     break;
                 }
-                case '\u007F': { // Backspace
-                    if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
-                        this.printToWindow('\b \b', true, 'white');
-                    }
+                case '\u0003': { // Ctrl+C
+                    break;
+                }
+                case '\u0016': { // Ctrl+V
                     break;
                 }
                 case '\r': { // Enter
@@ -1578,6 +1614,16 @@ class TerminalCore {
                     bufferReset();
                     this.printToWindow('\n\n\r $ ', true, 'white');
                     this.setDefaultKeyboardListener();
+                    break;
+                }
+                case '\u007F': { // Backspace
+                    if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
+                        this.printToWindow('\b \b', true, 'white');
+                    }
+                    break;
+                }
+                case '\t': { // TAB
+                    // we should block the TAB key for now!!!
                     break;
                 }
                 default: { // paste from the clipboard
@@ -1632,9 +1678,6 @@ class TerminalCore {
         // Initialize Supported Commands
         this.#supportedCommands = supportedCommands;
 
-        // Initialize Default Terminal Window's Listening to Keyboard Input
-        this.setDefaultKeyboardListener();
-
         // Initialize Terminal Minimized-Window Records
         this.#minimizedWindowRecords = new MinimizedWindowRecords();
 
@@ -1646,6 +1689,9 @@ class TerminalCore {
 
         // Initialize Terminal Window Display
         this.printToWindow(' $ ', true, 'white');
+
+        // Initialize Default Terminal Window's Listening to Keyboard Input
+        this.setDefaultKeyboardListener();
     }
 
     /**
