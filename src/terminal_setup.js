@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
             button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
             button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
             button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal'),
-            button_to_upload_to_mycloud_server = document.getElementById('button_to_upload_to_mycloud_server');
+            button_to_upload_to_mycloud_server = document.getElementById('button_to_upload_to_mycloud_server'),
+            button_to_recover_from_mycloud_server = document.getElementById('button_to_recover_from_mycloud_server');
 
         button_to_switch_theme.addEventListener('click', () => {
             button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
@@ -274,10 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
-            const submitButton = document.createElement('button');
-            submitButton.textContent = '💾 Upload';
-            submitButton.classList.add('mycloud-popup-submit-button');
-            submitButton.addEventListener('click', async () => {
+            const uploadButton = document.createElement('button');
+            uploadButton.textContent = '💾 Upload';
+            uploadButton.classList.add('mycloud-popup-submit-button');
+            uploadButton.addEventListener('click', async () => {
                 const ipp = ippInput.value.trim();
                 const userKey = userKeyInput.value.trim();
 
@@ -357,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(`Upload failed: ${error}`);
                 }
             });
-            divExitButtonsContainer.appendChild(submitButton);
+            divExitButtonsContainer.appendChild(uploadButton);
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
             cancelButton.classList.add('mycloud-popup-cancel-button');
@@ -380,7 +381,171 @@ document.addEventListener('DOMContentLoaded', () => {
             userKeyInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    submitButton.click();
+                    uploadButton.click();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            });
+
+            document.body.appendChild(divOverlay);
+            document.body.appendChild(divMyCloudPopup);
+
+            ippInput.focus();
+        });
+        button_to_recover_from_mycloud_server.addEventListener('click', () => {
+            // create overlay
+            const divOverlay = document.createElement('div');
+            divOverlay.classList.add('mycloud-popup-overlay');
+            divOverlay.addEventListener('click', () => undefined);
+
+            // create a divMyCloudPopup input box for IP:Port and User Key
+            const divMyCloudPopup = document.createElement('div');
+            divMyCloudPopup.classList.add('mycloud-popup');
+
+            const h3Title = document.createElement('h3');
+            h3Title.textContent = 'Recover from MyCloud Server';
+            divMyCloudPopup.appendChild(h3Title);
+
+            // ip:port input container
+            const divIppInputContainer = document.createElement('div');
+            divIppInputContainer.classList.add('mycloud-popup-input-container');
+            const ippInput = document.createElement('input');
+            ippInput.type = 'text';
+            ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
+            ippInput.classList.add('mycloud-popup-input');
+            divIppInputContainer.appendChild(ippInput);
+            divMyCloudPopup.appendChild(divIppInputContainer);
+
+            // user key input container
+            const divUserKeyInputContainer = document.createElement('div');
+            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
+            const userKeyInput = document.createElement('input');
+            userKeyInput.type = 'text';
+            userKeyInput.placeholder = 'User Key';
+            userKeyInput.classList.add('mycloud-popup-input');
+            divUserKeyInputContainer.appendChild(userKeyInput);
+            divMyCloudPopup.appendChild(divUserKeyInputContainer);
+
+            // helper function to close the divMyCloudPopup with fade-out animation
+            const closePopup = () => {
+                divMyCloudPopup.classList.add('fade-out');
+                divOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    divMyCloudPopup.remove();
+                    divOverlay.remove();
+                }, 200); // Match animation duration
+            };
+
+            // exit buttons container
+            const divExitButtonsContainer = document.createElement('div');
+            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+            const recoverButton = document.createElement('button');
+            recoverButton.textContent = '💾 Recover';
+            recoverButton.classList.add('mycloud-popup-submit-button');
+            recoverButton.addEventListener('click', async () => {
+                const ipp = ippInput.value.trim();
+                const userKey = userKeyInput.value.trim();
+
+                if (!ipp) {
+                    alert('Please enter IP:Port.');
+                    return;
+                }
+                if (!userKey) {
+                    alert('Please enter a user key.');
+                    return;
+                }
+                closePopup();
+                // Execute the upload/backup operation using the provided IP:Port and User Key
+                try {
+                    // Backup files using the provided user key
+                    const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
+                        fetch(
+                            `http://${ipp}/mycloud/files/backup/`,
+                            {
+                                method: 'POST',
+                                body: formData({
+                                    user_key: userKey,
+                                    serial: file.getSerial(),
+                                    content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
+                                    created_at: file.getCreatedAt(),
+                                    updated_at: file.getUpdatedAt()
+                                })
+                            }
+                        ).then(
+                            async (res) => [res.status, await res.json()]
+                        )
+                    ));
+                    let errorMessage = '';
+                    const anyFailure = settledResults.some((settledResult) => {
+                        if (settledResult.status === 'rejected') {
+                            errorMessage += `${settledResult.reason}\n`;
+                            return true;
+                        }
+                        if (settledResult.status === 'fulfilled') {
+                            const [status, stream] = settledResult.value;
+                            if (status !== 200) {
+                                const {error: error} = stream;
+                                errorMessage += `${error}\n`;
+                                return true;
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (anyFailure) {
+                        alert(`Failed to upload files.\n${errorMessage}`);
+                        return;
+                    }
+                    // Backup ROOT map
+                    const [status, stream] = await fetch(
+                        `http://${ipp}/mycloud/files/backup/`,
+                        {
+                            method: 'POST',
+                            body: formData({
+                                user_key: userKey,
+                                serial: 'ROOT',
+                                content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
+                                created_at: getISOTimeString(),
+                                updated_at: getISOTimeString()
+                            })
+                        }
+                    ).then(
+                        async (res) => [res.status, await res.json()]
+                    );
+                    if (status !== 200) {
+                        const {error: error} = stream;
+                        alert(`Failed to upload the ROOT map.\n${error}`);
+                        return;
+                    }
+                    alert('Successfully uploaded the file system to MyCloud server.');
+                } catch (error) {
+                    alert(`Upload failed: ${error}`);
+                }
+            });
+            divExitButtonsContainer.appendChild(recoverButton);
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = '✖ Cancel';
+            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.addEventListener('click', () => {
+                closePopup();
+            });
+            divExitButtonsContainer.appendChild(cancelButton);
+            divMyCloudPopup.appendChild(divExitButtonsContainer);
+
+            ippInput.addEventListener('keydown', (e) => {
+                // Handle Enter key - move to next input or submit
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    userKeyInput.focus();
+                } else if (e.key === 'Escape') {
+                    cancelButton.click();
+                }
+            });
+
+            userKeyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    recoverButton.click();
                 } else if (e.key === 'Escape') {
                     cancelButton.click();
                 }
