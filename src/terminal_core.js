@@ -1410,19 +1410,26 @@ class MinimizedWindowRecords {
     }
 }
 
+/**
+ * This structure represents an RGB color.
+ * */
 class RGBColor {
     /** @type {RGBColor} */
     static white = new RGBColor(255, 255, 255);
     /** @type {RGBColor} */
     static black = new RGBColor(0, 0, 0);
     /** @type {RGBColor} */
-    static red = new RGBColor(255, 0, 0);
+    static red = new RGBColor(255, 100, 100);
     /** @type {RGBColor} */
-    static green = new RGBColor(0, 255, 0);
+    static green = new RGBColor(150, 255, 150);
     /** @type {RGBColor} */
-    static blue = new RGBColor(0, 0, 255);
+    static blue = new RGBColor(75, 75, 255);
     /** @type {RGBColor} */
     static yellow = new RGBColor(255, 255, 0);
+    /** @type {RGBColor} */
+    static purple = new RGBColor(255, 0, 255);
+    /** @type {RGBColor} */
+    static turquoise = new RGBColor(0, 255, 255);
 
     /** @type {number} */
     #r;
@@ -1452,8 +1459,19 @@ class RGBColor {
     /**
      * @returns {[number, number, number]}
      * */
-    getRGB() {
+    getRGBArray() {
         return [this.#r, this.#g, this.#b];
+    }
+
+    /**
+     * @returns {{r: number, g: number, b: number}}
+     * */
+    getRGBObject() {
+        return {
+            r: this.#r,
+            g: this.#g,
+            b: this.#b
+        };
     }
 }
 
@@ -1777,7 +1795,7 @@ class TerminalCore {
             if (!(fontColor instanceof RGBColor))
                 throw new TypeError(`fontColor must be an RGBColor or null.`);
             // add fontColor as a presetting
-            const [fr, fg, fb] = fontColor.getRGB();           // reset font color
+            const [fr, fg, fb] = fontColor.getRGBArray();           // reset font color
             content = `\x1b[38;2;${fr};${fg};${fb}m` + content;
         }
         // read background color
@@ -1785,7 +1803,7 @@ class TerminalCore {
             if (!(backgroundColor instanceof RGBColor))
                 throw new TypeError(`backgroundColor must be an RGBColor or null.`);
             // add backgroundColor as a presetting
-            const [br, bg, bb] = backgroundColor.getRGB();     // reset background color
+            const [br, bg, bb] = backgroundColor.getRGBArray();     // reset background color
             content = `\x1b[48;2;${br};${bg};${bb}m` + content;
         }
         // reset the styles

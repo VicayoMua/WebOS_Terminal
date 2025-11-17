@@ -642,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         .duplicate()
                         .createPath(fileDir, true)
                         .createFile(false, fileName, _serialLake_.generateNext());
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`, RGBColor.green);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
@@ -662,7 +662,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .createPath(parameters[0], false);
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a directory, OR the directory may already exist.`);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a directory, `, RGBColor.green);
+                    currentTerminalTabRecord.terminalCore.printToWindow(`OR the directory may already exist.`, RGBColor.turquoise);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
@@ -713,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                         .gotoPath(parameters[0]);
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`, RGBColor.green);
                 } catch (error) {
                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
@@ -745,7 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .movePath('file', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`, RGBColor.green);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
                     }
@@ -755,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
                             .movePath('directory', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`, RGBColor.green);
                     } catch (error) {
                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
                     }
@@ -1470,12 +1471,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // document.getElementById('button_to_test').addEventListener('click', (e) => {
     //     currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`);
     // });
-    _supportedCommands_['ttt'] = {
+    _supportedCommands_['tt'] = {
         is_async: true,
         executable: async (_) => {
-            // currentTerminalTabRecord.terminalCore.printToWindow(' --> fadsfjkl\ndfdsf');
-            // throw new Error('dasd');
-            // currentTerminalTabRecord.terminalCore.printToWindow(`fsadfsf\n2`, null, null, '        ');
+            currentTerminalTabRecord.terminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
         },
         description: ''
     }
