@@ -189,8 +189,8 @@ body.dark-body-mode {
     color: var(--accent-color-contrast);
 }
 
-/* Styles for the <terminal-tabs> */
-.terminal-tabs {
+/* Styles for the <terminal-window-frames> */
+.terminal-window-frames {
     grid-row: 3;
     grid-column: 1;
     display: grid;
@@ -203,7 +203,7 @@ body.dark-body-mode {
     box-shadow: var(--panel-shadow);
 }
 
-.terminal-tab {
+.terminal-window-frame {
     grid-row: 1/1;
     grid-column: 1/1;
     padding: 0;
@@ -213,7 +213,7 @@ body.dark-body-mode {
     display: none;
 }
 
-.terminal-tab.current-tab {
+.terminal-window-frame.current-tab {
     display: block;
 }
 

@@ -50,7 +50,7 @@ const
         return formData;
     },
     /**
-     * This function pops up the alert window for a terminal tab.
+     * This function pops up the alert window for a terminal frame.
      * @param {HTMLDivElement} terminalWindowTab
      * @param {string} message
      * */
@@ -1363,7 +1363,7 @@ class TerminalFolderPointer {
 }
 
 /**
- * This structure represents the records of all minimized windows in a tab.
+ * This structure represents the records of all minimized windows in a frame.
  * All its instances should appear in a terminal core.
  * */
 class MinimizedWindowRecords {
@@ -1508,9 +1508,13 @@ class TerminalCore {
     /** @type {Terminal} */
     #xtermObj;
     /** @type {HTMLDivElement} */
-    #terminalWindowTab;
+    #terminalWindowFrame;
+    /** @type {HTMLButtonElement} */
+    #viewSwitchButton;
     /** @type {Folder} */
     #fsRoot;
+    /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
+    #supportedCommands;
 
     /** @type {SerializeAddon | null} */
     #serializeAddon;
@@ -1518,8 +1522,6 @@ class TerminalCore {
     #fitAddon;
     /** @type {Object | null} */
     #currentXTermKeyboardListener;
-    /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
-    #supportedCommands;
     /** @type {MinimizedWindowRecords} */
     #minimizedWindowRecords;
     /** @type {Record<any, any>} */
@@ -1741,17 +1743,20 @@ class TerminalCore {
      * This method generates a unified terminal interface.
      * Because this is a basic set-up method, type-checks are omitted!!!
      * @param {Terminal} xtermObj
-     * @param {HTMLDivElement} terminalWindowTab
+     * @param {HTMLDivElement} terminalWindowFrame
+     * @param {HTMLButtonElement} viewSwitchButton
      * @param {Folder} fsRoot
      * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
      * */
-    constructor(xtermObj, terminalWindowTab, fsRoot, supportedCommands) {
+    constructor(xtermObj, terminalWindowFrame, viewSwitchButton, fsRoot, supportedCommands) {
         this.#xtermObj = xtermObj;
-        this.#terminalWindowTab = terminalWindowTab;
+        this.#terminalWindowFrame = terminalWindowFrame;
+        this.#viewSwitchButton = viewSwitchButton;
         this.#fsRoot = fsRoot;
+        this.#supportedCommands = supportedCommands;
 
-        // Set up an XTerminal Window to <terminalWindowTab>
-        this.#xtermObj.open(this.#terminalWindowTab);
+        // Set up an XTerminal Window to <terminalWindowFrame>
+        this.#xtermObj.open(this.#terminalWindowFrame);
 
         // Enable SerializeAddon
         try {
@@ -1773,9 +1778,6 @@ class TerminalCore {
 
         // Initialize Current Keyboard Listener
         this.#currentXTermKeyboardListener = null;
-
-        // Initialize Supported Commands
-        this.#supportedCommands = supportedCommands;
 
         // Initialize Terminal Minimized-Window Records
         this.#minimizedWindowRecords = new MinimizedWindowRecords();
@@ -1863,8 +1865,15 @@ class TerminalCore {
     /**
      * @returns {HTMLDivElement}
      * */
-    getWindowTab() {
-        return this.#terminalWindowTab;
+    getWindowFrame() {
+        return this.#terminalWindowFrame;
+    }
+
+    /**
+     * @returns {HTMLButtonElement}
+     * */
+    getViewSwitchButton() {
+        return this.#viewSwitchButton;
     }
 
     /**

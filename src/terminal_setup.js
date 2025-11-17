@@ -23,23 +23,6 @@ import {
 } from './terminal_core.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    class TerminalTabRecord {
-        /** @type {HTMLButtonElement} */
-        buttonTerminalViewSwitch;
-        /** @type {TerminalCore} */
-        terminalCore;
-
-        /**
-         * @param {HTMLDivElement} divTerminalTab
-         * @param {HTMLButtonElement} buttonTerminalViewSwitch
-         * @param {TerminalCore} terminalCore
-         * */
-        constructor(buttonTerminalViewSwitch, terminalCore) {
-            this.buttonTerminalViewSwitch = buttonTerminalViewSwitch;
-            this.terminalCore = terminalCore;
-        }
-    }
-
     const
         /** @type {Object} */
         XTermSetup = {
@@ -71,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let
         /** @type {number} */
         tabCount = 0, // Initialize the total tab count
-        /** @type {TerminalTabRecord | null} */
-        currentTerminalTabRecord = null;
+        /** @type {TerminalCore | null} */
+        currentTerminalCore = null;
     const
         /** @type {Folder} */
         _fsRoot_ = new Folder(true), // Initialize File System Root
@@ -87,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 str += serialMusk[randomInt(0, 62)];
             return str;
         }),
-        /** @type {TerminalTabRecord[]} */
-        _terminalTabRecords_ = [],
+        /** @type {TerminalCore[]} */
+        _terminalCores_ = [],
         /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
         _supportedCommands_ = {}; // Initialize Supported Commands
 
@@ -97,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const
             MAX_TAB_COUNT = 40,
             button_to_switch_theme = document.getElementById('button_to_switch_theme'),
-            div_terminal_tabs = document.getElementById('terminal-tabs'),
+            div_terminal_window_frames = document.getElementById('terminal-window-frames'),
             nav_view_navigation = document.getElementById('view-navigation'),
             button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
             button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
@@ -114,49 +97,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
                 return;
             }
+
             // record the total tab count & use it as current tab number
             tabCount++;
+
             // create a new <HTMLDivElement> for the new Terminal
-            const divNewTerminalWindowTab = document.createElement('div');
-            divNewTerminalWindowTab.setAttribute('class', 'terminal-tab');
-            divNewTerminalWindowTab.setAttribute('id', `terminal-tab-${tabCount}`);
-            div_terminal_tabs.appendChild(divNewTerminalWindowTab);
-            const newTerminalCore = new TerminalCore(
-                new Terminal(XTermSetup),
-                divNewTerminalWindowTab,
-                _fsRoot_,
-                _supportedCommands_
-            );
+            const divNewTerminalWindowFrame = document.createElement('div');
+            divNewTerminalWindowFrame.setAttribute('class', 'terminal-window-frame');
+            div_terminal_window_frames.appendChild(divNewTerminalWindowFrame);
+
             // create a new <HTMLButtonElement> for the view switch for the new terminal core
             const buttonNewTerminalViewSwitch = document.createElement('button');
             buttonNewTerminalViewSwitch.type = 'button';
             buttonNewTerminalViewSwitch.textContent = `Tab #${tabCount}`;
             nav_view_navigation.appendChild(buttonNewTerminalViewSwitch);
-            // create a new tab record
-            const newTerminalTabRecord = new TerminalTabRecord(
+
+            const newTerminalCore = new TerminalCore(
+                new Terminal(XTermSetup),
+                divNewTerminalWindowFrame,
                 buttonNewTerminalViewSwitch,
-                newTerminalCore
+                _fsRoot_,
+                _supportedCommands_
             );
+            _terminalCores_.push(newTerminalCore);
+
             buttonNewTerminalViewSwitch.addEventListener('click', () => {
-                if (currentTerminalTabRecord === null || currentTerminalTabRecord !== newTerminalTabRecord) { // make sure the switch is necessary
+                if (currentTerminalCore === null || currentTerminalCore !== newTerminalCore) { // make sure the switch is necessary
                     // change the nav button style and the terminal tab view
-                    _terminalTabRecords_.forEach((tabRecord) => {
-                        tabRecord.terminalCore.getWindowTab().classList.remove('current-tab');
-                        tabRecord.buttonTerminalViewSwitch.classList.remove('current-tab');
+                    _terminalCores_.forEach((terminalCore) => {
+                        terminalCore.getWindowFrame().classList.remove('current-tab');
+                        terminalCore.getViewSwitchButton().classList.remove('current-tab');
                     });
-                    divNewTerminalWindowTab.classList.add('current-tab');
+                    divNewTerminalWindowFrame.classList.add('current-tab');
                     buttonNewTerminalViewSwitch.classList.add('current-tab');
                     // switch the terminal tab record
-                    currentTerminalTabRecord = newTerminalTabRecord;
+                    currentTerminalCore = newTerminalCore;
                 }
                 setTimeout(() => {
                     const fitAddon = newTerminalCore.getFitAddon();
                     if (fitAddon !== null) fitAddon.fit();
                 }, 100);
             });
-            _terminalTabRecords_.push(newTerminalTabRecord);
-            if (currentTerminalTabRecord === null) // if newly-created terminal tab is <Tab #1>
+
+            if (currentTerminalCore === null) // if newly-created terminal tab is <Tab #1>
                 buttonNewTerminalViewSwitch.click();
+
             window.addEventListener('resize', () => {
                 const fitAddon = newTerminalCore.getFitAddon();
                 if (fitAddon !== null)
@@ -165,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         button_to_save_terminal_log.addEventListener('click', () => {
             const
-                url = URL.createObjectURL(new Blob([currentTerminalTabRecord.terminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
+                url = URL.createObjectURL(new Blob([currentTerminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
                 link = document.createElement('a');
             link.href = url;
             link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
@@ -200,8 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 alert(`button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
                                 return;
                             }
-                            const [newFile, _] = currentTerminalTabRecord.terminalCore
-                                .getCurrentFolderPointer()
+                            const [newFile, _] = currentTerminalCore.getCurrentFolderPointer()
                                 .getCurrentFolder()
                                 .createFile(true, file.name, _serialLake_.generateNext());
                             if (typeof fileContent === 'string') {
@@ -562,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['hello'] = {
         is_async: false,
         executable: (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(` --> Hello World!`);
+            currentTerminalCore.printToWindow(` --> Hello World!`);
         },
         description: `Say 'Hello World!'`
     };
@@ -571,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['help'] = {
         is_async: false,
         executable: (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(
+            currentTerminalCore.printToWindow(
                 ` --> This terminal supports:\n${
                     Object.keys(_supportedCommands_).reduce(
                         (acc, elem, index) => {
@@ -595,14 +579,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     commandName = parameters[0],
                     commandObject = _supportedCommands_[commandName];
                 if (commandObject === undefined) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Command '${commandName}' is not supported!`);
+                    currentTerminalCore.printToWindow(` --> Command '${commandName}' is not supported!`);
                 } else {
-                    currentTerminalTabRecord.terminalCore.printToWindow(' --> ');
-                    currentTerminalTabRecord.terminalCore.printToWindow(commandObject.description, null, null, false, '        ');
+                    currentTerminalCore.printToWindow(' --> ');
+                    currentTerminalCore.printToWindow(commandObject.description, null, null, false, '        ');
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, RGBColor.red);
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, RGBColor.red);
         },
         description: 'A detailed manual of the terminal simulator.\n' +
             'Usage: man [command_name]',
@@ -619,8 +603,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 ''
             );
-            currentTerminalTabRecord.terminalCore.printToWindow(' --> ');
-            currentTerminalTabRecord.terminalCore.printToWindow(result.length > 0 ? result : `''`, null, null, false, '        ');
+            currentTerminalCore.printToWindow(' --> ');
+            currentTerminalCore.printToWindow(result.length > 0 ? result : `''`, null, null, false, '        ');
         },
         description: 'Simply print all the parameters.\n' +
             'Usage: echo [parameters]',
@@ -634,17 +618,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const
                         [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                    currentTerminalCore.getCurrentFolderPointer()
                         .duplicate()
                         .createPath(fileDir, true)
                         .createFile(false, fileName, _serialLake_.generateNext());
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`, RGBColor.green);
+                    currentTerminalCore.printToWindow(` --> Created a file.`, RGBColor.green);
                 } catch (error) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_path]`, RGBColor.red);
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_path]`, RGBColor.red);
         },
         description: 'Make a new file in the current directory.\n' +
             'Usage: touch [file_path]'
@@ -656,16 +640,15 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-                        .createPath(parameters[0], false);
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a directory, `, RGBColor.green);
-                    currentTerminalTabRecord.terminalCore.printToWindow(`OR the directory may already exist.`, RGBColor.turquoise);
+                    currentTerminalCore.getCurrentFolderPointer().createPath(parameters[0], false);
+                    currentTerminalCore.printToWindow(` --> Created a directory, `, RGBColor.green);
+                    currentTerminalCore.printToWindow(`OR the directory may already exist.`, RGBColor.turquoise);
                 } catch (error) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, RGBColor.red);
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, RGBColor.red);
         },
         description: 'Make a new directory.\n' +
             'Usage: mkdir [folder_path]'
@@ -676,8 +659,8 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (parameters) => {
             if (parameters.length === 0) {
-                currentTerminalTabRecord.terminalCore.printToWindow(
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                currentTerminalCore.printToWindow(
+                    currentTerminalCore.getCurrentFolderPointer()
                         .getCurrentFolder()
                         .getContentListAsString()
                 );
@@ -685,18 +668,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.printToWindow(
-                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                    currentTerminalCore.printToWindow(
+                        currentTerminalCore.getCurrentFolderPointer()
                             .duplicate()
                             .gotoPath(parameters[0])
                             .getContentListAsString()
                     );
                 } catch (error) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, RGBColor.red);
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, RGBColor.red);
         },
         description: 'List all the folders and files.\n' +
             'Usage: ls [folder_path]'
@@ -708,15 +691,14 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: (parameters) => {
             if (parameters.length === 1) {
                 try {
-                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-                        .gotoPath(parameters[0]);
-                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`, RGBColor.green);
+                    currentTerminalCore.getCurrentFolderPointer().gotoPath(parameters[0]);
+                    currentTerminalCore.printToWindow(` --> Went to a directory.`, RGBColor.green);
                 } catch (error) {
-                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                 }
                 return;
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, RGBColor.red);
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, RGBColor.red);
         },
         description: 'Goto the given folder.\n' +
             'Usage: cd [folder_path]'
@@ -726,8 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['pwd'] = {
         is_async: false,
         executable: (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(
-                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getFullPath()
+            currentTerminalCore.printToWindow(
+                currentTerminalCore.getCurrentFolderPointer().getFullPath()
             );
         },
         description: 'Print the full path of the current folder.'
@@ -740,26 +722,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (parameters.length === 3) {
                 if (parameters[0] === '-f') {
                     try {
-                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        currentTerminalCore.getCurrentFolderPointer()
                             .movePath('file', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`, RGBColor.green);
+                        currentTerminalCore.printToWindow(` --> Moved a file.`, RGBColor.green);
                     } catch (error) {
-                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                     }
                     return;
                 }
                 if (parameters[0] === '-d') {
                     try {
-                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        currentTerminalCore.getCurrentFolderPointer()
                             .movePath('directory', parameters[1], parameters[2]);
-                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`, RGBColor.green);
+                        currentTerminalCore.printToWindow(` --> Moved a directory.`, RGBColor.green);
                     } catch (error) {
-                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
                     }
                     return;
                 }
             }
-            currentTerminalTabRecord.terminalCore.printToWindow(
+            currentTerminalCore.printToWindow(
                 'Wrong grammar!\n' +
                 'Usage: mv -f [original_file_path] [destination_file_path]\n' +
                 '       mv -d [original_directory_path] [destination_directory_path]',
@@ -808,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //         'Usage: cp -f [original_file_path] [destination_file_path]\n' +
     //         '       cp -d [original_directory_path] [destination_directory_path]'
     // };
-
+    //
     // // Finished
     // _supportedCommands_['rm'] = {
     //     is_async: false,
@@ -863,7 +845,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                     fileContent = file.getContent();
     //                 await new Promise((resolve) => {
     //                     const setPromiseResolver = popupFileEditor(
-    //                         currentTerminalTabRecord.terminalCore.getWindowTab(),
+    //                         currentTerminalTabRecord.terminalCore.getWindowFrame(),
     //                         fileName,
     //                         utf8Decoder.decode(fileContent),
     //                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
@@ -1465,12 +1447,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // }
 
     document.getElementById('button_to_test').addEventListener('click', (e) => {
-        popupAlert(currentTerminalTabRecord.terminalCore.getWindowTab(), 'This is the alert message.');
+        popupAlert(currentTerminalCore.getWindowFrame(), 'This is the alert message.');
     });
     _supportedCommands_['tt'] = {
         is_async: true,
         executable: async (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
+            currentTerminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
         },
         description: ''
     }
