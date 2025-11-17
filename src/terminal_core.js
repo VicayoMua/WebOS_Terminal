@@ -1859,7 +1859,8 @@ class TerminalCore {
      * @returns {string}
      * */
     getTerminalLogAsString() {
-        return this.#serializeAddon.serialize();
+        const log = this.#serializeAddon.serialize();
+        return log.replace(/\x1b\[[0-9;]*m/g, ''); // Remove SGR color codes, like \x1b[38;2;255;100;100m, \x1b[0m, etc.
     }
 
     /**
