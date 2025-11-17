@@ -50,7 +50,18 @@ const
         return formData;
     },
     /**
-     * This function sets up the editor window for the <edit> command.
+     * This function pops up the alert window for a terminal tab.
+     * @param {HTMLDivElement} terminalWindowTab
+     * @param {string} message
+     * */
+    popupAlert = (terminalWindowTab, message) => {
+        const divOverlay = document.createElement('div');
+        divOverlay.classList.add('popup-overlay');
+        divOverlay.addEventListener('click', () => undefined);
+
+    },
+    /**
+     * This function pops up the editor window for the <edit> command.
      * @param {HTMLDivElement} terminalWindowTab
      * @param {string} fileName
      * @param {string} orginalFileContent
@@ -59,13 +70,28 @@ const
      * @param {function():void} callbackToCancelEdit
      * @param {function():void} promiseResolver
      * @returns {function(function():void):void}
+     * @throws {TypeError}
      * */
-    openFileEditor = (
+    popupFileEditor = (
         terminalWindowTab,
         fileName, orginalFileContent,
         callbackToBackupEditorWindow, callbackToSaveFile, callbackToCancelEdit,
         promiseResolver
     ) => {
+        if (!(terminalWindowTab instanceof HTMLDivElement))
+            throw new TypeError('terminalWindowTab must be an HTMLDivElement');
+        if (typeof fileName !== 'string')
+            throw new TypeError('fileName must be a string.');
+        if (typeof orginalFileContent !== 'string')
+            throw new TypeError('orginalFileContent must be a string.');
+        if (typeof callbackToBackupEditorWindow !== 'function')
+            throw new TypeError('callbackToBackupEditorWindow must be a function.');
+        if (typeof callbackToSaveFile !== 'function')
+            throw new TypeError('callbackToSaveFile must be a function.');
+        if (typeof callbackToCancelEdit !== 'function')
+            throw new TypeError('callbackToCancelEdit must be a function.');
+        if (typeof promiseResolver !== 'function')
+            throw new TypeError('promiseResolver must be a function.');
         const divAceEditorWindow = document.createElement('div');
         divAceEditorWindow.classList.add('ace-editor-window');
         {
@@ -1873,7 +1899,8 @@ export {
     utf8Decoder,
     utf8Encoder,
     formData,
-    openFileEditor,
+    popupAlert,
+    popupFileEditor,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,

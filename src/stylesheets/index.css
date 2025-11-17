@@ -1,3 +1,34 @@
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    opacity: 0;
+    animation: fadeIn 0.2s ease forwards;
+}
+
+.popup-overlay.fade-out {
+    animation: fadeOut 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
 :root {
     --bg-color: #fafafc;
     --text-color: #111317;
@@ -245,7 +276,6 @@ body.dark-body-mode {
     text-align: center;
     box-shadow: var(--panel-shadow);
 }
-
 
 @media (max-width: 900px) {
     .main-page {

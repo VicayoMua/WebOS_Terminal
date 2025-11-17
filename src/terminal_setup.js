@@ -8,7 +8,8 @@ import {
     utf8Decoder,
     utf8Encoder,
     formData,
-    openFileEditor,
+    popupAlert,
+    popupFileEditor,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -23,8 +24,6 @@ import {
 
 document.addEventListener('DOMContentLoaded', () => {
     class TerminalTabRecord {
-        /** @type {HTMLDivElement} */
-        divTerminalTab;
         /** @type {HTMLButtonElement} */
         buttonTerminalViewSwitch;
         /** @type {TerminalCore} */
@@ -35,16 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
          * @param {HTMLButtonElement} buttonTerminalViewSwitch
          * @param {TerminalCore} terminalCore
          * */
-        constructor(divTerminalTab, buttonTerminalViewSwitch, terminalCore) {
-            this.divTerminalTab = divTerminalTab;
+        constructor(buttonTerminalViewSwitch, terminalCore) {
             this.buttonTerminalViewSwitch = buttonTerminalViewSwitch;
             this.terminalCore = terminalCore;
         }
     }
 
     const
-        /** @type {number} */
-        MAX_TAB_COUNT = 40,
         /** @type {Object} */
         XTermSetup = {
             fontFamily: '"Fira Code", monospace',
@@ -99,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set Up Button Functions Links
     {
         const
+            MAX_TAB_COUNT = 40,
             button_to_switch_theme = document.getElementById('button_to_switch_theme'),
             div_terminal_tabs = document.getElementById('terminal-tabs'),
             nav_view_navigation = document.getElementById('view-navigation'),
@@ -120,13 +117,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // record the total tab count & use it as current tab number
             tabCount++;
             // create a new <HTMLDivElement> for the new Terminal
-            const divNewTerminalTab = document.createElement('div');
-            divNewTerminalTab.setAttribute('class', 'terminal-tab');
-            divNewTerminalTab.setAttribute('id', `terminal-tab-${tabCount}`);
-            div_terminal_tabs.appendChild(divNewTerminalTab);
+            const divNewTerminalWindowTab = document.createElement('div');
+            divNewTerminalWindowTab.setAttribute('class', 'terminal-tab');
+            divNewTerminalWindowTab.setAttribute('id', `terminal-tab-${tabCount}`);
+            div_terminal_tabs.appendChild(divNewTerminalWindowTab);
             const newTerminalCore = new TerminalCore(
                 new Terminal(XTermSetup),
-                divNewTerminalTab,
+                divNewTerminalWindowTab,
                 _fsRoot_,
                 _supportedCommands_
             );
@@ -137,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nav_view_navigation.appendChild(buttonNewTerminalViewSwitch);
             // create a new tab record
             const newTerminalTabRecord = new TerminalTabRecord(
-                divNewTerminalTab,
                 buttonNewTerminalViewSwitch,
                 newTerminalCore
             );
@@ -145,10 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentTerminalTabRecord === null || currentTerminalTabRecord !== newTerminalTabRecord) { // make sure the switch is necessary
                     // change the nav button style and the terminal tab view
                     _terminalTabRecords_.forEach((tabRecord) => {
-                        tabRecord.divTerminalTab.classList.remove('current-tab');
+                        tabRecord.terminalCore.getWindowTab().classList.remove('current-tab');
                         tabRecord.buttonTerminalViewSwitch.classList.remove('current-tab');
                     });
-                    divNewTerminalTab.classList.add('current-tab');
+                    divNewTerminalWindowTab.classList.add('current-tab');
                     buttonNewTerminalViewSwitch.classList.add('current-tab');
                     // switch the terminal tab record
                     currentTerminalTabRecord = newTerminalTabRecord;
@@ -232,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_upload_to_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
-            divOverlay.classList.add('mycloud-popup-overlay');
+            divOverlay.classList.add('popup-overlay');
             divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key
@@ -396,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_recover_from_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
-            divOverlay.classList.add('mycloud-popup-overlay');
+            divOverlay.classList.add('popup-overlay');
             divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key
@@ -866,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                         .getFile(fileName),
     //                     fileContent = file.getContent();
     //                 await new Promise((resolve) => {
-    //                     const setPromiseResolver = openFileEditor(
+    //                     const setPromiseResolver = popupFileEditor(
     //                         currentTerminalTabRecord.terminalCore.getWindowTab(),
     //                         fileName,
     //                         utf8Decoder.decode(fileContent),
@@ -1468,9 +1464,9 @@ document.addEventListener('DOMContentLoaded', () => {
     //         '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     // }
 
-    // document.getElementById('button_to_test').addEventListener('click', (e) => {
-    //     currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`);
-    // });
+    document.getElementById('button_to_test').addEventListener('click', (e) => {
+        popupAlert(currentTerminalTabRecord.terminalCore.getWindowTab(), 'This is the alert message.');
+    });
     _supportedCommands_['tt'] = {
         is_async: true,
         executable: async (_) => {
