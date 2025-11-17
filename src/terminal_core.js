@@ -1410,6 +1410,53 @@ class MinimizedWindowRecords {
     }
 }
 
+class RGBColor {
+    /** @type {RGBColor} */
+    static white = new RGBColor(255, 255, 255);
+    /** @type {RGBColor} */
+    static black = new RGBColor(0, 0, 0);
+    /** @type {RGBColor} */
+    static red = new RGBColor(255, 0, 0);
+    /** @type {RGBColor} */
+    static green = new RGBColor(0, 255, 0);
+    /** @type {RGBColor} */
+    static blue = new RGBColor(0, 0, 255);
+    /** @type {RGBColor} */
+    static yellow = new RGBColor(255, 255, 0);
+
+    /** @type {number} */
+    #r;
+    /** @type {number} */
+    #g;
+    /** @type {number} */
+    #b;
+
+    /**
+     * @param {number} r
+     * @param {number} g
+     * @param {number} b
+     * @throws {TypeError}
+     * */
+    constructor(r, g, b) {
+        if (
+            typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number' ||
+            !Number.isInteger(r) || !Number.isInteger(g) || !Number.isInteger(b) ||
+            r < 0 || g < 0 || b < 0 ||
+            r > 255 || g > 255 || b > 255
+        ) throw new TypeError('r, g, and b must be an integer between 0 and 255 (inclusive).');
+        this.#r = r;
+        this.#g = g;
+        this.#b = b;
+    }
+
+    /**
+     * @returns {[number, number, number]}
+     * */
+    getRGB() {
+        return [this.#r, this.#g, this.#b];
+    }
+}
+
 /**
  * This structure represents the core services of the terminal, handling all the terminal interfaces.
  * */
@@ -1447,10 +1494,45 @@ class TerminalCore {
     /**
      * @param {function(string):Promise<void | undefined>} keyboardListeningCallback
      * @returns {void}
+     * @throws {TypeError}
      * */
     setNewKeyboardListener(keyboardListeningCallback) {
+        if (typeof keyboardListeningCallback !== 'function')
+            throw new TypeError('KeyboardListener must be a function.');
         this.clearKeyboardListener();
         this.#currentXTermKeyboardListener = this.#xtermObj.onData(keyboardListeningCallback);
+    }
+
+    /**
+     * @param {string} commandName
+     * @param {string[]} commandParameters
+     * @returns {Promise<void>}
+     * */
+    async executeCommand(commandName, commandParameters) {
+        if (typeof commandName !== 'string')
+            throw new TypeError('CommandName must be a string.');
+        if (!Array.isArray(commandParameters) || !commandParameters.every((str) => typeof str === 'string' && str.length > 0))
+            throw new TypeError('CommandParameters must be an array of non-empty strings.');
+        this.clearKeyboardListener();
+        // exit of kernel mode
+        this.printToWindow('\n');
+        const commandObject = this.#supportedCommands[commandName];
+        if (commandObject === undefined) {
+            this.printToWindow(`Command "${commandName}" is not found.`, RGBColor.red);
+        } else {
+            try {
+                if (commandObject.is_async === true) { // must check "=== true"
+                    await commandObject.executable(commandParameters);
+                } else {
+                    commandObject.executable(commandParameters);
+                }
+            } catch (error) {
+                this.printToWindow(`Command "${commandName}" failed due to uncaught errors. <-- ${error}`, RGBColor.red);
+            }
+        }
+        this.printToWindow('\n\n $ ', null, null, false, '');
+        // enter of kernel mode
+        this.setDefaultKeyboardListener();
     }
 
     /**
@@ -1573,8 +1655,8 @@ class TerminalCore {
                     break;
                 }
                 case '\u000C': { // Ctrl+L
-                    this.printToWindow('\x1b[2J\x1b[H $ ', true, 'white');
-                    this.printToWindow(bufferToString(), true, 'white');
+                    this.printToWindow('\x1b[2J\x1b[H $ ');
+                    this.printToWindow(bufferToString());
                     break;
                 }
                 case '\u0003': { // Ctrl+C
@@ -1584,34 +1666,15 @@ class TerminalCore {
                     break;
                 }
                 case '\r': { // Enter
-                    if (buffer.length <= 0)
-                        break;
-                    const
-                        [commandName, commandParameters] = bufferAnalyzeCommandNameParameters(),
-                        commandObject = this.#supportedCommands[commandName];
-                    this.clearKeyboardListener();
-                    this.printToWindow('\n\r   ', true, 'white');
-                    if (commandObject === undefined) {
-                        this.printToWindow(`Command "${commandName}" is not found.`, true, 'white');
-                    } else {
-                        try {
-                            if (commandObject.is_async) {
-                                await commandObject.executable(commandParameters);
-                            } else {
-                                commandObject.executable(commandParameters);
-                            }
-                        } catch (error) {
-                            this.printToWindow(`Command "${commandName}" failed due to __uncaught_errors__: ${error}`, true, 'white');
-                        }
-                    }
+                    if (buffer.length <= 0) break;
+                    const [commandName, commandParameters] = bufferAnalyzeCommandNameParameters();
+                    await this.executeCommand(commandName, commandParameters);
                     bufferReset();
-                    this.printToWindow('\n\n\r $ ', true, 'white');
-                    this.setDefaultKeyboardListener();
                     break;
                 }
                 case '\u007F': { // Backspace
                     if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
-                        this.printToWindow('\b \b', true, 'white');
+                        this.printToWindow('\b \b');
                     }
                     break;
                 }
@@ -1619,12 +1682,11 @@ class TerminalCore {
                     // we should block the TAB key for now!!!
                     break;
                 }
-                default: { // paste from the clipboard
-                    for (const char of keyboardInput) {
-                        // if (char >= String.fromCharCode(0x20) && char <= String.fromCharCode(0x7E) || char >= '\u00a0') {
+                default: {
+                    // no enter no tab...
+                    for (const char of keyboardInput) { // paste from the clipboard
                         bufferAddChar(char);
-                        this.printToWindow(char, true, 'white');
-                        // }
+                        this.printToWindow(char);
                     }
                 }
             }
@@ -1681,30 +1743,56 @@ class TerminalCore {
         this.#currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
 
         // Initialize Terminal Window Display
-        this.printToWindow(' $ ', true, 'white');
+        this.printToWindow(' $ ');
 
         // Initialize Default Terminal Window's Listening to Keyboard Input
         this.setDefaultKeyboardListener();
     }
 
     /**
-     * @param {string} sentence
-     * @param {boolean} if_print_raw_to_window
-     * @param {'white' | 'red' | 'green' | 'blue' | 'yellow'} color
-     * @returns {void}
+     * @param {string} content
+     * @param {RGBColor | null} fontColor
+     * @param {RGBColor | null} backgroundColor
+     * @param {boolean} prefix_first_line
+     * @param {string} prefixPerLine
+     * @returns {number}
      * @throws {TypeError}
      * */
-    printToWindow(sentence, if_print_raw_to_window, color = 'white') { // (string, boolean, boolean) => void
-        if (typeof sentence !== 'string')
-            throw new TypeError('Sentence must be a string.');
-        if (typeof if_print_raw_to_window !== 'boolean')
-            throw new TypeError('if_print_raw_to_window must be a boolean.');
-        // type check for color is not decided yet!!!
-        this.#xtermObj.write(
-            if_print_raw_to_window ?
-                sentence : // leave <sentence> as it was
-                sentence.replaceAll('\n', '\n\r   ') // replace all '\n' in <sentence> with '\n\r   '
-        );
+    printToWindow(content, fontColor = null, backgroundColor = null, prefix_first_line = false, prefixPerLine = '   ') {
+        if (typeof content !== 'string' || content.length === 0)
+            throw new TypeError('content must be a non-empty string.');
+        if (content.indexOf('\r') !== -1)
+            throw new TypeError(`content must not include '\\r'.`);
+        if (typeof prefix_first_line !== 'boolean')
+            throw new TypeError(`prefix_first_line must be a boolean.`);
+        if (typeof prefixPerLine !== 'string')
+            throw new TypeError('prefixPerLine must be a string.');
+        if (prefixPerLine.indexOf('\b') !== -1 || prefixPerLine.indexOf('\r') !== -1 || prefixPerLine.indexOf('\n') !== -1)
+            throw new TypeError(`prefixPerLine must not include '\\b', '\\r', or '\\n'.`);
+        // prefix the content string
+        content = content.replaceAll('\n', `\n\r${prefixPerLine}`);
+        if (prefix_first_line) content = prefixPerLine + content;
+        // read font color
+        if (fontColor !== null) {
+            if (!(fontColor instanceof RGBColor))
+                throw new TypeError(`fontColor must be an RGBColor or null.`);
+            // add fontColor as a presetting
+            const [fr, fg, fb] = fontColor.getRGB();           // reset font color
+            content = `\x1b[38;2;${fr};${fg};${fb}m` + content;
+        }
+        // read background color
+        if (backgroundColor !== null) {
+            if (!(backgroundColor instanceof RGBColor))
+                throw new TypeError(`backgroundColor must be an RGBColor or null.`);
+            // add backgroundColor as a presetting
+            const [br, bg, bb] = backgroundColor.getRGB();     // reset background color
+            content = `\x1b[48;2;${br};${bg};${bb}m` + content;
+        }
+        // reset the styles
+        content = content + `\x1b[0m`;                                                  // reset to default
+        // write to window object
+        this.#xtermObj.write(content);
+        return content.length;
     }
 
     // /**
@@ -1776,5 +1864,6 @@ export {
     extractDirAndKeyName,
     TerminalFolderPointer,
     MinimizedWindowRecords,
+    RGBColor,
     TerminalCore
 };

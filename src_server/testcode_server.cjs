@@ -22,24 +22,5 @@ function extractDirAndKeyName(path) {
     return [path.substring(0, index), path.substring(index + 1)];
 }
 
-//
-//
-//
-//
-//      /** @type {Record<string, Folder>} */
-//      subfolders;          // IN getRecordsJSON
-//      /** @type {Record<string, File>} */
-//      files;                 // IN getRecordsJSON, name <--> serial
-//      /** @type {Record<string, string>} */
-//      folderLinks;         // IN getRecordsJSON
-//      /** @type {Record<string, string>} */
-//      fileLinks;           // IN getRecordsJSON
-//
-//
-//
-
-const path = '/';
-const pathStack = path.split('/').filter((s) => s.length > 0);
-if (pathStack.some((folderName) => folderName !== '.' && folderName !== '..' && !legalKeyNameInFileSystem.test(folderName)))
-    throw new Error(`Path ${path} must follow the keyname requirements.`);
-console.log(pathStack);
+const i = NaN;
+console.log(`prefixPerLine must not include '\\b'.`);
