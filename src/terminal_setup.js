@@ -576,13 +576,13 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTerminalTabRecord.terminalCore.printToWindow(
-                ` --> This terminal supports: ${
+                ` --> This terminal supports:\n${
                     Object.keys(_supportedCommands_).reduce(
                         (acc, elem, index) => {
-                            if (index === 0) return `\n     ${elem}`;
+                            if (index === 0) return `     ${elem}`;
                             return (index % 6 === 0) ? `${acc},\n     ${elem}` : `${acc}, ${elem}`;
                         },
-                        null
+                        ''
                     )
                 }.\n --> For more details, please use the command 'man [command_name]'.`
             );
@@ -590,203 +590,190 @@ document.addEventListener('DOMContentLoaded', () => {
         description: 'A brief manual of the terminal simulator.',
     };
 
-    // // Finished
-    // _supportedCommands_['man'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 1) {
-    //             const
-    //                 commandName = parameters[0],
-    //                 commandObject = _supportedCommands_[commandName];
-    //             if (commandObject === undefined) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     ` --> Command '${commandName}' is not supported!`,
-    //                     true
-    //                 );
-    //             } else {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     commandObject.description,
-    //                     false
-    //                 );
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, false);
-    //     },
-    //     description: 'A detailed manual of the terminal simulator.\n' +
-    //         'Usage: man [command_name]',
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['echo'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         const result = parameters.reduce(
-    //             (acc, elem, index) => {
-    //                 if (index === 0) return elem;
-    //                 return `${acc} ${elem}`;
-    //             },
-    //             ''
-    //         );
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             ` --> ${result.length > 0 ? result : `''`}`,
-    //             false
-    //         );
-    //     },
-    //     description: 'Simply print all the parameters.\n' +
-    //         'Usage: echo [parameters]',
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['touch'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 const
-    //                     [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
-    //                 currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                     .duplicate()
-    //                     .createPath(fileDir, true)
-    //                     .createFile(false, fileName, _serialLake_.generateNext());
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`, false);
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_path]`, false);
-    //     },
-    //     description: 'Make a new file in the current directory.\n' +
-    //         'Usage: touch [file_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['mkdir'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                     .createPath(parameters[0], false);
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     ` --> Created a directory, OR the directory may already exist.`,
-    //                     false
-    //                 );
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, false);
-    //     },
-    //     description: 'Make a new directory.\n' +
-    //         'Usage: mkdir [folder_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['ls'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 0) {
-    //             currentTerminalTabRecord.terminalCore.printToWindow(
-    //                 currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                     .getCurrentFolder()
-    //                     .getContentListAsString(),
-    //                 false
-    //             );
-    //             return;
-    //         }
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .duplicate()
-    //                         .gotoPath(parameters[0])
-    //                         .getContentListAsString(),
-    //                     false
-    //                 );
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, false);
-    //     },
-    //     description: 'List all the folders and files.\n' +
-    //         'Usage: ls [folder_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['cd'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                     .gotoPath(parameters[0]);
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`, false);
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, false);
-    //     },
-    //     description: 'Goto the given folder.\n' +
-    //         'Usage: cd [folder_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['pwd'] = {
-    //     is_async: false,
-    //     executable: (_) => {
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getFullPath(),
-    //             false
-    //         );
-    //     },
-    //     description: 'Print the full path of the current folder.'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['mv'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 3) {
-    //             if (parameters[0] === '-f') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .movePath('file', parameters[1], parameters[2]);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //             if (parameters[0] === '-d') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .movePath('directory', parameters[1], parameters[2]);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: mv -f [original_file_path] [destination_file_path]\n' +
-    //             '       mv -d [original_directory_path] [destination_directory_path]',
-    //             false
-    //         );
-    //     },
-    //     description: 'mv an existing file or directory.\n' +
-    //         'Usage: mv -f [original_file_path] [destination_file_path]\n' +
-    //         '       mv -d [original_directory_path] [destination_directory_path]'
-    // };
-    //
+    // Finished
+    _supportedCommands_['man'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                const
+                    commandName = parameters[0],
+                    commandObject = _supportedCommands_[commandName];
+                if (commandObject === undefined) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Command '${commandName}' is not supported!`);
+                } else {
+                    currentTerminalTabRecord.terminalCore.printToWindow(' --> ');
+                    currentTerminalTabRecord.terminalCore.printToWindow(commandObject.description, null, null, false, '        ');
+                }
+                return;
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: man [command_name]`, RGBColor.red);
+        },
+        description: 'A detailed manual of the terminal simulator.\n' +
+            'Usage: man [command_name]',
+    };
+
+    // Finished
+    _supportedCommands_['echo'] = {
+        is_async: false,
+        executable: (parameters) => {
+            const result = parameters.reduce(
+                (acc, elem, index) => {
+                    if (index === 0) return elem;
+                    return `${acc} ${elem}`;
+                },
+                ''
+            );
+            currentTerminalTabRecord.terminalCore.printToWindow(' --> ');
+            currentTerminalTabRecord.terminalCore.printToWindow(result.length > 0 ? result : `''`, null, null, false, '        ');
+        },
+        description: 'Simply print all the parameters.\n' +
+            'Usage: echo [parameters]',
+    };
+
+    // Finished
+    _supportedCommands_['touch'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                try {
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]);
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .duplicate()
+                        .createPath(fileDir, true)
+                        .createFile(false, fileName, _serialLake_.generateNext());
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a file.`);
+                } catch (error) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: touch [file_path]`, RGBColor.red);
+        },
+        description: 'Make a new file in the current directory.\n' +
+            'Usage: touch [file_path]'
+    };
+
+    // Finished
+    _supportedCommands_['mkdir'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                try {
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .createPath(parameters[0], false);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Created a directory, OR the directory may already exist.`);
+                } catch (error) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: mkdir [folder_path]`, RGBColor.red);
+        },
+        description: 'Make a new directory.\n' +
+            'Usage: mkdir [folder_path]'
+    };
+
+    // Finished
+    _supportedCommands_['ls'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 0) {
+                currentTerminalTabRecord.terminalCore.printToWindow(
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .getCurrentFolder()
+                        .getContentListAsString()
+                );
+                return;
+            }
+            if (parameters.length === 1) {
+                try {
+                    currentTerminalTabRecord.terminalCore.printToWindow(
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(parameters[0])
+                            .getContentListAsString()
+                    );
+                } catch (error) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: ls [folder_path]`, RGBColor.red);
+        },
+        description: 'List all the folders and files.\n' +
+            'Usage: ls [folder_path]'
+    };
+
+    // Finished
+    _supportedCommands_['cd'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                try {
+                    currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                        .gotoPath(parameters[0]);
+                    currentTerminalTabRecord.terminalCore.printToWindow(` --> Went to a directory.`);
+                } catch (error) {
+                    currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: cd [folder_path]`, RGBColor.red);
+        },
+        description: 'Goto the given folder.\n' +
+            'Usage: cd [folder_path]'
+    };
+
+    // Finished
+    _supportedCommands_['pwd'] = {
+        is_async: false,
+        executable: (_) => {
+            currentTerminalTabRecord.terminalCore.printToWindow(
+                currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().getFullPath()
+            );
+        },
+        description: 'Print the full path of the current folder.'
+    };
+
+    // Finished
+    _supportedCommands_['mv'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 3) {
+                if (parameters[0] === '-f') {
+                    try {
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .movePath('file', parameters[1], parameters[2]);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a file.`);
+                    } catch (error) {
+                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+                if (parameters[0] === '-d') {
+                    try {
+                        currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
+                            .movePath('directory', parameters[1], parameters[2]);
+                        currentTerminalTabRecord.terminalCore.printToWindow(` --> Moved a directory.`);
+                    } catch (error) {
+                        currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+            }
+            currentTerminalTabRecord.terminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: mv -f [original_file_path] [destination_file_path]\n' +
+                '       mv -d [original_directory_path] [destination_directory_path]',
+                RGBColor.red
+            );
+        },
+        description: 'mv an existing file or directory.\n' +
+            'Usage: mv -f [original_file_path] [destination_file_path]\n' +
+            '       mv -d [original_directory_path] [destination_directory_path]'
+    };
+
     // // Finished
     // _supportedCommands_['cp'] = {
     //     is_async: false,
@@ -824,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //         'Usage: cp -f [original_file_path] [destination_file_path]\n' +
     //         '       cp -d [original_directory_path] [destination_directory_path]'
     // };
-    //
+
     // // Finished
     // _supportedCommands_['rm'] = {
     //     is_async: false,
@@ -1480,13 +1467,13 @@ document.addEventListener('DOMContentLoaded', () => {
     //         '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     // }
 
-    document.getElementById('button_to_test').addEventListener('click', (e) => {
-        currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`);
-    });
+    // document.getElementById('button_to_test').addEventListener('click', (e) => {
+    //     currentTerminalTabRecord.terminalCore.printToWindow(`Hello World!`);
+    // });
     _supportedCommands_['ttt'] = {
         is_async: true,
         executable: async (_) => {
-            currentTerminalTabRecord.terminalCore.printToWindow(' --> fadsfjkl\ndfdsf');
+            // currentTerminalTabRecord.terminalCore.printToWindow(' --> fadsfjkl\ndfdsf');
             // throw new Error('dasd');
             // currentTerminalTabRecord.terminalCore.printToWindow(`fsadfsf\n2`, null, null, '        ');
         },
