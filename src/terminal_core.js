@@ -1700,15 +1700,19 @@ class TerminalCore {
                 case '\x1b[24~': { // F12
                     break;
                 }
+                case '\u0003': { // Ctrl+C
+                    break;
+                }
+                case '\u0016': { // Ctrl+V
+                    break;
+                }
                 case '\u000C': { // Ctrl+L
                     this.printToWindow('\x1b[2J\x1b[H $ ');
                     this.printToWindow(bufferToString());
                     break;
                 }
-                case '\u0003': { // Ctrl+C
-                    break;
-                }
-                case '\u0016': { // Ctrl+V
+                case '\t': { // TAB
+                    // we should block the TAB key for now!!!
                     break;
                 }
                 case '\r': { // Enter
@@ -1724,12 +1728,9 @@ class TerminalCore {
                     }
                     break;
                 }
-                case '\t': { // TAB
-                    // we should block the TAB key for now!!!
-                    break;
-                }
                 default: {
-                    // no enter no tab...
+                    // delete every character outside the printable ASCII range
+                    keyboardInput = keyboardInput.replace(/[^ -~]/g, '');
                     for (const char of keyboardInput) { // paste from the clipboard
                         bufferAddChar(char);
                         this.printToWindow(char);
