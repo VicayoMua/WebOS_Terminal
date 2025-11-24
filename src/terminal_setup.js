@@ -1024,42 +1024,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // // Update!!!
-    // _supportedCommands_['ping'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-    //
-    // // Update!!!
-    // _supportedCommands_['wget'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-    //
-    // // Update!!!
-    // _supportedCommands_['zip'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-    //
-    // // Update!!!
-    // _supportedCommands_['unzip'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-    //
-    // // Update!!!
     // _supportedCommands_['mycloud'] = {
     //     is_async: true,
     //     executable: async (parameters) => {
@@ -1447,6 +1411,42 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         description: ''
     }
+
+    // // Update!!!
+    // _supportedCommands_['ping'] = {
+    //     is_async: true,
+    //     executable: async (parameters) => {
+    //         //
+    //     },
+    //     description: ''
+    // }
+
+    // // Update!!!
+    // _supportedCommands_['wget'] = {
+    //     is_async: true,
+    //     executable: async (parameters) => {
+    //         //
+    //     },
+    //     description: ''
+    // }
+
+    // // Update!!!
+    // _supportedCommands_['zip'] = {
+    //     is_async: true,
+    //     executable: async (parameters) => {
+    //         //
+    //     },
+    //     description: ''
+    // }
+
+    // // Update!!!
+    // _supportedCommands_['unzip'] = {
+    //     is_async: true,
+    //     executable: async (parameters) => {
+    //         //
+    //     },
+    //     description: ''
+    // }
 
     // // Update Needed
     // _supportedCommands_['ctow'] = {
