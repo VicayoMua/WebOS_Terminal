@@ -1,35 +1,3 @@
-/* Styles for the Ace Editor popup overlay */
-.ace-editor-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 9998;
-    opacity: 0;
-    animation: aceFadeIn 0.2s ease forwards;
-}
-
-.ace-editor-overlay.fade-out {
-    animation: aceFadeOut 0.2s ease forwards;
-}
-
-@keyframes aceFadeIn {
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes aceFadeOut {
-    from {
-        opacity: 1;
-    }
-    to {
-        opacity: 0;
-    }
-}
-
 .ace-editor-window {
     display: grid;
     grid-template-columns: 1fr;
@@ -42,7 +10,7 @@
     padding: 20px;
     border: 1px solid var(--boarder-color, #e6e8ee);
     border-radius: 14px;
-    z-index: 9999;       /* make the window always in the front */
+    z-index: 200;       /* make the window always in the front */
     width: 95%;          /* relative to parent (.terminal-tab) */
     height: 95%;         /* relative to parent (.terminal-tab) */
     box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
