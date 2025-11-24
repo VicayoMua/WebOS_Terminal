@@ -1836,7 +1836,7 @@ class TerminalCore {
             content = `\x1b[48;2;${br};${bg};${bb}m` + content;
         }
         // reset the styles
-        content = content + `\x1b[0m`;                                                  // reset to default
+        content = content + `\x1b[0m`;                                                       // reset to default
         // write to window object
         this.#xtermObj.write(content);
         return content.length;

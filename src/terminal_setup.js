@@ -753,285 +753,276 @@ document.addEventListener('DOMContentLoaded', () => {
             '       mv -d [original_directory_path] [destination_directory_path]'
     };
 
-    // // Finished
-    // _supportedCommands_['cp'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 3) {
-    //             if (parameters[0] === '-f') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .copyPath('file', parameters[1], parameters[2], _serialLake_);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Copied a file.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //             if (parameters[0] === '-d') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .copyPath('directory', parameters[1], parameters[2], _serialLake_);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Copied a directory.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: cp -f [original_file_path] [destination_file_path]\n' +
-    //             '       cp -d [original_directory_path] [destination_directory_path]',
-    //             false
-    //         );
-    //     },
-    //     description: 'Copy an existing file or directory.\n' +
-    //         'Usage: cp -f [original_file_path] [destination_file_path]\n' +
-    //         '       cp -d [original_directory_path] [destination_directory_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['rm'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 2) {
-    //             if (parameters[0] === '-f') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .deletePath('file', parameters[1]);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Removed a file.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //             if (parameters[0] === '-d') {
-    //                 try {
-    //                     currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .deletePath('directory', parameters[1]);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Removed a directory.`, false);
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: rm -f [file_path]\n' +
-    //             '       rm -d [directory_path]',
-    //             false
-    //         );
-    //     },
-    //     description: 'Remove (delete) an existing file or directory.\n' +
-    //         'Usage: rm -f [file_path]\n' +
-    //         '       rm -d [directory_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['edit'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 const
-    //                     [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
-    //                     file = currentTerminalTabRecord.terminalCore
-    //                         .getCurrentFolderPointer()
-    //                         .duplicate()
-    //                         .gotoPath(fileDir)
-    //                         .getFile(fileName),
-    //                     fileContent = file.getContent();
-    //                 await new Promise((resolve) => {
-    //                     const setPromiseResolver = popupFileEditor(
-    //                         currentTerminalTabRecord.terminalCore.getWindowFrame(),
-    //                         fileName,
-    //                         utf8Decoder.decode(fileContent),
-    //                         (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-    //                             currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().add(windowDescription, (promiseResolver) => {
-    //                                 divAceEditorWindow.classList.remove('fade-out');
-    //                                 divAceEditorWindow.style.display = '';
-    //                                 aceEditorObject.focus();
-    //                                 setPromiseResolver(promiseResolver);
-    //                             });
-    //                             currentTerminalTabRecord.terminalCore.printToWindow(` --> Minimized a editor window.`, false);
-    //                         },
-    //                         (newFileContent) => { // save
-    //                             file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
-    //                             currentTerminalTabRecord.terminalCore.printToWindow(` --> Saved a text file.`, false);
-    //                         },
-    //                         () => { // cancel
-    //                             currentTerminalTabRecord.terminalCore.printToWindow(` --> Discarded the change of a text file.`, false);
-    //                         },
-    //                         () => resolve(undefined)
-    //                     );
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(` --> Opened a text editor.\n`, false);
-    //                 });
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, false);
-    //     },
-    //     description: 'Edit an existing file.\n' +
-    //         'Usage: edit [file_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['fprint'] = {
-    //     is_async: false,
-    //     executable: (parameters) => {
-    //         if (parameters.length === 1) {
-    //             try {
-    //                 const
-    //                     [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
-    //                     fileContent = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer()
-    //                         .duplicate()
-    //                         .gotoPath(fileDir)
-    //                         .getFile(fileName)
-    //                         .getContent(),
-    //                     fileString = utf8Decoder.decode(fileContent);
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     fileString.length === 0 ? '<EMPTY FILE>' : fileString,
-    //                     false
-    //                 );
-    //             } catch (error) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //             }
-    //             return;
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: fprint [file_path]',
-    //             false
-    //         );
-    //     },
-    //     description: 'Print an existing file to the terminal window.\n' +
-    //         'Usage: fprint [file_path]'
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['mini'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         if (parameters.length === 1) {
-    //             if (parameters[0] === '-l') { // Command: mini -l
-    //                 const cmwrList = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords().getList();
-    //                 if (cmwrList.length === 0) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(' --> No minimized window...', false);
-    //                 } else {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(
-    //                         ' --> Window List:' + cmwrList.reduce(
-    //                             (acc, [index, description]) =>
-    //                                 `${acc}\n                    [${index}] ${description}`,
-    //                             ''
-    //                         ),
-    //                         false
-    //                     );
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         if (parameters.length === 2) {
-    //             if (parameters[0] === '-r') { // Command: mini -r [number]
-    //                 try {
-    //                     const
-    //                         cmwr = currentTerminalTabRecord.terminalCore.getMinimizedWindowRecords(),
-    //                         windowRecoverCallback = cmwr.getWindowRecoverCallback(Number.parseInt(parameters[1], 10));
-    //                     if (windowRecoverCallback === null) {
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(' --> Wrong index!', false);
-    //                     } else {
-    //                         await new Promise((resolve) => {
-    //                             windowRecoverCallback(resolve);
-    //                             currentTerminalTabRecord.terminalCore.printToWindow(
-    //                                 ' --> Recovered a window.\n' +
-    //                                 '     Note: Window indices are refrshed after this operation!\n',
-    //                                 false
-    //                             );
-    //                         });
-    //                     }
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: mini -l\n' +
-    //             '       mini -r [number]',
-    //             false
-    //         );
-    //     },
-    //     description: 'List all the minimized windows, or Re-open a minimized window.\n' +
-    //         'Usage: mini -l             to list all the minimized windows\n' +
-    //         '       mini -r [number]    to recover the minimized window',
-    // };
-    //
-    // // Finished
-    // _supportedCommands_['download'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         if (parameters.length === 2) {
-    //             const tfp = currentTerminalTabRecord.terminalCore.getCurrentFolderPointer().duplicate();
-    //             if (parameters[0] === '-f') {
-    //                 try {
-    //                     const
-    //                         [fileDir, fileName] = extractDirAndKeyName(parameters[1]),
-    //                         url = URL.createObjectURL(
-    //                             new Blob(
-    //                                 [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
-    //                                 {type: 'application/octet-stream'}
-    //                             )
-    //                         ),
-    //                         link = document.createElement('a');
-    //                     link.href = url;
-    //                     link.download = fileName; // the filename the user sees
-    //                     link.click();
-    //                     URL.revokeObjectURL(url);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(
-    //                         ' --> Downloaded a file.',
-    //                         false
-    //                     );
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //             if (parameters[0] === '-d') {
-    //                 try {
-    //                     const
-    //                         url = URL.createObjectURL(await tfp.gotoPath(parameters[1]).getZipBlob()),
-    //                         link = document.createElement('a'),
-    //                         zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
-    //                     link.href = url;
-    //                     link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
-    //                     link.click();
-    //                     URL.revokeObjectURL(url);
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(
-    //                         ' --> downloaded a directory.',
-    //                         false
-    //                     );
-    //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
-    //                 }
-    //                 return;
-    //             }
-    //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
-    //             'Wrong grammar!\n' +
-    //             'Usage: download -f [file_path]\n' +
-    //             '       download -d [directory_path]',
-    //             false
-    //         );
-    //     },
-    //     description: 'Download a single file or a directory (as .zip file) in the terminal file system.\n' +
-    //         'Usage: download -f [file_path]\n' +
-    //         '       download -d [directory_path]'
-    // };
-    //
+    // Finished
+    _supportedCommands_['cp'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 3) {
+                if (parameters[0] === '-f') {
+                    try {
+                        currentTerminalCore.getCurrentFolderPointer()
+                            .copyPath('file', parameters[1], parameters[2], _serialLake_);
+                        currentTerminalCore.printToWindow(` --> Copied a file.`, RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+                if (parameters[0] === '-d') {
+                    try {
+                        currentTerminalCore.getCurrentFolderPointer()
+                            .copyPath('directory', parameters[1], parameters[2], _serialLake_);
+                        currentTerminalCore.printToWindow(` --> Copied a directory.`, RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: cp -f [original_file_path] [destination_file_path]\n' +
+                '       cp -d [original_directory_path] [destination_directory_path]',
+                RGBColor.red
+            );
+        },
+        description: 'Copy an existing file or directory.\n' +
+            'Usage: cp -f [original_file_path] [destination_file_path]\n' +
+            '       cp -d [original_directory_path] [destination_directory_path]'
+    };
+
+    // Finished
+    _supportedCommands_['rm'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 2) {
+                if (parameters[0] === '-f') {
+                    try {
+                        currentTerminalCore.getCurrentFolderPointer()
+                            .deletePath('file', parameters[1]);
+                        currentTerminalCore.printToWindow(` --> Removed a file.`, RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+                if (parameters[0] === '-d') {
+                    try {
+                        currentTerminalCore.getCurrentFolderPointer()
+                            .deletePath('directory', parameters[1]);
+                        currentTerminalCore.printToWindow(` --> Removed a directory.`, RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: rm -f [file_path]\n' +
+                '       rm -d [directory_path]',
+                RGBColor.red
+            );
+        },
+        description: 'Remove (delete) an existing file or directory.\n' +
+            'Usage: rm -f [file_path]\n' +
+            '       rm -d [directory_path]'
+    };
+
+    // Finished
+    _supportedCommands_['edit'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            if (parameters.length === 1) {
+                try {
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
+                        file = currentTerminalCore.getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(fileDir)
+                            .getFile(fileName),
+                        fileContent = file.getContent();
+                    await new Promise((resolve) => {
+                        const setPromiseResolver = popupFileEditor(
+                            currentTerminalCore.getWindowFrame(),
+                            fileName,
+                            utf8Decoder.decode(fileContent),
+                            (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
+                                currentTerminalCore.getMinimizedWindowRecords().add(windowDescription, (promiseResolver) => {
+                                    divAceEditorWindow.classList.remove('fade-out');
+                                    divAceEditorWindow.style.display = '';
+                                    aceEditorObject.focus();
+                                    setPromiseResolver(promiseResolver);
+                                });
+                                currentTerminalCore.printToWindow(` --> Minimized a editor window.`, RGBColor.green);
+                            },
+                            (newFileContent) => { // save
+                                file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
+                                currentTerminalCore.printToWindow(` --> Saved a text file.`, RGBColor.green);
+                            },
+                            () => { // cancel
+                                currentTerminalCore.printToWindow(` --> Discarded the change of a text file.`);
+                            },
+                            () => resolve(undefined)
+                        );
+                        currentTerminalCore.printToWindow(` --> Opened a text editor.\n`, RGBColor.green);
+                    });
+                } catch (error) {
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalCore.printToWindow(`Wrong grammar!\nUsage: edit [file_path]`, RGBColor.red);
+        },
+        description: 'Edit an existing file.\n' +
+            'Usage: edit [file_path]'
+    };
+
+    // Finished
+    _supportedCommands_['printf'] = {
+        is_async: false,
+        executable: (parameters) => {
+            if (parameters.length === 1) {
+                try {
+                    const
+                        [fileDir, fileName] = extractDirAndKeyName(parameters[0]),
+                        fileContent = currentTerminalCore.getCurrentFolderPointer()
+                            .duplicate()
+                            .gotoPath(fileDir)
+                            .getFile(fileName)
+                            .getContent(),
+                        fileString = utf8Decoder.decode(fileContent);
+                    currentTerminalCore.printToWindow(
+                        fileString.length === 0 ? '<EMPTY FILE>' : fileString,
+                        RGBColor.black, RGBColor.turquoise
+                    );
+                } catch (error) {
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: printf [file_path]',
+                RGBColor.red
+            );
+        },
+        description: 'Print an existing file to the terminal window.\n' +
+            'Usage: printf [file_path]'
+    };
+
+    // Finished
+    _supportedCommands_['rwind'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            if (parameters.length === 1) {
+                if (parameters[0] === '-l') { // Command: rwind -l
+                    const cmwrList = currentTerminalCore.getMinimizedWindowRecords().getList();
+                    if (cmwrList.length === 0) {
+                        currentTerminalCore.printToWindow(' --> No minimized window...');
+                    } else {
+                        const content = cmwrList.reduce(
+                            (acc, [index, description]) =>
+                                `${acc}\n                    [${index}] ${description}`,
+                            ''
+                        );
+                        currentTerminalCore.printToWindow(` --> Window List:${content}`);
+                    }
+                    return;
+                }
+            }
+            if (parameters.length === 2) {
+                if (parameters[0] === '-r') { // Command: rwind -r [number]
+                    try {
+                        const
+                            cmwr = currentTerminalCore.getMinimizedWindowRecords(),
+                            windowRecoverCallback = cmwr.getWindowRecoverCallback(Number.parseInt(parameters[1], 10));
+                        if (windowRecoverCallback === null) {
+                            currentTerminalCore.printToWindow(' --> Wrong index!', RGBColor.red);
+                        } else {
+                            await new Promise((resolve) => {
+                                windowRecoverCallback(resolve);
+                                currentTerminalCore.printToWindow(
+                                    ' --> Recovered a window.\n' +
+                                    '     Note: Window indices are refrshed after this operation!\n',
+                                    RGBColor.green
+                                );
+                            });
+                        }
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: rwind -l\n' +
+                '       rwind -r [number]',
+                RGBColor.red
+            );
+        },
+        description: 'List all the minimized windows, or recover (bring to the front) a minimized window.\n' +
+            'Usage: rwind -l             to list all the minimized windows\n' +
+            '       rwind -r [number]    to recover the minimized window',
+    };
+
+    // Finished
+    _supportedCommands_['download'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            if (parameters.length === 2) {
+                const tfp = currentTerminalCore.getCurrentFolderPointer().duplicate();
+                if (parameters[0] === '-f') {
+                    try {
+                        const
+                            [fileDir, fileName] = extractDirAndKeyName(parameters[1]),
+                            url = URL.createObjectURL(
+                                new Blob(
+                                    [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
+                                    {type: 'application/octet-stream'}
+                                )
+                            ),
+                            link = document.createElement('a');
+                        link.href = url;
+                        link.download = fileName; // the filename the user sees
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        currentTerminalCore.printToWindow(' --> Downloaded a file.', RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+                if (parameters[0] === '-d') {
+                    try {
+                        const
+                            url = URL.createObjectURL(await tfp.gotoPath(parameters[1]).getZipBlob()),
+                            link = document.createElement('a'),
+                            zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
+                        link.href = url;
+                        link.download = (zipFileName === '') ? 'ROOT.zip' : `ROOT_${zipFileName}.zip`; // the filename the user sees
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        currentTerminalCore.printToWindow(' --> downloaded a directory.', RGBColor.green);
+                    } catch (error) {
+                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                    }
+                    return;
+                }
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: download -f [file_path]\n' +
+                '       download -d [directory_path]',
+                RGBColor.red
+            );
+        },
+        description: 'Download a single file or a directory (as .zip file) from the terminal file system to your local machine.\n' +
+            'Usage: download -f [file_path]\n' +
+            '       download -d [directory_path]'
+    };
+
     // // Update!!!
     // _supportedCommands_['ping'] = {
     //     is_async: true,
