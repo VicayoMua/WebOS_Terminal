@@ -1659,49 +1659,52 @@ class TerminalCore {
             indexPrevComm = -1;
         this.#defaultKeyboardListeningFunction = async (keyboardInput) => {
             switch (keyboardInput) {
-                case '\x1bOP': { // F1
+                case '\x1bOP': { // F1 (ignored)
                     break;
                 }
-                case '\x1bOQ': { // F2
+                case '\x1bOQ': { // F2 (ignored)
                     break;
                 }
-                case '\x1bOR': { // F3
+                case '\x1bOR': { // F3 (ignored)
                     break;
                 }
-                case '\x1bOS': { // F4
+                case '\x1bOS': { // F4 (ignored)
                     break;
                 }
-                case '\x1b[15~': { // F5
+                case '\x1b[15~': { // F5 (ignored)
                     break;
                 }
-                case '\x1b[17~': { // F6
+                case '\x1b[17~': { // F6 (ignored)
                     break;
                 }
-                case '\x1b[18~': { // F7
+                case '\x1b[18~': { // F7 (ignored)
                     break;
                 }
-                case '\x1b[19~': { // F8
+                case '\x1b[19~': { // F8 (ignored)
                     break;
                 }
-                case '\x1b[20~': { // F9
+                case '\x1b[20~': { // F9 (ignored)
                     break;
                 }
-                case '\x1b[21~': { // F10
+                case '\x1b[21~': { // F10 (ignored)
                     break;
                 }
-                case '\x1b[23~': { // F11
+                case '\x1b[23~': { // F11 (ignored)
                     break;
                 }
-                case '\x1b[24~': { // F12
+                case '\x1b[24~': { // F12 (ignored)
                     break;
                 }
-                case '\u0003': { // Ctrl+C
+                case '\x1b[C': { // Right Arrow (ignored)
                     break;
                 }
-                case '\u0016': { // Ctrl+V
+                case '\x1b[D': { // Left Arrow (ignored)
                     break;
                 }
-                case '\x1b[A': { // Up arrow
+                case '\t': { // TAB (ignored for now)
+                    break;
+                }
+                case '\x1b[A': { // Up Arrow
                     if (previousCommands.length <= 0)
                         break;
                     if (indexPrevComm === -1 || indexPrevComm === 0) {
@@ -1718,7 +1721,7 @@ class TerminalCore {
                     bufferAddString(command);
                     break;
                 }
-                case '\x1b[B': { // Down arrow
+                case '\x1b[B': { // Down Arrow
                     if (previousCommands.length <= 0)
                         break;
                     if (indexPrevComm === -1 || indexPrevComm === previousCommands.length - 1) {
@@ -1735,19 +1738,10 @@ class TerminalCore {
                     bufferAddString(command);
                     break;
                 }
-                case '\x1b[C': { // Right arrow
-                    break;
-                }
-                case '\x1b[D': { // Left arrow
-                    break;
-                }
-                case '\t': { // TAB
-                    // we should block the TAB key for now!!!
-                    break;
-                }
-                case '\u000C': { // Ctrl+L
-                    this.clearAllInWindow();
-                    this.printToWindow(` $ ${bufferToString()}`);
+                case '\u007F': { // Backspace
+                    if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
+                        this.printToWindow('\b \b');
+                    }
                     break;
                 }
                 case '\r': { // Enter
@@ -1759,17 +1753,23 @@ class TerminalCore {
                     await this.executeCommand(commandName, commandParameters);
                     break;
                 }
-                case '\u007F': { // Backspace
-                    if (bufferRemoveChar()) { // if the char is successfully removed from the buffer
-                        this.printToWindow('\b \b');
-                    }
+                case '\u000C': { // Ctrl+L
+                    this.clearAllInWindow();
+                    this.printToWindow(` $ ${bufferToString()}`);
+                    break;
+                }
+                case '\u0016': { // Ctrl+V
+                    const clipText = await navigator.clipboard.readText();
+                    const safeKeyboardInput = clipText.replace(/[^ -~]/g, '');
+                    this.printToWindow(safeKeyboardInput);
+                    bufferAddString(safeKeyboardInput);
                     break;
                 }
                 default: {
                     // delete every character outside the printable ASCII range
                     const safeKeyboardInput = keyboardInput.replace(/[^ -~]/g, '');
-                    bufferAddString(safeKeyboardInput);
                     this.printToWindow(safeKeyboardInput);
+                    bufferAddString(safeKeyboardInput);
                 }
             }
         };
