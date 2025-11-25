@@ -1861,8 +1861,8 @@ class TerminalCore {
     printToWindow(content, fontColor = null, backgroundColor = null, prefix_first_line = false, prefixPerLine = '   ') {
         if (typeof content !== 'string' || content.length === 0)
             throw new TypeError('content must be a non-empty string.');
-        if (content.indexOf('\r') !== -1)
-            throw new TypeError(`content must not include '\\r'.`);
+        // if (content.indexOf('\r') !== -1)
+        //     throw new TypeError(`content must not include '\\r'.`);
         if (typeof prefix_first_line !== 'boolean')
             throw new TypeError(`prefix_first_line must be a boolean.`);
         if (typeof prefixPerLine !== 'string')
