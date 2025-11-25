@@ -52,9 +52,13 @@ const
     /**
      * This function pops up the alert window for a terminal frame.
      * @param {HTMLDivElement} terminalWindowFrame
-     * @param {string} message
+     * @param {string} alertMessage
      * */
-    popupAlert = (terminalWindowFrame, message) => {
+    popupAlert = (terminalWindowFrame, alertMessage) => {
+        if (!(terminalWindowFrame instanceof HTMLDivElement))
+            throw new TypeError('terminalWindowFrame must be an HTMLDivElement.');
+        if (typeof alertMessage !== 'string' || alertMessage.length === 0)
+            throw new TypeError('alertMessage must be a non-empty string.');
         const divOverlay = document.createElement('div');
         divOverlay.classList.add('popup-overlay');
         divOverlay.addEventListener('click', () => undefined);
@@ -66,10 +70,10 @@ const
         h3Title.textContent = 'Alert';
         divAlertPopup.appendChild(h3Title);
 
-        // message container
+        // alertMessage container
         const divMessage = document.createElement('div');
-        divMessage.classList.add('alert-popup-message');
-        divMessage.textContent = message;
+        divMessage.classList.add('alert-popup-alertMessage');
+        divMessage.textContent = alertMessage;
         divAlertPopup.appendChild(divMessage);
 
         // helper function to close the popup with fade-out animation
@@ -85,13 +89,13 @@ const
         // exit buttons container
         const divExitButtonContainer = document.createElement('div');
         divExitButtonContainer.classList.add('alert-popup-button-container');
-        const okButton = document.createElement('button');
-        okButton.textContent = 'Got it';
-        okButton.classList.add('alert-popup-got-it-button');
-        okButton.addEventListener('click', () => {
+        const gotitButton = document.createElement('button');
+        gotitButton.textContent = 'Got it';
+        gotitButton.classList.add('alert-popup-got-it-button');
+        gotitButton.addEventListener('click', () => {
             closePopup();
         });
-        divExitButtonContainer.appendChild(okButton);
+        divExitButtonContainer.appendChild(gotitButton);
         divAlertPopup.appendChild(divExitButtonContainer);
 
         // Append to terminalWindowFrame
@@ -100,7 +104,7 @@ const
 
         // Focus the OK button for keyboard accessibility
         setTimeout(() => {
-            okButton.focus();
+            gotitButton.focus();
         }, 100);
     },
     /**

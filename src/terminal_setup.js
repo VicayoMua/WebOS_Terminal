@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_open_new_terminal_tab.addEventListener('click', () => {
             // check the tab count limit
             if (tabCount >= MAX_TAB_COUNT) {
-                alert(`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
+                popupAlert(currentTerminalCore.getWindowFrame(),`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
                 return;
             }
 
@@ -169,20 +169,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (const file of input_event.target.files) {
                     if (!file) continue;
                     if (typeof file.name !== 'string') { // filename is illegal
-                        alert('button_to_add_files_to_terminal: file name must be a string.');
+                        popupAlert(currentTerminalCore.getWindowFrame(),'button_to_add_files_to_terminal: file name must be a string.');
                         return;
                     }
                     const reader = new FileReader();
                     {
                         // set up behaviors on errors
                         reader.onerror = (error) => {
-                            alert(`button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
+                            popupAlert(currentTerminalCore.getWindowFrame(),`button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
                         };
                         // set up behaviors on loading
                         reader.onload = (reader_event) => {
                             const fileContent = reader_event.target.result;
                             if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
-                                alert(`button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
+                                popupAlert(currentTerminalCore.getWindowFrame(),`button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
                                 return;
                             }
                             const [newFile, _] = currentTerminalCore.getCurrentFolderPointer()
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
                     }
                 }
-                alert(`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
+                popupAlert(currentTerminalCore.getWindowFrame(),`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
             });
             // activate the file input element
             input.click();
@@ -264,11 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userKey = userKeyInput.value.trim();
 
                 if (!ipp) {
-                    alert('Please enter IP:Port.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter IP:Port.');
                     return;
                 }
                 if (!userKey) {
-                    alert('Please enter a user key.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter a user key.');
                     return;
                 }
                 closePopup();
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return true;
                     });
                     if (anyFailure) {
-                        alert(`Failed to upload files.\n${errorMessage}`);
+                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload files.\n${errorMessage}`);
                         return;
                     }
                     // Backup ROOT map
@@ -331,12 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                     if (status !== 200) {
                         const {error: error} = stream;
-                        alert(`Failed to upload the ROOT map.\n${error}`);
+                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload the ROOT map.\n${error}`);
                         return;
                     }
-                    alert('Successfully uploaded the file system to MyCloud server.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Successfully uploaded the file system to MyCloud server.');
                 } catch (error) {
-                    alert(`Upload failed: ${error}`);
+                    popupAlert(currentTerminalCore.getWindowFrame(),`Upload failed: ${error}`);
                 }
             });
             divExitButtonsContainer.appendChild(uploadButton);
@@ -428,11 +428,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userKey = userKeyInput.value.trim();
 
                 if (!ipp) {
-                    alert('Please enter IP:Port.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter IP:Port.');
                     return;
                 }
                 if (!userKey) {
-                    alert('Please enter a user key.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter a user key.');
                     return;
                 }
                 closePopup();
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return true;
                     });
                     if (anyFailure) {
-                        alert(`Failed to upload files.\n${errorMessage}`);
+                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload files.\n${errorMessage}`);
                         return;
                     }
                     // Backup ROOT map
@@ -495,12 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                     if (status !== 200) {
                         const {error: error} = stream;
-                        alert(`Failed to upload the ROOT map.\n${error}`);
+                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload the ROOT map.\n${error}`);
                         return;
                     }
-                    alert('Successfully uploaded the file system to MyCloud server.');
+                    popupAlert(currentTerminalCore.getWindowFrame(),'Successfully uploaded the file system to MyCloud server.');
                 } catch (error) {
-                    alert(`Upload failed: ${error}`);
+                    popupAlert(currentTerminalCore.getWindowFrame(),`Upload failed: ${error}`);
                 }
             });
             divExitButtonsContainer.appendChild(recoverButton);
@@ -1402,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // }
 
     document.getElementById('button_to_test').addEventListener('click', (e) => {
-        popupAlert(currentTerminalCore.getWindowFrame(), 'This is the alert message.');
+        popupAlert(currentTerminalCore.getWindowFrame(), 'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.');
     });
     _supportedCommands_['tt'] = {
         is_async: true,
