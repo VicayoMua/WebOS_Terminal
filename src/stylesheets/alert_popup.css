@@ -1,0 +1,95 @@
+.alert-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    background-color: var(--header-color, #ffffff);
+    padding: 24px;
+    border: 1px solid var(--boarder-color, #e6e8ee);
+    border-radius: 14px;
+    box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
+    z-index: 1001;
+    min-width: 400px;
+    color: var(--text-color, #111317);
+    opacity: 0;
+    animation: alertPopupFadeIn 0.2s ease forwards;
+}
+
+/* When alert-popup is inside terminal-window-frame, scope it to that container */
+.terminal-window-frame .popup-overlay {
+    position: absolute;
+}
+
+.terminal-window-frame .alert-popup {
+    position: absolute;
+}
+
+.alert-popup.fade-out {
+    animation: alertPopupFadeOut 0.2s ease forwards;
+}
+
+@keyframes alertPopupFadeIn {
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes alertPopupFadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+}
+
+.alert-popup h3 {
+    margin: 0 0 16px 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: red;
+}
+
+.alert-popup-message {
+    margin: 0 0 24px 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-color, #111317);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.alert-popup-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.alert-popup-got-it-button {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.alert-popup-got-it-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.alert-popup-got-it-button:active {
+    transform: translateY(0);
+}
+
+.alert-popup-got-it-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
+}

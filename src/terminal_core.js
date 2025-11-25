@@ -59,6 +59,49 @@ const
         divOverlay.classList.add('popup-overlay');
         divOverlay.addEventListener('click', () => undefined);
 
+        const divAlertPopup = document.createElement('div');
+        divAlertPopup.classList.add('alert-popup');
+
+        const h3Title = document.createElement('h3');
+        h3Title.textContent = 'Alert';
+        divAlertPopup.appendChild(h3Title);
+
+        // message container
+        const divMessage = document.createElement('div');
+        divMessage.classList.add('alert-popup-message');
+        divMessage.textContent = message;
+        divAlertPopup.appendChild(divMessage);
+
+        // helper function to close the popup with fade-out animation
+        const closePopup = () => {
+            divAlertPopup.classList.add('fade-out');
+            divOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                divAlertPopup.remove();
+                divOverlay.remove();
+            }, 200); // Match animation duration
+        };
+
+        // exit buttons container
+        const divExitButtonContainer = document.createElement('div');
+        divExitButtonContainer.classList.add('alert-popup-button-container');
+        const okButton = document.createElement('button');
+        okButton.textContent = 'Got it';
+        okButton.classList.add('alert-popup-got-it-button');
+        okButton.addEventListener('click', () => {
+            closePopup();
+        });
+        divExitButtonContainer.appendChild(okButton);
+        divAlertPopup.appendChild(divExitButtonContainer);
+
+        // Append to terminalWindowTab
+        terminalWindowTab.appendChild(divOverlay);
+        terminalWindowTab.appendChild(divAlertPopup);
+
+        // Focus the OK button for keyboard accessibility
+        setTimeout(() => {
+            okButton.focus();
+        }, 100);
     },
     /**
      * This function pops up the editor window for the <edit> command.
