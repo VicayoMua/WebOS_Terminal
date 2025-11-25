@@ -51,10 +51,10 @@ const
     },
     /**
      * This function pops up the alert window for a terminal frame.
-     * @param {HTMLDivElement} terminalWindowTab
+     * @param {HTMLDivElement} terminalWindowFrame
      * @param {string} message
      * */
-    popupAlert = (terminalWindowTab, message) => {
+    popupAlert = (terminalWindowFrame, message) => {
         const divOverlay = document.createElement('div');
         divOverlay.classList.add('popup-overlay');
         divOverlay.addEventListener('click', () => undefined);
@@ -94,9 +94,9 @@ const
         divExitButtonContainer.appendChild(okButton);
         divAlertPopup.appendChild(divExitButtonContainer);
 
-        // Append to terminalWindowTab
-        terminalWindowTab.appendChild(divOverlay);
-        terminalWindowTab.appendChild(divAlertPopup);
+        // Append to terminalWindowFrame
+        terminalWindowFrame.appendChild(divOverlay);
+        terminalWindowFrame.appendChild(divAlertPopup);
 
         // Focus the OK button for keyboard accessibility
         setTimeout(() => {
@@ -105,7 +105,7 @@ const
     },
     /**
      * This function pops up the editor window for the <edit> command.
-     * @param {HTMLDivElement} terminalWindowTab
+     * @param {HTMLDivElement} terminalWindowFrame
      * @param {string} fileName
      * @param {string} orginalFileContent
      * @param {function(windowDescription: string, divAceEditorWindow:HTMLDivElement, aceEditorObject: Object): void} callbackToBackupEditorWindow
@@ -116,13 +116,13 @@ const
      * @throws {TypeError}
      * */
     popupFileEditor = (
-        terminalWindowTab,
+        terminalWindowFrame,
         fileName, orginalFileContent,
         callbackToBackupEditorWindow, callbackToSaveFile, callbackToCancelEdit,
         promiseResolver
     ) => {
-        if (!(terminalWindowTab instanceof HTMLDivElement))
-            throw new TypeError('terminalWindowTab must be an HTMLDivElement');
+        if (!(terminalWindowFrame instanceof HTMLDivElement))
+            throw new TypeError('terminalWindowFrame must be an HTMLDivElement');
         if (typeof fileName !== 'string')
             throw new TypeError('fileName must be a string.');
         if (typeof orginalFileContent !== 'string')
@@ -200,7 +200,7 @@ const
             divExitButtonsContainer.appendChild(cancelButton);
             divAceEditorWindow.appendChild(divExitButtonsContainer);
         }
-        terminalWindowTab.appendChild(divAceEditorWindow);
+        terminalWindowFrame.appendChild(divAceEditorWindow);
         return (newPromiseResolver) => {
             promiseResolver = newPromiseResolver;
         };
