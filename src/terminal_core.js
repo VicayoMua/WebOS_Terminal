@@ -53,6 +53,8 @@ const
      * This function pops up the alert window for a terminal frame.
      * @param {HTMLDivElement} terminalWindowFrame
      * @param {string} alertMessage
+     * @returns {void}
+     * @throws {TypeError}
      * */
     popupAlert = (terminalWindowFrame, alertMessage) => {
         if (!(terminalWindowFrame instanceof HTMLDivElement))
