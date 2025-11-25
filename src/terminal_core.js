@@ -1528,6 +1528,8 @@ class TerminalCore {
     #cacheSpace;
     /** @type {TerminalFolderPointer} */
     #currentTerminalFolderPointer;
+    /** @type {function(string): Promise<void>} */
+    #defaultKeyboardListeningFunction;
 
     /**
      * @returns {void}
@@ -1547,6 +1549,13 @@ class TerminalCore {
             throw new TypeError('KeyboardListener must be a function.');
         this.clearKeyboardListener();
         this.#currentXTermKeyboardListener = this.#xtermObj.onData(keyboardListeningCallback);
+    }
+
+    /**
+     * @returns {void}
+     * */
+    setDefaultKeyboardListener() {
+        this.setNewKeyboardListener(this.#defaultKeyboardListeningFunction);
     }
 
     /**
@@ -1582,18 +1591,64 @@ class TerminalCore {
     }
 
     /**
-     * @returns {void}
+     * This method generates a unified terminal interface.
+     * Because this is a basic set-up method, type-checks are omitted!!!
+     * @param {Terminal} xtermObj
+     * @param {HTMLDivElement} terminalWindowFrame
+     * @param {HTMLButtonElement} viewSwitchButton
+     * @param {Folder} fsRoot
+     * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
      * */
-    setDefaultKeyboardListener() {
+    constructor(xtermObj, terminalWindowFrame, viewSwitchButton, fsRoot, supportedCommands) {
+        this.#xtermObj = xtermObj;
+        this.#terminalWindowFrame = terminalWindowFrame;
+        this.#viewSwitchButton = viewSwitchButton;
+        this.#fsRoot = fsRoot;
+        this.#supportedCommands = supportedCommands;
+
+        // Set up an XTerminal Window to <terminalWindowFrame>
+        this.#xtermObj.open(this.#terminalWindowFrame);
+
+        // Enabled Fit Addon
+        try {
+            this.#fitAddon = new FitAddon();
+            this.#xtermObj.loadAddon(this.#fitAddon);
+        } catch (error) {
+            this.#fitAddon = null;
+            alert(`Failed to load the fit-addon (${error}).`);
+        }
+
+        // Enable SerializeAddon
+        try {
+            this.#serializeAddon = new SerializeAddon();
+            this.#xtermObj.loadAddon(this.#serializeAddon);
+        } catch (error) {
+            this.#serializeAddon = null;
+            alert(`Failed to load the serialize-addon (${error}).`);
+        }
+
+        // Initialize Current Keyboard Listener
+        this.#currentXTermKeyboardListener = null;
+
+        // Initialize Terminal Minimized-Window Records
+        this.#minimizedWindowRecords = new MinimizedWindowRecords();
+
+        // Initialize Terminal Cache Space
+        this.#cacheSpace = {/* any additional information */};
+
+        // Initialize Terminal Global Folder Pointer Object
+        this.#currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
+
+        // Initialize Default Keyboard Listening Function
         let
             /** @type {string[]} */
             buffer = [];
         const
             /** @returns {string} */
             bufferToString = () => buffer.reduce((acc, char) => `${acc}${char}`, ''),
-            /** @param {string} newChar @returns {void} */
-            bufferAddChar = (newChar) => {
-                buffer.push(newChar);
+            /** @param {string} str @returns {void} */
+            bufferAddString = (str) => {
+                for (const ch of str) buffer.push(ch);
             },
             /** @returns {boolean} */
             bufferRemoveChar = () => {
@@ -1650,20 +1705,14 @@ class TerminalCore {
                 }
                 return [commandName, commandParameters];
             };
-        this.setNewKeyboardListener(async (keyboardInput) => {
+        const
+            /** @type {[string, string[]]} */
+            previousCommands = [];
+        let
+            /** @type {number} */
+            indexPrevComm = -1;
+        this.#defaultKeyboardListeningFunction = async (keyboardInput) => {
             switch (keyboardInput) {
-                case '\x1b[A': { // Up arrow
-                    break;
-                }
-                case '\x1b[B': { // Down arrow
-                    break;
-                }
-                case '\x1b[C': { // Right arrow
-                    break;
-                }
-                case '\x1b[D': { // Left arrow
-                    break;
-                }
                 case '\x1bOP': { // F1
                     break;
                 }
@@ -1706,20 +1755,62 @@ class TerminalCore {
                 case '\u0016': { // Ctrl+V
                     break;
                 }
-                case '\u000C': { // Ctrl+L
-                    this.printToWindow('\x1b[2J\x1b[H $ ');
-                    this.printToWindow(bufferToString());
+                case '\x1b[A': { // Up arrow
+                    if (previousCommands.length <= 0)
+                        break;
+                    if (indexPrevComm === -1 || indexPrevComm === 0) {
+                        indexPrevComm = previousCommands.length - 1;
+                    } else {
+                        indexPrevComm--;
+                    }
+                    const
+                        [commandName, commandParameters] = previousCommands[indexPrevComm],
+                        command = commandParameters.reduce((acc, str) => `${acc} ${str}`, commandName);
+                    this.clearLineInWindow();
+                    this.printToWindow(` $ ${command}`);
+                    bufferReset();
+                    bufferAddString(command);
+                    break;
+                }
+                case '\x1b[B': { // Down arrow
+                    if (previousCommands.length <= 0)
+                        break;
+                    if (indexPrevComm === -1 || indexPrevComm === previousCommands.length - 1) {
+                        indexPrevComm = 0;
+                    } else {
+                        indexPrevComm++;
+                    }
+                    const
+                        [commandName, commandParameters] = previousCommands[indexPrevComm],
+                        command = commandParameters.reduce((acc, str) => `${acc} ${str}`, commandName);
+                    this.clearLineInWindow();
+                    this.printToWindow(` $ ${command}`);
+                    bufferReset();
+                    bufferAddString(command);
+                    break;
+                }
+                case '\x1b[C': { // Right arrow
+                    break;
+                }
+                case '\x1b[D': { // Left arrow
                     break;
                 }
                 case '\t': { // TAB
                     // we should block the TAB key for now!!!
                     break;
                 }
+                case '\u000C': { // Ctrl+L
+                    this.clearAllInWindow();
+                    this.printToWindow(` $ ${bufferToString()}`);
+                    break;
+                }
                 case '\r': { // Enter
                     if (buffer.length <= 0) break;
                     const [commandName, commandParameters] = bufferAnalyzeCommandNameParameters();
-                    await this.executeCommand(commandName, commandParameters);
                     bufferReset();
+                    previousCommands.push([commandName, commandParameters]);
+                    indexPrevComm = -1;
+                    await this.executeCommand(commandName, commandParameters);
                     break;
                 }
                 case '\u007F': { // Backspace
@@ -1730,70 +1821,32 @@ class TerminalCore {
                 }
                 default: {
                     // delete every character outside the printable ASCII range
-                    keyboardInput = keyboardInput.replace(/[^ -~]/g, '');
-                    for (const char of keyboardInput) { // paste from the clipboard
-                        bufferAddChar(char);
-                        this.printToWindow(char);
-                    }
+                    const safeKeyboardInput = keyboardInput.replace(/[^ -~]/g, '');
+                    bufferAddString(safeKeyboardInput);
+                    this.printToWindow(safeKeyboardInput);
                 }
             }
-        });
-    }
-
-    /**
-     * This method generates a unified terminal interface.
-     * Because this is a basic set-up method, type-checks are omitted!!!
-     * @param {Terminal} xtermObj
-     * @param {HTMLDivElement} terminalWindowFrame
-     * @param {HTMLButtonElement} viewSwitchButton
-     * @param {Folder} fsRoot
-     * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
-     * */
-    constructor(xtermObj, terminalWindowFrame, viewSwitchButton, fsRoot, supportedCommands) {
-        this.#xtermObj = xtermObj;
-        this.#terminalWindowFrame = terminalWindowFrame;
-        this.#viewSwitchButton = viewSwitchButton;
-        this.#fsRoot = fsRoot;
-        this.#supportedCommands = supportedCommands;
-
-        // Set up an XTerminal Window to <terminalWindowFrame>
-        this.#xtermObj.open(this.#terminalWindowFrame);
-
-        // Enable SerializeAddon
-        try {
-            this.#serializeAddon = new SerializeAddon();
-            this.#xtermObj.loadAddon(this.#serializeAddon);
-        } catch (error) {
-            this.#serializeAddon = null;
-            alert(`Failed to load the serialize-addon (${error}).`);
-        }
-
-        // Enabled Fit Addon
-        try {
-            this.#fitAddon = new FitAddon();
-            this.#xtermObj.loadAddon(this.#fitAddon);
-        } catch (error) {
-            this.#fitAddon = null;
-            alert(`Failed to load the fit-addon (${error}).`);
-        }
-
-        // Initialize Current Keyboard Listener
-        this.#currentXTermKeyboardListener = null;
-
-        // Initialize Terminal Minimized-Window Records
-        this.#minimizedWindowRecords = new MinimizedWindowRecords();
-
-        // Initialize Terminal Cache Space
-        this.#cacheSpace = {/* any additional information */};
-
-        // Initialize Terminal Global Folder Pointer Object
-        this.#currentTerminalFolderPointer = new TerminalFolderPointer(fsRoot);
+        };
 
         // Initialize Terminal Window Display
         this.printToWindow(' $ ');
 
         // Initialize Default Terminal Window's Listening to Keyboard Input
         this.setDefaultKeyboardListener();
+    }
+
+    /**
+     * @return {void}
+     * */
+    clearLineInWindow() {
+        this.#xtermObj.write('\x1b[2K\r');
+    }
+
+    /**
+     * @return {void}
+     * */
+    clearAllInWindow() {
+        this.#xtermObj.write('\x1b[2J\x1b[H');
     }
 
     /**
@@ -1842,6 +1895,13 @@ class TerminalCore {
         return content.length;
     }
 
+    /**
+     * @returns {FitAddon | null}
+     * */
+    getFitAddon() {
+        return this.#fitAddon;
+    }
+
     // /**
     //  * @returns {SerializeAddon | null}
     //  * */
@@ -1850,16 +1910,10 @@ class TerminalCore {
     // }
 
     /**
-     * @returns {FitAddon | null}
-     * */
-    getFitAddon() {
-        return this.#fitAddon;
-    }
-
-    /**
      * @returns {string}
      * */
     getTerminalLogAsString() {
+        /** @type {string} */
         const log = this.#serializeAddon.serialize();
         return log.replace(/\x1b\[[0-9;]*m/g, ''); // Remove SGR color codes, like \x1b[38;2;255;100;100m, \x1b[0m, etc.
     }
