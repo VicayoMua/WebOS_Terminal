@@ -17,7 +17,6 @@ import {
     Folder,
     extractDirAndKeyName,
     TerminalFolderPointer,
-    MinimizedWindowRecords,
     RGBColor,
     TerminalCore
 } from './terminal_core.js';
@@ -843,27 +842,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             .getFile(fileName),
                         fileContent = file.getContent();
                     await new Promise((resolve) => {
-                        const setPromiseResolver = popupFileEditor(
+                        popupFileEditor(
                             currentTerminalCore.getWindowFrame(),
                             fileName,
                             utf8Decoder.decode(fileContent),
-                            (windowDescription, divAceEditorWindow, aceEditorObject) => { // minimize
-                                currentTerminalCore.getMinimizedWindowRecords().add(windowDescription, (promiseResolver) => {
-                                    divAceEditorWindow.classList.remove('fade-out');
-                                    divAceEditorWindow.style.display = '';
-                                    aceEditorObject.focus();
-                                    setPromiseResolver(promiseResolver);
-                                });
-                                currentTerminalCore.printToWindow(` --> Minimized a editor window.`, RGBColor.green);
-                            },
                             (newFileContent) => { // save
                                 file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
-                                currentTerminalCore.printToWindow(` --> Saved a text file.`, RGBColor.green);
+                                currentTerminalCore.printToWindow(` --> Updated a text file.`, RGBColor.yellow);
+                                resolve(undefined);
                             },
                             () => { // cancel
-                                currentTerminalCore.printToWindow(` --> Discarded the change of a text file.`);
-                            },
-                            () => resolve(undefined)
+                                currentTerminalCore.printToWindow(` --> Canceled updates on a text file.`, RGBColor.yellow);
+                                resolve(undefined);
+                            }
                         );
                         currentTerminalCore.printToWindow(` --> Opened a text editor.\n`, RGBColor.green);
                     });
@@ -909,62 +900,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         description: 'Print an existing file to the terminal window.\n' +
             'Usage: printf [file_path]'
-    };
-
-    // Finished
-    _supportedCommands_['rwind'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            if (parameters.length === 1) {
-                if (parameters[0] === '-l') { // Command: rwind -l
-                    const cmwrList = currentTerminalCore.getMinimizedWindowRecords().getList();
-                    if (cmwrList.length === 0) {
-                        currentTerminalCore.printToWindow(' --> No minimized window...');
-                    } else {
-                        const content = cmwrList.reduce(
-                            (acc, [index, description]) =>
-                                `${acc}\n                    [${index}] ${description}`,
-                            ''
-                        );
-                        currentTerminalCore.printToWindow(` --> Window List:${content}`);
-                    }
-                    return;
-                }
-            }
-            if (parameters.length === 2) {
-                if (parameters[0] === '-r') { // Command: rwind -r [number]
-                    try {
-                        const
-                            cmwr = currentTerminalCore.getMinimizedWindowRecords(),
-                            windowRecoverCallback = cmwr.getWindowRecoverCallback(Number.parseInt(parameters[1], 10));
-                        if (windowRecoverCallback === null) {
-                            currentTerminalCore.printToWindow(' --> Wrong index!', RGBColor.red);
-                        } else {
-                            await new Promise((resolve) => {
-                                windowRecoverCallback(resolve);
-                                currentTerminalCore.printToWindow(
-                                    ' --> Recovered a window.\n' +
-                                    '     Note: Window indices are refrshed after this operation!\n',
-                                    RGBColor.green
-                                );
-                            });
-                        }
-                    } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
-                    }
-                    return;
-                }
-            }
-            currentTerminalCore.printToWindow(
-                'Wrong grammar!\n' +
-                'Usage: rwind -l\n' +
-                '       rwind -r [number]',
-                RGBColor.red
-            );
-        },
-        description: 'List all the minimized windows, or recover (bring to the front) a minimized window.\n' +
-            'Usage: rwind -l             to list all the minimized windows\n' +
-            '       rwind -r [number]    to recover the minimized window',
     };
 
     // Finished

@@ -95,15 +95,6 @@
     box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
 }
 
-.ace-editor-minimize-button {
-    background-color: var(--accent-color, #7c3aed);
-    margin-right: 0;
-}
-
-.ace-editor-minimize-button:hover {
-    filter: brightness(1.05);
-}
-
 .ace-editor-save-button {
     background-color: #4CAF50;
     margin-right: 0;

@@ -114,18 +114,15 @@ const
      * @param {HTMLDivElement} terminalWindowFrame
      * @param {string} fileName
      * @param {string} orginalFileContent
-     * @param {function(windowDescription: string, divAceEditorWindow:HTMLDivElement, aceEditorObject: Object): void} callbackToBackupEditorWindow
      * @param {function(newFileContent: string): void} callbackToSaveFile
      * @param {function():void} callbackToCancelEdit
-     * @param {function():void} promiseResolver
-     * @returns {function(function():void):void}
+     * @returns {void}
      * @throws {TypeError}
      * */
     popupFileEditor = (
         terminalWindowFrame,
         fileName, orginalFileContent,
-        callbackToBackupEditorWindow, callbackToSaveFile, callbackToCancelEdit,
-        promiseResolver
+        callbackToSaveFile, callbackToCancelEdit
     ) => {
         if (!(terminalWindowFrame instanceof HTMLDivElement))
             throw new TypeError('terminalWindowFrame must be an HTMLDivElement');
@@ -133,14 +130,10 @@ const
             throw new TypeError('fileName must be a string.');
         if (typeof orginalFileContent !== 'string')
             throw new TypeError('orginalFileContent must be a string.');
-        if (typeof callbackToBackupEditorWindow !== 'function')
-            throw new TypeError('callbackToBackupEditorWindow must be a function.');
         if (typeof callbackToSaveFile !== 'function')
             throw new TypeError('callbackToSaveFile must be a function.');
         if (typeof callbackToCancelEdit !== 'function')
             throw new TypeError('callbackToCancelEdit must be a function.');
-        if (typeof promiseResolver !== 'function')
-            throw new TypeError('promiseResolver must be a function.');
         const divAceEditorWindow = document.createElement('div');
         divAceEditorWindow.classList.add('ace-editor-window');
         {
@@ -168,18 +161,6 @@ const
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
-            const minimizeButton = document.createElement('button');
-            minimizeButton.classList.add('ace-editor-minimize-button');
-            minimizeButton.textContent = `🔽 Minimize`;
-            minimizeButton.addEventListener('click', () => {
-                callbackToBackupEditorWindow(`Editing File: ${fileName}`, divAceEditorWindow, aceEditorObject); // giving out info to recover the window
-                divAceEditorWindow.classList.add('fade-out');
-                setTimeout(() => {
-                    divAceEditorWindow.style.display = 'none'; // hide but not remove
-                }, 200); // Match animation duration
-                promiseResolver();
-            });
-            divExitButtonsContainer.appendChild(minimizeButton);
             const saveButton = document.createElement('button');
             saveButton.classList.add('ace-editor-save-button');
             saveButton.textContent = '💾 Save';
@@ -189,7 +170,6 @@ const
                 setTimeout(() => {
                     divAceEditorWindow.remove();
                 }, 200); // Match animation duration
-                promiseResolver();
             });
             divExitButtonsContainer.appendChild(saveButton);
             const cancelButton = document.createElement('button');
@@ -201,15 +181,11 @@ const
                 setTimeout(() => {
                     divAceEditorWindow.remove();
                 }, 200); // Match animation duration
-                promiseResolver();
             });
             divExitButtonsContainer.appendChild(cancelButton);
             divAceEditorWindow.appendChild(divExitButtonsContainer);
         }
         terminalWindowFrame.appendChild(divAceEditorWindow);
-        return (newPromiseResolver) => {
-            promiseResolver = newPromiseResolver;
-        };
     };
 
 /**
@@ -1412,80 +1388,6 @@ class TerminalFolderPointer {
 }
 
 /**
- * This structure represents the records of all minimized windows in a frame.
- * All its instances should appear in a terminal core.
- * */
-class MinimizedWindowRecords {
-    /** @type {Record<number, [string, function(function():void):void]>} */
-    #records; // description: windowRecoverCallback
-    /** @type {number} */
-    #addCount;
-    /** @type {number} */
-    #deleteCount;
-
-    constructor() {
-        this.#records = {};
-        this.#addCount = 0;
-        this.#deleteCount = 0;
-    }
-
-    /**
-     * @param {string} description
-     * @param {function(function():void):void} windowRecoverCallback
-     * @returns {void}
-     * @throws {TypeError}
-     * */
-    add(description, windowRecoverCallback) {
-        if (typeof description !== 'string' || description.length === 0)
-            throw new TypeError('Description should be a non-empty string.');
-        if (typeof windowRecoverCallback !== 'function')
-            throw new TypeError('windowRecoverCallback should be a function.');
-        this.#addCount++;
-        this.#records[this.#addCount] = [description, windowRecoverCallback];
-    }
-
-    /**
-     * @param {number} index
-     * @returns {null | function(function():void):void} whether records are re-factored.
-     * @throws {TypeError}
-     * */
-    getWindowRecoverCallback(index) {
-        if (typeof index !== 'number' || !Number.isInteger(index) || index < 0)
-            throw new TypeError('Index must be a natural number.');
-        if (this.#records[index] === undefined)
-            return null;
-        const [_, windowRecoverCallback] = this.#records[index];
-        this.#deleteCount++;
-        delete this.#records[index];
-        if (this.#deleteCount > 100000) {
-            const
-                oldEntries = Object.entries(this.#records),
-                newRecords = {};
-            for (this.#addCount = 0; this.#addCount < oldEntries.length; this.#addCount++) {
-                const [_, [description, windowRecoverCallback]] = oldEntries[this.#addCount];
-                newRecords[this.#addCount + 1] = [description, windowRecoverCallback];
-            }
-            this.#deleteCount = 0;
-            this.#records = newRecords;
-        }
-        return windowRecoverCallback;
-    }
-
-    /**
-     * @returns {[number, string][]}
-     * */
-    getList() {
-        return Object.entries(this.#records).reduce(
-            (acc, [index, [description, _]]) => {
-                acc.push([index, description]);
-                return acc;
-            },
-            []
-        );
-    }
-}
-
-/**
  * This structure represents an RGB color.
  * */
 class RGBColor {
@@ -1571,8 +1473,6 @@ class TerminalCore {
     #fitAddon;
     /** @type {Object | null} */
     #currentXTermKeyboardListener;
-    /** @type {MinimizedWindowRecords} */
-    #minimizedWindowRecords;
     /** @type {Record<any, any>} */
     #cacheSpace;
     /** @type {TerminalFolderPointer} */
@@ -1678,9 +1578,6 @@ class TerminalCore {
 
         // Initialize Current Keyboard Listener
         this.#currentXTermKeyboardListener = null;
-
-        // Initialize Terminal Minimized-Window Records
-        this.#minimizedWindowRecords = new MinimizedWindowRecords();
 
         // Initialize Terminal Cache Space
         this.#cacheSpace = {/* any additional information */};
@@ -1982,13 +1879,6 @@ class TerminalCore {
     }
 
     /**
-     * @returns {MinimizedWindowRecords}
-     * */
-    getMinimizedWindowRecords() {
-        return this.#minimizedWindowRecords;
-    }
-
-    /**
      * @returns {Record<any,any>}
      * */
     getCacheSpace() {
@@ -2022,7 +1912,6 @@ export {
     Folder,
     extractDirAndKeyName,
     TerminalFolderPointer,
-    MinimizedWindowRecords,
     RGBColor,
     TerminalCore
 };
