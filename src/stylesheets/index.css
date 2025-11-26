@@ -41,12 +41,11 @@ body.dark-body-mode {
 }
 
 .main-page {
+    max-width: 1800px;
+    min-height: 100vh;
     gap: 14px;
-    max-width: 1600px;
-    width: 100%;
     margin: 0 auto;
     padding: 16px;
-    min-height: 100vh;
     display: grid;
     grid-template-columns: 1fr 320px;
     grid-template-rows: auto auto 1fr auto;
