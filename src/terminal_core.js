@@ -1470,10 +1470,12 @@ class TerminalCore {
     /** @type {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} */
     #supportedCommands;
 
-    /** @type {SerializeAddon | null} */
-    #serializeAddon;
     /** @type {FitAddon | null} */
     #fitAddon;
+    /** @type {SerializeAddon | null} */
+    #serializeAddon;
+    /** @type {HTMLTextAreaElement} */
+    #terminalWindowFrameTextArea;
     /** @type {Object | null} */
     #currentXTermKeyboardListener;
     /** @type {Record<any, any>} */
@@ -1578,6 +1580,10 @@ class TerminalCore {
             this.#serializeAddon = null;
             alert(`Failed to load the serialize-addon (${error}).`);
         }
+
+        // Initialize the terminal window textarea pointer
+        const textareas = this.#terminalWindowFrame.getElementsByTagName('textarea');
+        if (textareas.length > 0) this.#terminalWindowFrameTextArea = textareas[0];
 
         // Initialize Current Keyboard Listener
         this.#currentXTermKeyboardListener = null;
@@ -1842,6 +1848,13 @@ class TerminalCore {
         // write to window object
         this.#xtermObj.write(content);
         return content.length;
+    }
+
+    /**
+     * @returns {HTMLTextAreaElement}
+     * */
+    getWindowTextArea() {
+        return this.#terminalWindowFrameTextArea;
     }
 
     /**

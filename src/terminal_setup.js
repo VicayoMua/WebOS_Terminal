@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         button_to_switch_theme.addEventListener('click', () => {
             button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+            // focus on the terminal window
+            currentTerminalCore.getWindowTextArea().focus();
         });
 
         button_to_open_new_terminal_tab.addEventListener('click', () => {
@@ -131,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             _terminalCores_.push(newTerminalCore);
 
             buttonNewTerminalViewSwitch.addEventListener('click', () => {
-                if (currentTerminalCore === null || currentTerminalCore !== newTerminalCore) { // make sure the switch is necessary
+                if (currentTerminalCore !== newTerminalCore) { // make sure the switch is necessary
                     // change the nav button style and the terminal tab view
                     _terminalCores_.forEach((terminalCore) => {
                         terminalCore.getWindowFrame().classList.remove('current-tab');
@@ -141,11 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     buttonNewTerminalViewSwitch.classList.add('current-tab');
                     // switch the terminal tab record
                     currentTerminalCore = newTerminalCore;
+                    setTimeout(() => {
+                        const fitAddon = newTerminalCore.getFitAddon();
+                        if (fitAddon !== null) fitAddon.fit();
+                    }, 100);
                 }
-                setTimeout(() => {
-                    const fitAddon = newTerminalCore.getFitAddon();
-                    if (fitAddon !== null) fitAddon.fit();
-                }, 100);
+                // focus on the terminal window
+                currentTerminalCore.getWindowTextArea().focus();
             });
 
             if (currentTerminalCore === null) // if newly-created terminal tab is <Tab #1>
@@ -156,6 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (fitAddon !== null)
                     fitAddon.fit();
             });
+
+            // focus on the terminal window
+            currentTerminalCore.getWindowTextArea().focus();
         });
 
         button_to_save_terminal_log.addEventListener('click', () => {
@@ -166,6 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
             link.download = `terminal_log @ ${getISOTimeString()}.txt`; // the filename the user will get
             link.click();
             URL.revokeObjectURL(url);
+            // focus on the terminal window
+            currentTerminalCore.getWindowTextArea().focus();
         });
 
         button_to_add_files_to_terminal.addEventListener('click', () => {
