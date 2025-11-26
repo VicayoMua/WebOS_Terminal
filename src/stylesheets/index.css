@@ -204,6 +204,19 @@ body.dark-body-mode {
     align-self: start;
 }
 
+.additional-buttons h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.quick-access-buttons-title {
+    margin: 2px 0 8px 0;
+}
+
+.mycloud-buttons-title {
+    margin: 12px 0 8px 0;
+}
+
 .additional-buttons button {
     background-color: var(--accent-color);
     color: var(--accent-color-contrast);
