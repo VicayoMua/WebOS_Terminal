@@ -7,7 +7,6 @@ import {
     randomInt,
     utf8Decoder,
     utf8Encoder,
-    formData,
     popupAlert,
     popupFileEditor,
     legalFileSystemKeyNameRegExp,
@@ -18,7 +17,12 @@ import {
     extractDirAndKeyName,
     TerminalFolderPointer,
     RGBColor,
-    TerminalCore, verifyMyCloudSetup, backupFSToMyCloud, recoverFSFromMyCloud
+    TerminalCore,
+    formData,
+    registerUserKeyToMyCloud,
+    verifyMyCloudSetup,
+    backupFSToMyCloud,
+    recoverFSFromMyCloud
 } from './terminal_core.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -273,6 +277,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             divMyCloudPopup.appendChild(divIppInputContainer);
 
+            // user key input container
+            const divUserKeyInputContainer = document.createElement('div');
+            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
+
+            const userKeyLabel = document.createElement('label');
+            userKeyLabel.textContent = 'User Key';
+            userKeyLabel.classList.add('mycloud-popup-input-label');
+
+            const userKeyInput = document.createElement('input');
+            userKeyInput.type = 'text';
+            userKeyInput.value = mycloudUserKey;
+            userKeyInput.classList.add('mycloud-popup-input');
+            userKeyInput.addEventListener('change', () => {
+                mycloudUserKey = userKeyInput.value;
+            });
+
+            divUserKeyInputContainer.appendChild(userKeyLabel);
+            divUserKeyInputContainer.appendChild(userKeyInput);
+
+            divMyCloudPopup.appendChild(divUserKeyInputContainer);
+
             // helper function to close the divMyCloudPopup with fade-out animation
             const closePopup = () => {
                 divMyCloudPopup.classList.add('fade-out');
@@ -296,7 +321,17 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelButton.classList.add('mycloud-popup-cancel-button');
 
             registerButton.addEventListener('click', async () => {
-
+                closePopup();
+                const buttonCloseAlert = popupAlert(document.body, 'Registering a new user key...', '');
+                try {
+                    await registerUserKeyToMyCloud(mycloudIpp, mycloudUserKey);
+                    buttonCloseAlert.click();
+                    popupAlert(document.body, 'Successfully registered a new user key.');
+                } catch (error) {
+                    buttonCloseAlert.click();
+                    mycloudUserKey = '';
+                    popupAlert(document.body, `${error}`);
+                }
             });
 
             cancelButton.addEventListener('click', () => {
@@ -966,53 +1001,6 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: download -f [file_path]\n' +
             '       download -d [directory_path]'
     };
-
-    // Update!!!
-    _supportedCommands_['mycloud'] = {
-        is_async: true,
-        executable: async (parameters) => {
-            if (
-                parameters.length === 3 &&
-                parameters[0].length > 6 && parameters[0].startsWith('-ipp=') &&  // IP:Port
-                parameters[1].length > 5 && parameters[1].startsWith('-key=')     // user key
-            ) {
-                const
-                    ipp = parameters[0].substring(5),
-                    user_key = parameters[1].substring(5);
-                if (parameters[2] === '-new') { // Command: mycloud -ipp=[IP:Port] -key=[user_key] -new
-                    try {
-                        const [status, stream] = await fetch(
-                            `http://${ipp}/mycloud/users/register/`,
-                            {
-                                method: 'POST',
-                                body: formData({ // short enough so we can use JSON
-                                    user_key: user_key
-                                })
-                            }
-                        ).then(
-                            async (res) => [res.status, await res.json()]
-                        );
-                        if (status !== 200) {
-                            const {error: error} = stream; // stream here is a json object
-                            currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
-                            return;
-                        }
-                        currentTerminalCore.printToWindow(' --> Registered a user key.', RGBColor.green);
-                    } catch (error) {
-                        currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
-                    }
-                    return;
-                }
-            }
-            currentTerminalCore.printToWindow(
-                'Wrong grammar!\n' +
-                'Usage: mycloud -ipp=[IP:Port] -key=[user_key] -new     to register a new user key on MyCloud server',
-                RGBColor.red
-            );
-        },
-        description: 'Backup and recover the terminal file system to MyCloud server.\n' +
-            'Usage: mycloud -ipp=[IP:Port] -key=[user_key] -new     to register a new user key on MyCloud server'
-    }
 
     // // Update!!!
     // _supportedCommands_['ping'] = {

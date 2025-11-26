@@ -1935,13 +1935,36 @@ const
      * @returns {Promise<void>}
      * @throws {TypeError | Error}
      * */
+    registerUserKeyToMyCloud = async (ipp, userKey) => {
+        const [status, stream] = await fetch(
+            `http://${ipp}/mycloud/users/register/`,
+            {
+                method: 'POST',
+                body: formData({ // short enough so we can use JSON
+                    user_key: userKey
+                })
+            }
+        ).then(
+            async (res) => [res.status, await res.json()]
+        );
+        if (status !== 200) {
+            const {error: error} = stream; // stream here is a json object
+            throw new Error(`${error}`);
+        }
+    },
+    /**
+     * @param {string} ipp
+     * @param {string} userKey
+     * @returns {Promise<void>}
+     * @throws {TypeError | Error}
+     * */
     verifyMyCloudSetup = async (ipp, userKey) => {
         if (typeof ipp !== 'string' || ipp.length < 7)
             throw new TypeError('ipp must be a string of length at least 7.');
         if (typeof userKey !== 'string' || userKey.length < 5)
             throw new TypeError('userKey must be a string of length at least 5.');
         const [status, stream] = await fetch(
-            `http://${ipp}/mycloud/users/validate/`,
+            `http://${ipp}/mycloud/users/verify/`,
             {
                 method: 'POST',
                 body: formData({ // short enough so we can use JSON
@@ -2236,6 +2259,7 @@ export {
     RGBColor,
     TerminalCore,
     formData,
+    registerUserKeyToMyCloud,
     verifyMyCloudSetup,
     backupFSToMyCloud,
     recoverFSFromMyCloud

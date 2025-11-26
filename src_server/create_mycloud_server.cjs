@@ -182,7 +182,7 @@ app.post('/mycloud/users/register/', multerUpload.none(), (req, res) => {
  *      error                when failure
  *      result=true/false    when success
  * */
-app.post('/mycloud/users/validate/', multerUpload.none(), (req, res) => {
+app.post('/mycloud/users/verify/', multerUpload.none(), (req, res) => {
     if (req.body === undefined) {
         return res.status(400).json({
             error: `Body not found.`
