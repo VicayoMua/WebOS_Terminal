@@ -567,13 +567,13 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_open_new_terminal_tab.click();
     }
 
-    document.getElementById('button-to-test').addEventListener('click', (e) => {
-        popupAlert(
-            currentTerminalCore.getWindowFrame(),
-            'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.',
-            '123456789012345678901234567890'
-        );
-    });
+    // document.getElementById('button-to-test').addEventListener('click', (e) => {
+    //     popupAlert(
+    //         currentTerminalCore.getWindowFrame(),
+    //         'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.',
+    //         '123456789012345678901234567890'
+    //     );
+    // });
 
     _supportedCommands_['tt'] = {
         is_async: true,
