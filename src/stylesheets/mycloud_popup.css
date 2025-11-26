@@ -9,7 +9,7 @@
     border-radius: 14px;
     box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
     z-index: 2000;
-    min-width: 400px;
+    width: 400px;
     color: var(--text-color, #111317);
     opacity: 0;
     animation: popupFadeIn 0.2s ease forwards;
@@ -47,6 +47,14 @@
     margin-bottom: 16px;
 }
 
+.mycloud-popup-input-label {
+    display: block;
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color, #111317);
+}
+
 .mycloud-popup-input {
     width: 100%;
     padding: 10px 14px;
@@ -71,7 +79,7 @@
     gap: 12px;
 }
 
-.mycloud-popup-submit-button {
+.mycloud-popup-upload-button {
     padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid transparent;
@@ -83,16 +91,16 @@
     transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.mycloud-popup-submit-button:hover {
+.mycloud-popup-upload-button:hover {
     filter: brightness(1.05);
     transform: translateY(-1px);
 }
 
-.mycloud-popup-submit-button:active {
+.mycloud-popup-upload-button:active {
     transform: translateY(0);
 }
 
-.mycloud-popup-submit-button:focus-visible {
+.mycloud-popup-upload-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
 }

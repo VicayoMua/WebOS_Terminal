@@ -77,23 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set Up Button Functions Links
     {
         const
+            /** @type {number} */
             MAX_TAB_COUNT = 40,
-            button_to_switch_theme = document.getElementById('button_to_switch_theme'),
+            /** @type {HTMLButtonElement} */
+            button_to_switch_theme = document.getElementById('button-to-switch-theme'),
+            /** @type {HTMLDivElement} */
             div_terminal_window_frames = document.getElementById('terminal-window-frames'),
+            /** @type {HTMLElement} */
             nav_view_navigation = document.getElementById('view-navigation'),
-            button_to_open_new_terminal_tab = document.getElementById('button_to_open_new_terminal_tab'),
-            button_to_save_terminal_log = document.getElementById('button_to_save_terminal_log'),
-            button_to_add_files_to_terminal = document.getElementById('button_to_add_files_to_terminal'),
-            button_to_upload_to_mycloud_server = document.getElementById('button_to_upload_to_mycloud_server'),
-            button_to_recover_from_mycloud_server = document.getElementById('button_to_recover_from_mycloud_server');
+            /** @type {HTMLButtonElement} */
+            button_to_open_new_terminal_tab = document.getElementById('button-to-open-new-terminal-tab'),
+            /** @type {HTMLButtonElement} */
+            button_to_save_terminal_log = document.getElementById('button-to_save-terminal-log'),
+            /** @type {HTMLButtonElement} */
+            button_to_add_files_to_terminal = document.getElementById('button-to-add-files-to-terminal'),
+            /** @type {HTMLButtonElement} */
+            button_to_upload_to_mycloud_server = document.getElementById('button-to-upload-to-mycloud-server'),
+            /** @type {HTMLButtonElement} */
+            button_to_recover_from_mycloud_server = document.getElementById('button-to-recover-from-mycloud-server');
 
         button_to_switch_theme.addEventListener('click', () => {
             button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
         });
+
         button_to_open_new_terminal_tab.addEventListener('click', () => {
             // check the tab count limit
             if (tabCount >= MAX_TAB_COUNT) {
-                popupAlert(currentTerminalCore.getWindowFrame(),`You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
+                popupAlert(currentTerminalCore.getWindowFrame(), `You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
                 return;
             }
 
@@ -147,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fitAddon.fit();
             });
         });
+
         button_to_save_terminal_log.addEventListener('click', () => {
             const
                 url = URL.createObjectURL(new Blob([currentTerminalCore.getTerminalLogAsString()], {type: 'text/plain'})),
@@ -156,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link.click();
             URL.revokeObjectURL(url);
         });
+
         button_to_add_files_to_terminal.addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -168,20 +180,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (const file of input_event.target.files) {
                     if (!file) continue;
                     if (typeof file.name !== 'string') { // filename is illegal
-                        popupAlert(currentTerminalCore.getWindowFrame(),'button_to_add_files_to_terminal: file name must be a string.');
+                        popupAlert(currentTerminalCore.getWindowFrame(), 'button_to_add_files_to_terminal: file name must be a string.');
                         return;
                     }
                     const reader = new FileReader();
                     {
                         // set up behaviors on errors
                         reader.onerror = (error) => {
-                            popupAlert(currentTerminalCore.getWindowFrame(),`button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
+                            popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
                         };
                         // set up behaviors on loading
                         reader.onload = (reader_event) => {
                             const fileContent = reader_event.target.result;
                             if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
-                                popupAlert(currentTerminalCore.getWindowFrame(),`button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
+                                popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
                                 return;
                             }
                             const [newFile, _] = currentTerminalCore.getCurrentFolderPointer()
@@ -203,11 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
                     }
                 }
-                popupAlert(currentTerminalCore.getWindowFrame(),`Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
+                popupAlert(currentTerminalCore.getWindowFrame(), `Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
             });
             // activate the file input element
             input.click();
         });
+
+        let
+            /** @type {string} */
+            mycloudIpp = '127.0.0.1:80',
+            /** @type {string} */
+            mycloudUserKey = '';
+
         button_to_upload_to_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
@@ -218,29 +237,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const divMyCloudPopup = document.createElement('div');
             divMyCloudPopup.classList.add('mycloud-popup');
 
-            const h3Title = document.createElement('h3');
-            h3Title.textContent = 'Upload to MyCloud Server';
-            divMyCloudPopup.appendChild(h3Title);
+                const h3Title = document.createElement('h3');
+                h3Title.textContent = 'Upload to MyCloud Server';
+                divMyCloudPopup.appendChild(h3Title);
 
-            // ip:port input container
-            const divIppInputContainer = document.createElement('div');
-            divIppInputContainer.classList.add('mycloud-popup-input-container');
-            const ippInput = document.createElement('input');
-            ippInput.type = 'text';
-            ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
-            ippInput.classList.add('mycloud-popup-input');
-            divIppInputContainer.appendChild(ippInput);
-            divMyCloudPopup.appendChild(divIppInputContainer);
+                // ip:port input container
+                const divIppInputContainer = document.createElement('div');
+                divIppInputContainer.classList.add('mycloud-popup-input-container');
 
-            // user key input container
-            const divUserKeyInputContainer = document.createElement('div');
-            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
-            const userKeyInput = document.createElement('input');
-            userKeyInput.type = 'text';
-            userKeyInput.placeholder = 'User Key';
-            userKeyInput.classList.add('mycloud-popup-input');
-            divUserKeyInputContainer.appendChild(userKeyInput);
-            divMyCloudPopup.appendChild(divUserKeyInputContainer);
+                    const ippLabel = document.createElement('label');
+                    ippLabel.textContent = 'IP:Port';
+                    ippLabel.classList.add('mycloud-popup-input-label');
+
+                    const ippInput = document.createElement('input');
+                    ippInput.type = 'text';
+                    ippInput.value = mycloudIpp;
+                    ippInput.classList.add('mycloud-popup-input');
+                    ippInput.addEventListener('change', () => {
+                        mycloudIpp = ippInput.value;
+                    });
+
+                    divIppInputContainer.appendChild(ippLabel);
+                    divIppInputContainer.appendChild(ippInput);
+
+                divMyCloudPopup.appendChild(divIppInputContainer);
+
+                // user key input container
+                const divUserKeyInputContainer = document.createElement('div');
+                divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
+
+                    const userKeyLabel = document.createElement('label');
+                    userKeyLabel.textContent = 'User Key';
+                    userKeyLabel.classList.add('mycloud-popup-input-label');
+
+                    const userKeyInput = document.createElement('input');
+                    userKeyInput.type = 'text';
+                    userKeyInput.value = mycloudUserKey;
+                    userKeyInput.classList.add('mycloud-popup-input');
+                    userKeyInput.addEventListener('change', () => {
+                        mycloudUserKey = userKeyInput.value;
+                    });
+
+                    divUserKeyInputContainer.appendChild(userKeyLabel);
+                    divUserKeyInputContainer.appendChild(userKeyInput);
+
+                divMyCloudPopup.appendChild(divUserKeyInputContainer);
 
             // helper function to close the divMyCloudPopup with fade-out animation
             const closePopup = () => {
@@ -255,123 +296,50 @@ document.addEventListener('DOMContentLoaded', () => {
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+
             const uploadButton = document.createElement('button');
             uploadButton.textContent = '💾 Upload';
-            uploadButton.classList.add('mycloud-popup-submit-button');
-            uploadButton.addEventListener('click', async () => {
-                const ipp = ippInput.value.trim();
-                const userKey = userKeyInput.value.trim();
+            uploadButton.classList.add('mycloud-popup-upload-button');
 
-                if (!ipp) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter IP:Port.');
-                    return;
-                }
-                if (!userKey) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter a user key.');
-                    return;
-                }
-                closePopup();
-                // Execute the upload/backup operation using the provided IP:Port and User Key
-                try {
-                    // Backup files using the provided user key
-                    const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
-                        fetch(
-                            `http://${ipp}/mycloud/files/backup/`,
-                            {
-                                method: 'POST',
-                                body: formData({
-                                    user_key: userKey,
-                                    serial: file.getSerial(),
-                                    content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
-                                    created_at: file.getCreatedAt(),
-                                    updated_at: file.getUpdatedAt()
-                                })
-                            }
-                        ).then(
-                            async (res) => [res.status, await res.json()]
-                        )
-                    ));
-                    let errorMessage = '';
-                    const anyFailure = settledResults.some((settledResult) => {
-                        if (settledResult.status === 'rejected') {
-                            errorMessage += `${settledResult.reason}\n`;
-                            return true;
-                        }
-                        if (settledResult.status === 'fulfilled') {
-                            const [status, stream] = settledResult.value;
-                            if (status !== 200) {
-                                const {error: error} = stream;
-                                errorMessage += `${error}\n`;
-                                return true;
-                            }
-                            return false;
-                        }
-                        return true;
-                    });
-                    if (anyFailure) {
-                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload files.\n${errorMessage}`);
-                        return;
-                    }
-                    // Backup ROOT map
-                    const [status, stream] = await fetch(
-                        `http://${ipp}/mycloud/files/backup/`,
-                        {
-                            method: 'POST',
-                            body: formData({
-                                user_key: userKey,
-                                serial: 'ROOT',
-                                content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
-                                created_at: getISOTimeString(),
-                                updated_at: getISOTimeString()
-                            })
-                        }
-                    ).then(
-                        async (res) => [res.status, await res.json()]
-                    );
-                    if (status !== 200) {
-                        const {error: error} = stream;
-                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload the ROOT map.\n${error}`);
-                        return;
-                    }
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Successfully uploaded the file system to MyCloud server.');
-                } catch (error) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),`Upload failed: ${error}`);
-                }
-            });
-            divExitButtonsContainer.appendChild(uploadButton);
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
             cancelButton.classList.add('mycloud-popup-cancel-button');
+
+            uploadButton.addEventListener('click', async () => {
+
+                
+
+                // if (!mycloudIpp) {
+                //     closePopup();
+                //     popupAlert(currentTerminalCore.getWindowFrame(), 'Please enter IP:Port.');
+                //     return;
+                // }
+                // if (!mycloudUserKey) {
+                //     closePopup();
+                //     popupAlert(currentTerminalCore.getWindowFrame(), 'Please enter a user key.');
+                //     return;
+                // }
+                //
+                // // Upload the files
+                //
+                // closePopup();
+            });
+
             cancelButton.addEventListener('click', () => {
                 closePopup();
             });
+
+            divExitButtonsContainer.appendChild(uploadButton);
             divExitButtonsContainer.appendChild(cancelButton);
+
             divMyCloudPopup.appendChild(divExitButtonsContainer);
-
-            ippInput.addEventListener('keydown', (e) => {
-                // Handle Enter key - move to next input or submit
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    userKeyInput.focus();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            });
-
-            userKeyInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    uploadButton.click();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            });
 
             document.body.appendChild(divOverlay);
             document.body.appendChild(divMyCloudPopup);
 
             ippInput.focus();
         });
+
         button_to_recover_from_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
@@ -382,29 +350,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const divMyCloudPopup = document.createElement('div');
             divMyCloudPopup.classList.add('mycloud-popup');
 
-            const h3Title = document.createElement('h3');
-            h3Title.textContent = 'Recover from MyCloud Server';
-            divMyCloudPopup.appendChild(h3Title);
+                const h3Title = document.createElement('h3');
+                h3Title.textContent = 'Upload to MyCloud Server';
+                divMyCloudPopup.appendChild(h3Title);
 
-            // ip:port input container
-            const divIppInputContainer = document.createElement('div');
-            divIppInputContainer.classList.add('mycloud-popup-input-container');
-            const ippInput = document.createElement('input');
-            ippInput.type = 'text';
-            ippInput.placeholder = 'IP:Port (e.g., 127.0.0.1:80)';
-            ippInput.classList.add('mycloud-popup-input');
-            divIppInputContainer.appendChild(ippInput);
-            divMyCloudPopup.appendChild(divIppInputContainer);
+                // ip:port input container
+                const divIppInputContainer = document.createElement('div');
+                divIppInputContainer.classList.add('mycloud-popup-input-container');
 
-            // user key input container
-            const divUserKeyInputContainer = document.createElement('div');
-            divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
-            const userKeyInput = document.createElement('input');
-            userKeyInput.type = 'text';
-            userKeyInput.placeholder = 'User Key';
-            userKeyInput.classList.add('mycloud-popup-input');
-            divUserKeyInputContainer.appendChild(userKeyInput);
-            divMyCloudPopup.appendChild(divUserKeyInputContainer);
+                    const ippLabel = document.createElement('label');
+                    ippLabel.textContent = 'IP:Port';
+                    ippLabel.classList.add('mycloud-popup-input-label');
+
+                    const ippInput = document.createElement('input');
+                    ippInput.type = 'text';
+                    ippInput.value = mycloudIpp;
+                    ippInput.classList.add('mycloud-popup-input');
+                    ippInput.addEventListener('change', () => {
+                        mycloudIpp = ippInput.value;
+                    });
+
+                    divIppInputContainer.appendChild(ippLabel);
+                    divIppInputContainer.appendChild(ippInput);
+
+                divMyCloudPopup.appendChild(divIppInputContainer);
+
+                // user key input container
+                const divUserKeyInputContainer = document.createElement('div');
+                divUserKeyInputContainer.classList.add('mycloud-popup-input-container');
+
+                    const userKeyLabel = document.createElement('label');
+                    userKeyLabel.textContent = 'User Key';
+                    userKeyLabel.classList.add('mycloud-popup-input-label');
+
+                    const userKeyInput = document.createElement('input');
+                    userKeyInput.type = 'text';
+                    userKeyInput.value = mycloudUserKey;
+                    userKeyInput.classList.add('mycloud-popup-input');
+                    userKeyInput.addEventListener('change', () => {
+                        mycloudUserKey = userKeyInput.value;
+                    });
+
+                    divUserKeyInputContainer.appendChild(userKeyLabel);
+                    divUserKeyInputContainer.appendChild(userKeyInput);
+
+                divMyCloudPopup.appendChild(divUserKeyInputContainer);
 
             // helper function to close the divMyCloudPopup with fade-out animation
             const closePopup = () => {
@@ -419,117 +409,43 @@ document.addEventListener('DOMContentLoaded', () => {
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+
             const recoverButton = document.createElement('button');
             recoverButton.textContent = '💾 Recover';
             recoverButton.classList.add('mycloud-popup-recover-button');
-            recoverButton.addEventListener('click', async () => {
-                const ipp = ippInput.value.trim();
-                const userKey = userKeyInput.value.trim();
 
-                if (!ipp) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter IP:Port.');
-                    return;
-                }
-                if (!userKey) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Please enter a user key.');
-                    return;
-                }
-                closePopup();
-                // Execute the upload/backup operation using the provided IP:Port and User Key
-                try {
-                    // Backup files using the provided user key
-                    const settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
-                        fetch(
-                            `http://${ipp}/mycloud/files/backup/`,
-                            {
-                                method: 'POST',
-                                body: formData({
-                                    user_key: userKey,
-                                    serial: file.getSerial(),
-                                    content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
-                                    created_at: file.getCreatedAt(),
-                                    updated_at: file.getUpdatedAt()
-                                })
-                            }
-                        ).then(
-                            async (res) => [res.status, await res.json()]
-                        )
-                    ));
-                    let errorMessage = '';
-                    const anyFailure = settledResults.some((settledResult) => {
-                        if (settledResult.status === 'rejected') {
-                            errorMessage += `${settledResult.reason}\n`;
-                            return true;
-                        }
-                        if (settledResult.status === 'fulfilled') {
-                            const [status, stream] = settledResult.value;
-                            if (status !== 200) {
-                                const {error: error} = stream;
-                                errorMessage += `${error}\n`;
-                                return true;
-                            }
-                            return false;
-                        }
-                        return true;
-                    });
-                    if (anyFailure) {
-                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload files.\n${errorMessage}`);
-                        return;
-                    }
-                    // Backup ROOT map
-                    const [status, stream] = await fetch(
-                        `http://${ipp}/mycloud/files/backup/`,
-                        {
-                            method: 'POST',
-                            body: formData({
-                                user_key: userKey,
-                                serial: 'ROOT',
-                                content: new Blob([_fsRoot_.getRecordsJSON()], {type: 'application/octet-stream'}),
-                                created_at: getISOTimeString(),
-                                updated_at: getISOTimeString()
-                            })
-                        }
-                    ).then(
-                        async (res) => [res.status, await res.json()]
-                    );
-                    if (status !== 200) {
-                        const {error: error} = stream;
-                        popupAlert(currentTerminalCore.getWindowFrame(),`Failed to upload the ROOT map.\n${error}`);
-                        return;
-                    }
-                    popupAlert(currentTerminalCore.getWindowFrame(),'Successfully uploaded the file system to MyCloud server.');
-                } catch (error) {
-                    popupAlert(currentTerminalCore.getWindowFrame(),`Upload failed: ${error}`);
-                }
-            });
-            divExitButtonsContainer.appendChild(recoverButton);
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
             cancelButton.classList.add('mycloud-popup-cancel-button');
+
+            recoverButton.addEventListener('click', async () => {
+
+
+
+                // if (!mycloudIpp) {
+                //     closePopup();
+                //     popupAlert(currentTerminalCore.getWindowFrame(), 'Please enter IP:Port.');
+                //     return;
+                // }
+                // if (!mycloudUserKey) {
+                //     closePopup();
+                //     popupAlert(currentTerminalCore.getWindowFrame(), 'Please enter a user key.');
+                //     return;
+                // }
+                //
+                // // Upload the files
+                //
+                // closePopup();
+            });
+
             cancelButton.addEventListener('click', () => {
                 closePopup();
             });
+
+            divExitButtonsContainer.appendChild(recoverButton);
             divExitButtonsContainer.appendChild(cancelButton);
+
             divMyCloudPopup.appendChild(divExitButtonsContainer);
-
-            ippInput.addEventListener('keydown', (e) => {
-                // Handle Enter key - move to next input or submit
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    userKeyInput.focus();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            });
-
-            userKeyInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    recoverButton.click();
-                } else if (e.key === 'Escape') {
-                    cancelButton.click();
-                }
-            });
 
             document.body.appendChild(divOverlay);
             document.body.appendChild(divMyCloudPopup);
@@ -539,6 +455,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Automatically Open Window #1
         button_to_open_new_terminal_tab.click();
+    }
+
+    document.getElementById('button-to-test').addEventListener('click', (e) => {
+        popupAlert(
+            currentTerminalCore.getWindowFrame(),
+            'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.',
+            '123456789012345678901234567890123'
+        );
+    });
+
+    _supportedCommands_['tt'] = {
+        is_async: true,
+        executable: async (_) => {
+            currentTerminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
+        },
+        description: ''
     }
 
     // Finished
@@ -985,12 +917,12 @@ document.addEventListener('DOMContentLoaded', () => {
     //                     );
     //                     if (status !== 200) {
     //                         const {error: error} = stream; // stream here is a json object
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                         currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                         return;
     //                     }
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(' --> Registered a user key.', false);
+    //                     currentTerminalCore.printToWindow(' --> Registered a user key.', RGBColor.green);
     //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                     currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                 }
     //                 return;
     //             }
@@ -1009,18 +941,18 @@ document.addEventListener('DOMContentLoaded', () => {
     //                     );
     //                     if (status !== 200) {
     //                         const {error: error} = stream; // stream here is a json object
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                         currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                         return;
     //                     }
     //                     const {result: result} = stream; // stream here is a json object
     //                     if (result !== true) {
-    //                         currentTerminalTabRecord.terminalCore.printToWindow('The user key does not exist.', false);
+    //                         currentTerminalCore.printToWindow(' --> The user key does not exist.', RGBColor.yellow);
     //                         return;
     //                     }
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(
+    //                     currentTerminalCore.printToWindow(
     //                         ' --> The user key is valid.\n' +
-    //                         ' --> Generating the configuration file at /.mycloud_conf.\n'
-    //                         , false
+    //                         ' --> Generating the configuration file at /.mycloud_conf.\n',
+    //                         RGBColor.green
     //                     );
     //                     if (_fsRoot_.hasFile('.mycloud_conf')) { // .mycloud_conf is already existing
     //                         _fsRoot_.getFile('.mycloud_conf').setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
@@ -1028,12 +960,9 @@ document.addEventListener('DOMContentLoaded', () => {
     //                         const [file, _] = _fsRoot_.createFile(false, '.mycloud_conf', _serialLake_.generateNext());
     //                         file.setContent(utf8Encoder.encode(`${parameters[0]}\n${parameters[1]}`).buffer, false);
     //                     }
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(
-    //                         ' --> Successfully configured MyCloud Client.',
-    //                         false
-    //                     );
+    //                     currentTerminalCore.printToWindow(' --> Successfully configured MyCloud Client.', RGBColor.green);
     //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                     currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                 }
     //                 return;
     //             }
@@ -1041,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //         if (parameters.length === 1) {
     //             // get the configuration file
     //             if (!_fsRoot_.hasFile('.mycloud_conf')) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`Fail to load the configuration file at /.mycloud_conf.`, false);
+    //                 currentTerminalCore.printToWindow(` --> Fail to load the configuration file at /.mycloud_conf.`, RGBColor.red);
     //                 return;
     //             }
     //             const
@@ -1055,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                 ippIndex === -1 || enterIndex === -1 || keyIndex === -1 ||
     //                 ippIndex + 4 >= enterIndex || enterIndex >= keyIndex || keyIndex + 4 >= confContent.length - 1
     //             ) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false);
+    //                 currentTerminalCore.printToWindow(` --> The configuration file content (/.mycloud_conf) is illegal.`, RGBColor.red);
     //                 return;
     //             }
     //             const
@@ -1063,14 +992,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //                 user_key = confContent.substring(keyIndex + 5);
     //             // check the content of <ipp> and <user_key>
     //             if (ipp.length === 0 || user_key.length === 0) {
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`The configuration file content (/.mycloud_conf) is illegal.`, false);
+    //                 currentTerminalCore.printToWindow(` --> The configuration file content (/.mycloud_conf) is illegal.`, RGBColor.red);
     //                 return;
     //             }
     //             if (parameters[0] === '-backup') { // Command: mycloud -backup
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(
-    //                     `Backing up the file system to ${ipp} as '${user_key.substring(0, 6)}..'\n`,
-    //                     false
-    //                 );
+    //                 currentTerminalCore.printToWindow(` --> Backing up the file system to ${ipp} as '${user_key.substring(0, 6)}..'\n`, RGBColor.green);
     //                 try {
     //                     const
     //                         settledResults = await Promise.allSettled(_fsRoot_.getFilesAsList().map((file) =>
@@ -1092,14 +1018,14 @@ document.addEventListener('DOMContentLoaded', () => {
     //                         )),
     //                         anyFailure = settledResults.some((settledResult) => {
     //                             if (settledResult.status === 'rejected') {
-    //                                 currentTerminalTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
+    //                                 currentTerminalCore.printToWindow(`${settledResult.reason}\n`, RGBColor.red);
     //                                 return true; // failure
     //                             }
     //                             if (settledResult.status === 'fulfilled') {
     //                                 const [status, stream] = settledResult.value;
     //                                 if (status !== 200) {
     //                                     const {error: error} = stream; // stream here is a json object
-    //                                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+    //                                     currentTerminalCore.printToWindow(`${error}\n`, RGBColor.red);
     //                                     return true; // failure
     //                                 }
     //                                 return false; // success
@@ -1107,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                             return true;
     //                         });
     //                     if (anyFailure) {
-    //                         currentTerminalTabRecord.terminalCore.printToWindow('Failed to back up the files.', false);
+    //                         currentTerminalCore.printToWindow(' --> Failed to back up the files.', RGBColor.red);
     //                         return;
     //                     }
     //                     const [status, stream] = await fetch(
@@ -1127,18 +1053,18 @@ document.addEventListener('DOMContentLoaded', () => {
     //                     );
     //                     if (status !== 200) {
     //                         const {error: error} = stream; // stream here is a json object
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`Failed to back up the ROOT map.`, false);
+    //                         currentTerminalCore.printToWindow(`${error}\n`, RGBColor.red);
+    //                         currentTerminalCore.printToWindow(` --> Failed to back up the ROOT map.`, RGBColor.red);
     //                         return;
     //                     }
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully backed up the file system to MyCloud server.', false);
+    //                     currentTerminalCore.printToWindow(' --> Successfully backed up the file system to MyCloud server.', RGBColor.green);
     //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                     currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                 }
     //                 return;
     //             }
     //             if (parameters[0] === '-recover') { // Command: mycloud -recover
-    //                 currentTerminalTabRecord.terminalCore.printToWindow(`Recovering the file system from ${ipp} as '${user_key.substring(0, 6)}..'\n`, false);
+    //                 currentTerminalCore.printToWindow(`Recovering the file system from ${ipp} as '${user_key.substring(0, 6)}..'\n`, RGBColor.green);
     //                 try {
     //                     // get the ROOT map
     //                     const [statusROOT, streamROOT] = await fetch(
@@ -1158,8 +1084,8 @@ document.addEventListener('DOMContentLoaded', () => {
     //                     );
     //                     if (statusROOT !== 200) {
     //                         const {error: error} = streamROOT; // stream here is a json object
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
-    //                         currentTerminalTabRecord.terminalCore.printToWindow(`Failed to recover the ROOT map.`, false);
+    //                         currentTerminalCore.printToWindow(`${error}\n`, RGBColor.red);
+    //                         currentTerminalCore.printToWindow(` --> Failed to recover the ROOT map.`, RGBColor.red);
     //                         return;
     //                     }
     //                     const
@@ -1245,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                         [anyFailure, filesMap] = settledResults.reduce(
     //                             ([af, fm], settledResult) => {
     //                                 if (settledResult.status === 'rejected') {
-    //                                     currentTerminalTabRecord.terminalCore.printToWindow(`${settledResult.reason}\n`, false);
+    //                                     currentTerminalCore.printToWindow(`${settledResult.reason}\n`, RGBColor.red);
     //                                     return [true, fm]; // failure
     //                                 }
     //                                 if (settledResult.status === 'fulfilled') {
@@ -1256,11 +1182,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //                                     ] = settledResult.value;
     //                                     if (status !== 200) {
     //                                         const {error: error} = stream; // stream here is a json object
-    //                                         currentTerminalTabRecord.terminalCore.printToWindow(`${error}\n`, false);
+    //                                         currentTerminalCore.printToWindow(`${error}\n`, RGBColor.red);
     //                                         return [true, fm]; // failure
     //                                     }
     //                                     if (serial.length === 0 || created_at.length === 0 || updated_at.length === 0) {
-    //                                         currentTerminalTabRecord.terminalCore.printToWindow('A file is illegal.\n', false);
+    //                                         currentTerminalCore.printToWindow(' --> There is an illegal file.\n', RGBColor.red);
     //                                         return [true, fm]; // failure
     //                                     }
     //                                     fm[serial] = new File(serial, stream, created_at, updated_at); // stream here is an arrayBuffer
@@ -1271,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //                             [false, {}]
     //                         );
     //                     if (anyFailure) {
-    //                         currentTerminalTabRecord.terminalCore.printToWindow('Failed to recover the files.', false);
+    //                         currentTerminalCore.printToWindow(' --> Failed to recover the files.', RGBColor.red);
     //                         return;
     //                     }
     //                     // recover <_serialLake_> with <fileSerials>
@@ -1312,20 +1238,20 @@ document.addEventListener('DOMContentLoaded', () => {
     //                             }
     //                         })(plainRootFolderObject, _fsRoot_.clear());
     //                     }
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(' --> Successfully recovered the file system from MyCloud server.', false);
+    //                     currentTerminalCore.printToWindow(' --> Successfully recovered the file system from MyCloud server.', RGBColor.green);
     //                 } catch (error) {
-    //                     currentTerminalTabRecord.terminalCore.printToWindow(`${error}`, false);
+    //                     currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
     //                 }
     //                 return;
     //             }
     //         }
-    //         currentTerminalTabRecord.terminalCore.printToWindow(
+    //         currentTerminalCore.printToWindow(
     //             'Wrong grammar!\n' +
     //             'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server\n' +
     //             '       mycloud -ipp=[ip:port] -key=[user_key] -conf    to configure MyCloud client (creating file \'/.mycloud_conf\')\n' +
     //             '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
     //             '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n',
-    //             false
+    //             RGBColor.red
     //         );
     //     },
     //     description: 'Backup and recover the terminal file system to MyCloud server.\n' +
@@ -1335,17 +1261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //         '       mycloud -backup                                 to backup the current file system to MyCloud server\n' +
     //         '       mycloud -recover                                to recover the file system from MyCloud server (overwriting the current file system)\n'
     // }
-
-    document.getElementById('button_to_test').addEventListener('click', (e) => {
-        popupAlert(currentTerminalCore.getWindowFrame(), 'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.');
-    });
-    _supportedCommands_['tt'] = {
-        is_async: true,
-        executable: async (_) => {
-            currentTerminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
-        },
-        description: ''
-    }
 
     // // Update!!!
     // _supportedCommands_['ping'] = {

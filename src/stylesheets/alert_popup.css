@@ -9,7 +9,7 @@
     border-radius: 14px;
     box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
     z-index: 1001;
-    max-width: 400px;
+    width: 400px;
     color: var(--text-color, #111317);
     opacity: 0;
     animation: alertPopupFadeIn 0.2s ease forwards;

@@ -53,14 +53,20 @@ const
      * This function pops up the alert window for a terminal frame.
      * @param {HTMLDivElement} terminalWindowFrame
      * @param {string} alertMessage
+     * @param {string} exitButtonText
+     * @param {(function():void) | null} callbackAfterExit
      * @returns {void}
      * @throws {TypeError}
      * */
-    popupAlert = (terminalWindowFrame, alertMessage) => {
+    popupAlert = (terminalWindowFrame, alertMessage, exitButtonText = 'Got it', callbackAfterExit = null) => {
         if (!(terminalWindowFrame instanceof HTMLDivElement))
             throw new TypeError('terminalWindowFrame must be an HTMLDivElement.');
         if (typeof alertMessage !== 'string' || alertMessage.length === 0)
             throw new TypeError('alertMessage must be a non-empty string.');
+        if (typeof exitButtonText !== 'string' || exitButtonText.length < 1 || exitButtonText.length > 32)
+            throw new TypeError('exitButtonText must be a string of length between 1 and 32 (inclusive).');
+        if (typeof callbackAfterExit !== 'function' && callbackAfterExit !== null)
+            throw new TypeError('callbackAfterExit must be a function or null.');
         const divOverlay = document.createElement('div');
         divOverlay.classList.add('popup-overlay');
         divOverlay.addEventListener('click', () => undefined);
@@ -92,10 +98,12 @@ const
         const divExitButtonContainer = document.createElement('div');
         divExitButtonContainer.classList.add('alert-popup-button-container');
         const gotitButton = document.createElement('button');
-        gotitButton.textContent = 'Got it';
+        gotitButton.textContent = exitButtonText;
         gotitButton.classList.add('alert-popup-got-it-button');
         gotitButton.addEventListener('click', () => {
             closePopup();
+            if (callbackAfterExit !== null)
+                callbackAfterExit();
         });
         divExitButtonContainer.appendChild(gotitButton);
         divAlertPopup.appendChild(divExitButtonContainer);
