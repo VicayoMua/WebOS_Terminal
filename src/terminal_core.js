@@ -2047,7 +2047,172 @@ const
             throw new TypeError('fsRoot must be a Folder.');
         if (!(serialLake instanceof SerialLake))
             throw new TypeError('serialLake must be a SerialLake.');
-
+        // get the ROOT map
+        const [statusROOT, streamROOT] = await fetch(
+            `http://${ipp}/mycloud/files/recover/`,
+            {
+                method: 'POST',
+                body: formData({
+                    user_key: userKey,
+                    serial: 'ROOT'
+                })
+            }
+        ).then(
+            async (res) => {
+                const status = res.status;
+                return [status, status === 200 ? await res.arrayBuffer() : await res.json()];
+            }
+        );
+        if (statusROOT !== 200) {
+            const {error: error} = streamROOT; // stream here is a json object
+            throw new Error('Failed to recover the ROOT map.');
+        }
+        const
+            /** @type {Object} */
+            plainRootFolderObject = JSON.parse(utf8Decoder.decode(streamROOT)), // stream here is an arrayBuffer
+            /** @type {string[]} */
+            fileSerials = [];
+        // check the information in <plainRootFolderObject>, while getting all file serials
+        {
+            /**
+             * This implementation maximizes the compatibility of received JSON.
+             * This function is ONLY immediately-called.
+             * @param {Object} plainFolderObject
+             * @returns {void}
+             * @throws {TypeError}
+             * */
+            (function checkPlainFolderObject_gettingFileSerials(plainFolderObject) {
+                if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
+                    Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
+                        if (typeof subfolderName !== 'string' || !legalFileSystemKeyNameRegExp.test(subfolderName))
+                            throw new TypeError('Subfolder name in the plain folder object must be legal.');
+                        if (typeof psfo !== 'object')
+                            throw new TypeError('Plain subfolder object in the plain folder object must be an object.');
+                        checkPlainFolderObject_gettingFileSerials(psfo);
+                    });
+                }
+                if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
+                    Object.entries(plainFolderObject.files).forEach(([fileName, fileSerial]) => {
+                        if (typeof fileName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileName))
+                            throw new TypeError('File name in the plain folder object must be legal.');
+                        if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
+                            throw new TypeError('File serial in the plain folder object must be legal.');
+                        fileSerials.push(fileSerial);
+                    });
+                }
+                if (typeof plainFolderObject.created_at === 'string') { // string
+                    if (plainFolderObject.created_at.length === 0)
+                        throw new TypeError('created_at in the plain folder object must be a non-empty string.');
+                }
+                if (typeof plainFolderObject.folderLinks === 'object') { // {name: link}
+                    Object.entries(plainFolderObject.folderLinks).forEach(([folderLinkName, folderLink]) => {
+                        if (typeof folderLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(folderLinkName))
+                            throw new TypeError('Folder link name in the plain folder object must be legal');
+                        if (typeof folderLink !== 'string' || folderLink.length === 0)
+                            throw new TypeError('Folder link in the plain folder object must be a non-empty string.');
+                    });
+                }
+                if (typeof plainFolderObject.fileLinks === 'object') { // {name: link}
+                    Object.entries(plainFolderObject.fileLinks).forEach(([fileLinkName, fileLink]) => {
+                        if (typeof fileLinkName !== 'string' || !legalFileSystemKeyNameRegExp.test(fileLinkName))
+                            throw new TypeError('File link name in the plain folder object must be legal.');
+                        if (typeof fileLink !== 'string' || fileLink.length === 0)
+                            throw new TypeError('File link in the plain folder object must be a non-empty string.');
+                    });
+                }
+            })(plainRootFolderObject);
+        }
+        // get the files and construct files map
+        const
+            settledResults = await Promise.allSettled(fileSerials.map((fileSerial) =>
+                fetch( // {error, content, created_at, updated_at}
+                    `http://${ipp}/mycloud/files/recover/`,
+                    {
+                        method: 'POST',
+                        body: formData({
+                            user_key: userKey,
+                            serial: fileSerial
+                        })
+                    }
+                ).then(
+                    async (res) => {
+                        const status = res.status;
+                        const headers = {
+                            serial: res.headers.get('X_serial'),
+                            created_at: res.headers.get('X_created_at'),
+                            updated_at: res.headers.get('X_updated_at'),
+                            file_size: res.headers.get('X_file_size')
+                        };
+                        return [status, headers, status === 200 ? await res.arrayBuffer() : await res.json()];
+                    }
+                )
+            )),
+            [anyFailure, filesMap] = settledResults.reduce(
+                ([af, fm], settledResult) => {
+                    if (settledResult.status === 'rejected') {
+                        const error = settledResult.reason;
+                        return [true, fm]; // failure
+                    }
+                    if (settledResult.status === 'fulfilled') {
+                        const [
+                            status,
+                            {serial, created_at, updated_at, file_size},
+                            stream
+                        ] = settledResult.value;
+                        if (status !== 200) {
+                            const {error: error} = stream; // stream here is a json object
+                            return [true, fm]; // failure
+                        }
+                        if (serial.length > 0 && created_at.length > 0 && updated_at.length > 0) {
+                            fm[serial] = new File(serial, stream, created_at, updated_at); // stream here is an arrayBuffer
+                        }
+                        return [af, fm]; // success
+                    }
+                    return [true, fm];
+                },
+                [false, {}]
+            );
+        if (anyFailure) {
+            throw new Error('Failed to recover the files.');
+        }
+        // recover <_serialLake_> with <fileSerials>
+        serialLake.recover(fileSerials);
+        // recover fsRoot with <plainRootFolderObject> and <filesMap>
+        {
+            /**
+             * This implementation maximizes the compatibility of received JSON.
+             * This function is ONLY immediately-called.
+             * @param {Object} plainFolderObject
+             * @param {Folder} destFolder
+             * @returns {void}
+             * @throws {TypeError | Error}
+             * */
+            (function recoverFSRoot(plainFolderObject, destFolder) {
+                if (typeof plainFolderObject.subfolders === 'object') { // {name: plainFolderObject}
+                    Object.entries(plainFolderObject.subfolders).forEach(([subfolderName, psfo]) => {
+                        recoverFSRoot(psfo, destFolder.createSubfolder(false, subfolderName));
+                    });
+                }
+                if (typeof plainFolderObject.files === 'object') { // {name: fileSerial}
+                    Object.entries(plainFolderObject.files).forEach(([fileName, fileSerial]) => {
+                        destFolder.createFileDangerous(fileName, filesMap[fileSerial]);
+                    });
+                }
+                if (typeof plainFolderObject.created_at === 'string') { // string
+                    destFolder.setCreatedAt(plainFolderObject.created_at);
+                }
+                if (typeof plainFolderObject.folderLinks === 'object') { // {name: link}
+                    Object.entries(plainFolderObject.folderLinks).forEach(([folderLinkName, folderLink]) => {
+                        destFolder.createFolderLink(folderLinkName, folderLink);
+                    });
+                }
+                if (typeof plainFolderObject.fileLinks === 'object') { // {name: link}
+                    Object.entries(plainFolderObject.fileLinks).forEach((fileLinkName, fileLink) => {
+                        destFolder.createFileLink(fileLinkName, fileLink);
+                    });
+                }
+            })(plainRootFolderObject, fsRoot.clear());
+        }
     };
 
 export {
