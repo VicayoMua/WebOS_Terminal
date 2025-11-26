@@ -31,40 +31,27 @@ const
     utf8Decoder = new TextDecoder('utf-8'),
     utf8Encoder = new TextEncoder(),
     /**
-     * This function converts <object> to <FormData>
-     * @param {Object} object
-     * @returns {FormData}
-     * @throws {TypeError}
-     * */
-    formData = (object) => {
-        if (typeof object !== 'object')
-            throw new TypeError('Object must be an object.');
-        const formData = new FormData();
-        Object.entries(object).forEach(([key, value]) => {
-            if (typeof key !== 'string')
-                throw new TypeError('Object key must be a string.');
-            if (typeof value !== 'string' && !(value instanceof Blob))
-                throw new TypeError('Object value must be either a string or a FormData.');
-            formData.append(key, value);
-        });
-        return formData;
-    },
-    /**
-     * This function pops up the alert window for a terminal frame.
-     * @param {HTMLDivElement} terminalWindowFrame
+     * This function pops up an alert window.
+     * If exitButtonText.length === 0, then the button will not appear!
+     * @param {HTMLElement} terminalWindowFrame
      * @param {string} alertMessage
      * @param {string} exitButtonText
      * @param {(function():void) | null} callbackAfterExit
-     * @returns {void}
+     * @returns {HTMLButtonElement}
      * @throws {TypeError}
      * */
-    popupAlert = (terminalWindowFrame, alertMessage, exitButtonText = 'Got it', callbackAfterExit = null) => {
-        if (!(terminalWindowFrame instanceof HTMLDivElement))
-            throw new TypeError('terminalWindowFrame must be an HTMLDivElement.');
+    popupAlert = (
+        terminalWindowFrame,
+        alertMessage,
+        exitButtonText = 'Got it',
+        callbackAfterExit = null
+    ) => {
+        if (!(terminalWindowFrame instanceof HTMLElement))
+            throw new TypeError('terminalWindowFrame must be an HTMLElement.');
         if (typeof alertMessage !== 'string' || alertMessage.length === 0)
             throw new TypeError('alertMessage must be a non-empty string.');
-        if (typeof exitButtonText !== 'string' || exitButtonText.length < 1 || exitButtonText.length > 32)
-            throw new TypeError('exitButtonText must be a string of length between 1 and 32 (inclusive).');
+        if (typeof exitButtonText !== 'string' || exitButtonText.length > 32)
+            throw new TypeError('exitButtonText must be a string of length between 0 and 32 (inclusive).');
         if (typeof callbackAfterExit !== 'function' && callbackAfterExit !== null)
             throw new TypeError('callbackAfterExit must be a function or null.');
         const divOverlay = document.createElement('div');
@@ -97,6 +84,7 @@ const
         // exit buttons container
         const divExitButtonContainer = document.createElement('div');
         divExitButtonContainer.classList.add('alert-popup-button-container');
+
         const gotitButton = document.createElement('button');
         gotitButton.textContent = exitButtonText;
         gotitButton.classList.add('alert-popup-got-it-button');
@@ -105,17 +93,24 @@ const
             if (callbackAfterExit !== null)
                 callbackAfterExit();
         });
-        divExitButtonContainer.appendChild(gotitButton);
-        divAlertPopup.appendChild(divExitButtonContainer);
+
+        if (exitButtonText.length !== 0) {
+            divExitButtonContainer.appendChild(gotitButton);
+            divAlertPopup.appendChild(divExitButtonContainer);
+        }
 
         // Append to terminalWindowFrame
         terminalWindowFrame.appendChild(divOverlay);
         terminalWindowFrame.appendChild(divAlertPopup);
 
         // Focus the OK button for keyboard accessibility
-        setTimeout(() => {
-            gotitButton.focus();
-        }, 100);
+        if (exitButtonText.length !== 0) {
+            setTimeout(() => {
+                gotitButton.focus();
+            }, 100);
+        }
+
+        return gotitButton;
     },
     /**
      * This function pops up the editor window for the <edit> command.
@@ -1901,6 +1896,147 @@ class TerminalCore {
     }
 }
 
+const
+    /**
+     * This function converts <object> to <FormData>
+     * @param {Object} object
+     * @returns {FormData}
+     * @throws {TypeError}
+     * */
+    formData = (object) => {
+        if (typeof object !== 'object')
+            throw new TypeError('Object must be an object.');
+        const formData = new FormData();
+        Object.entries(object).forEach(([key, value]) => {
+            if (typeof key !== 'string')
+                throw new TypeError('Object key must be a string.');
+            if (typeof value !== 'string' && !(value instanceof Blob))
+                throw new TypeError('Object value must be either a string or a FormData.');
+            formData.append(key, value);
+        });
+        return formData;
+    },
+    /**
+     * @param {string} ipp
+     * @param {string} userKey
+     * @returns {Promise<void>}
+     * @throws {TypeError | Error}
+     * */
+    verifyMyCloudSetup = async (ipp, userKey) => {
+        if (typeof ipp !== 'string' || ipp.length < 7)
+            throw new TypeError('ipp must be a string of length at least 7.');
+        if (typeof userKey !== 'string' || userKey.length < 5)
+            throw new TypeError('userKey must be a string of length at least 5.');
+        const [status, stream] = await fetch(
+            `http://${ipp}/mycloud/users/validate/`,
+            {
+                method: 'POST',
+                body: formData({ // short enough so we can use JSON
+                    user_key: userKey
+                })
+            }
+        ).then(
+            async (res) => [res.status, await res.json()]
+        );
+        if (status !== 200) {
+            const {error: error} = stream; // stream here is a json object
+            throw new Error(`${error}`);
+        }
+        const {result: result} = stream; // stream here is a json object
+        if (result !== true) {
+            throw new Error(`The user key does not exist.`);
+        }
+    },
+    /**
+     * @param {string} ipp
+     * @param {string} userKey
+     * @param {Folder} fsRoot
+     * @returns {Promise<void>}
+     * @throws {TypeError | Error}
+     * */
+    uploadFSToMyCloud = async (ipp, userKey, fsRoot) => {
+        if (typeof ipp !== 'string' || ipp.length < 7)
+            throw new TypeError('ipp must be a string of length at least 7.');
+        if (typeof userKey !== 'string' || userKey.length < 5)
+            throw new TypeError('userKey must be a string of length at least 5.');
+        if (!(fsRoot instanceof Folder))
+            throw new TypeError('fsRoot must be a Folder.');
+        const
+            settledResults = await Promise.allSettled(fsRoot.getFilesAsList().map((file) =>
+                fetch(
+                    `http://${ipp}/mycloud/files/backup/`,
+                    {
+                        method: 'POST',
+                        body: formData({
+                            user_key: userKey,
+                            serial: file.getSerial(),
+                            content: new Blob([file.getContent()], {type: 'application/octet-stream'}),
+                            created_at: file.getCreatedAt(),
+                            updated_at: file.getUpdatedAt()
+                        })
+                    }
+                ).then(
+                    async (res) => [res.status, await res.json()]
+                )
+            )),
+            anyFailure = settledResults.some((settledResult) => {
+                if (settledResult.status === 'rejected') {
+                    const error = settledResult.reason;
+                    return true;
+                }
+                if (settledResult.status === 'fulfilled') {
+                    const [status, stream] = settledResult.value;
+                    if (status !== 200) {
+                        const {error: error} = stream; // stream here is a json object
+                        return true;
+                    }
+                    return false;
+                }
+                return true;
+            });
+        if (anyFailure) {
+            throw new Error(`Failed to backup the files.`);
+        }
+        const [status, stream] = await fetch(
+            `http://${ipp}/mycloud/files/backup/`,
+            {
+                method: 'POST',
+                body: formData({
+                    user_key: userKey,
+                    serial: 'ROOT',
+                    content: new Blob([fsRoot.getRecordsJSON()], {type: 'application/octet-stream'}),
+                    created_at: getISOTimeString(),
+                    updated_at: getISOTimeString()
+                })
+            }
+        ).then(
+            async (res) => [res.status, await res.json()]
+        );
+        if (status !== 200) {
+            const {error: error} = stream; // stream here is a json object
+            throw new Error(`Failed to backup the ROOT map. <-- ${error}`);
+        }
+    },
+    /**
+     * @param {string} ipp
+     * @param {string} userKey
+     * @param {Folder} fsRoot
+     * @param {SerialLake} serialLake
+     * @returns {Promise<void>}
+     * @throws {TypeError | Error}
+     * */
+    recoverFSFromMyCloud = async (ipp, userKey, fsRoot, serialLake) => {
+        if (typeof ipp !== 'string' || ipp.length < 7)
+            throw new TypeError('ipp must be a string of length at least 7.');
+        if (typeof userKey !== 'string' || userKey.length < 5)
+            throw new TypeError('userKey must be a string of length at least 5.');
+        if (!(fsRoot instanceof Folder))
+            throw new TypeError('fsRoot must be a Folder.');
+        if (!(serialLake instanceof SerialLake))
+            throw new TypeError('serialLake must be a SerialLake.');
+
+    };
+
 export {
     Terminal,
     FitAddon,
@@ -1910,7 +2046,6 @@ export {
     randomInt,
     utf8Decoder,
     utf8Encoder,
-    formData,
     popupAlert,
     popupFileEditor,
     legalFileSystemKeyNameRegExp,
@@ -1921,5 +2056,9 @@ export {
     extractDirAndKeyName,
     TerminalFolderPointer,
     RGBColor,
-    TerminalCore
+    TerminalCore,
+    formData,
+    verifyMyCloudSetup,
+    uploadFSToMyCloud,
+    recoverFSFromMyCloud
 };
