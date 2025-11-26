@@ -92,6 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
             /** @type {HTMLButtonElement} */
             button_to_add_files_to_terminal = document.getElementById('button-to-add-files-to-terminal'),
             /** @type {HTMLButtonElement} */
+            button_to_register_on_mycloud_server = document.getElementById('button-to-register-on-mycloud-server'),
+            /** @type {HTMLButtonElement} */
             button_to_upload_to_mycloud_server = document.getElementById('button-to-upload-to-mycloud-server'),
             /** @type {HTMLButtonElement} */
             button_to_recover_from_mycloud_server = document.getElementById('button-to-recover-from-mycloud-server');
@@ -235,6 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
             mycloudIpp = '127.0.0.1:80',
             /** @type {string} */
             mycloudUserKey = '';
+
+        button_to_register_on_mycloud_server.addEventListener('click', () => {
+
+        });
 
         button_to_upload_to_mycloud_server.addEventListener('click', () => {
             // create overlay
