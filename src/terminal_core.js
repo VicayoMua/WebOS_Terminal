@@ -1967,7 +1967,7 @@ const
      * @returns {Promise<void>}
      * @throws {TypeError | Error}
      * */
-    uploadFSToMyCloud = async (ipp, userKey, fsRoot) => {
+    backupFSToMyCloud = async (ipp, userKey, fsRoot) => {
         if (typeof ipp !== 'string' || ipp.length < 7)
             throw new TypeError('ipp must be a string of length at least 7.');
         if (typeof userKey !== 'string' || userKey.length < 5)
@@ -2237,6 +2237,6 @@ export {
     TerminalCore,
     formData,
     verifyMyCloudSetup,
-    uploadFSToMyCloud,
+    backupFSToMyCloud,
     recoverFSFromMyCloud
 };

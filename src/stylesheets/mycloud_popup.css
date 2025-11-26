@@ -79,7 +79,7 @@
     gap: 12px;
 }
 
-.mycloud-popup-upload-button {
+.mycloud-popup-register-button {
     padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid transparent;
@@ -91,16 +91,42 @@
     transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.mycloud-popup-upload-button:hover {
+.mycloud-popup-register-button:hover {
     filter: brightness(1.05);
     transform: translateY(-1px);
 }
 
-.mycloud-popup-upload-button:active {
+.mycloud-popup-register-button:active {
     transform: translateY(0);
 }
 
-.mycloud-popup-upload-button:focus-visible {
+.mycloud-popup-register-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
+}
+
+.mycloud-popup-backup-button {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.mycloud-popup-backup-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.mycloud-popup-backup-button:active {
+    transform: translateY(0);
+}
+
+.mycloud-popup-backup-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
 }

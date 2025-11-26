@@ -18,7 +18,7 @@ import {
     extractDirAndKeyName,
     TerminalFolderPointer,
     RGBColor,
-    TerminalCore, verifyMyCloudSetup, uploadFSToMyCloud, recoverFSFromMyCloud
+    TerminalCore, verifyMyCloudSetup, backupFSToMyCloud, recoverFSFromMyCloud
 } from './terminal_core.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
             /** @type {HTMLButtonElement} */
             button_to_register_on_mycloud_server = document.getElementById('button-to-register-on-mycloud-server'),
             /** @type {HTMLButtonElement} */
-            button_to_upload_to_mycloud_server = document.getElementById('button-to-upload-to-mycloud-server'),
+            button_to_backup_to_mycloud_server = document.getElementById('button-to-backup-to-mycloud-server'),
             /** @type {HTMLButtonElement} */
             button_to_recover_from_mycloud_server = document.getElementById('button-to-recover-from-mycloud-server');
 
@@ -239,10 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mycloudUserKey = '';
 
         button_to_register_on_mycloud_server.addEventListener('click', () => {
-
-        });
-
-        button_to_upload_to_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
             divOverlay.classList.add('popup-overlay');
@@ -253,15 +249,91 @@ document.addEventListener('DOMContentLoaded', () => {
             divMyCloudPopup.classList.add('mycloud-popup');
 
             const h3Title = document.createElement('h3');
-            h3Title.textContent = 'Upload to MyCloud Server';
+            h3Title.textContent = 'Register on MyCloud Server';
             divMyCloudPopup.appendChild(h3Title);
 
-            // ip:port input container
+            // IP:Port input container
             const divIppInputContainer = document.createElement('div');
             divIppInputContainer.classList.add('mycloud-popup-input-container');
 
             const ippLabel = document.createElement('label');
-            ippLabel.textContent = 'IP:Port';
+            ippLabel.textContent = 'Server IP:Port';
+            ippLabel.classList.add('mycloud-popup-input-label');
+
+            const ippInput = document.createElement('input');
+            ippInput.type = 'text';
+            ippInput.value = mycloudIpp;
+            ippInput.classList.add('mycloud-popup-input');
+            ippInput.addEventListener('change', () => {
+                mycloudIpp = ippInput.value;
+            });
+
+            divIppInputContainer.appendChild(ippLabel);
+            divIppInputContainer.appendChild(ippInput);
+
+            divMyCloudPopup.appendChild(divIppInputContainer);
+
+            // helper function to close the divMyCloudPopup with fade-out animation
+            const closePopup = () => {
+                divMyCloudPopup.classList.add('fade-out');
+                divOverlay.classList.add('fade-out');
+                setTimeout(() => {
+                    divMyCloudPopup.remove();
+                    divOverlay.remove();
+                }, 200); // Match animation duration
+            };
+
+            // exit buttons container
+            const divExitButtonsContainer = document.createElement('div');
+            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+
+            const registerButton = document.createElement('button');
+            registerButton.textContent = '📝 Register';
+            registerButton.classList.add('mycloud-popup-register-button');
+
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = '✖ Cancel';
+            cancelButton.classList.add('mycloud-popup-cancel-button');
+
+            registerButton.addEventListener('click', async () => {
+
+            });
+
+            cancelButton.addEventListener('click', () => {
+                closePopup();
+            });
+
+            divExitButtonsContainer.appendChild(registerButton);
+            divExitButtonsContainer.appendChild(cancelButton);
+
+            divMyCloudPopup.appendChild(divExitButtonsContainer);
+
+            document.body.appendChild(divOverlay);
+            document.body.appendChild(divMyCloudPopup);
+
+            ippInput.focus();
+        });
+
+        button_to_backup_to_mycloud_server.addEventListener('click', () => {
+            // create overlay
+            const divOverlay = document.createElement('div');
+            divOverlay.classList.add('popup-overlay');
+            divOverlay.addEventListener('click', () => undefined);
+
+            // create a divMyCloudPopup input box for IP:Port and User Key
+            const divMyCloudPopup = document.createElement('div');
+            divMyCloudPopup.classList.add('mycloud-popup');
+
+            const h3Title = document.createElement('h3');
+            h3Title.textContent = 'Backup to MyCloud Server';
+            divMyCloudPopup.appendChild(h3Title);
+
+            // IP:Port input container
+            const divIppInputContainer = document.createElement('div');
+            divIppInputContainer.classList.add('mycloud-popup-input-container');
+
+            const ippLabel = document.createElement('label');
+            ippLabel.textContent = 'Server IP:Port';
             ippLabel.classList.add('mycloud-popup-input-label');
 
             const ippInput = document.createElement('input');
@@ -312,22 +384,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
 
-            const uploadButton = document.createElement('button');
-            uploadButton.textContent = '💾 Upload';
-            uploadButton.classList.add('mycloud-popup-upload-button');
+            const backupButton = document.createElement('button');
+            backupButton.textContent = '🗄️ Backup';
+            backupButton.classList.add('mycloud-popup-backup-button');
 
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
             cancelButton.classList.add('mycloud-popup-cancel-button');
 
-            uploadButton.addEventListener('click', async () => {
+            backupButton.addEventListener('click', async () => {
                 closePopup();
-                const buttonCloseAlert = popupAlert(document.body, 'Uploading the whole file system...', '');
+                const buttonCloseAlert = popupAlert(document.body, 'Backing-up the whole file system...', '');
                 try {
                     await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
-                    await uploadFSToMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_);
+                    await backupFSToMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_);
                     buttonCloseAlert.click();
-                    popupAlert(document.body, 'Successfully uploaded the whole file system.');
+                    popupAlert(document.body, 'Successfully backed-up the whole file system.');
                 } catch (error) {
                     buttonCloseAlert.click();
                     popupAlert(document.body, `${error}`);
@@ -338,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 closePopup();
             });
 
-            divExitButtonsContainer.appendChild(uploadButton);
+            divExitButtonsContainer.appendChild(backupButton);
             divExitButtonsContainer.appendChild(cancelButton);
 
             divMyCloudPopup.appendChild(divExitButtonsContainer);
@@ -360,15 +432,15 @@ document.addEventListener('DOMContentLoaded', () => {
             divMyCloudPopup.classList.add('mycloud-popup');
 
             const h3Title = document.createElement('h3');
-            h3Title.textContent = 'Upload to MyCloud Server';
+            h3Title.textContent = 'Recover from MyCloud Server';
             divMyCloudPopup.appendChild(h3Title);
 
-            // ip:port input container
+            // IP:Port input container
             const divIppInputContainer = document.createElement('div');
             divIppInputContainer.classList.add('mycloud-popup-input-container');
 
             const ippLabel = document.createElement('label');
-            ippLabel.textContent = 'IP:Port';
+            ippLabel.textContent = 'Server IP:Port';
             ippLabel.classList.add('mycloud-popup-input-label');
 
             const ippInput = document.createElement('input');
@@ -420,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
             divExitButtonsContainer.classList.add('mycloud-popup-button-container');
 
             const recoverButton = document.createElement('button');
-            recoverButton.textContent = '💾 Recover';
+            recoverButton.textContent = '🔄 Recover';
             recoverButton.classList.add('mycloud-popup-recover-button');
 
             const cancelButton = document.createElement('button');
@@ -899,13 +971,13 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: async (parameters) => {
             if (
                 parameters.length === 3 &&
-                parameters[0].length > 6 && parameters[0].startsWith('-ipp=') &&  // ip:port
+                parameters[0].length > 6 && parameters[0].startsWith('-ipp=') &&  // IP:Port
                 parameters[1].length > 5 && parameters[1].startsWith('-key=')     // user key
             ) {
                 const
                     ipp = parameters[0].substring(5),
                     user_key = parameters[1].substring(5);
-                if (parameters[2] === '-new') { // Command: mycloud -ipp=[ip:port] -key=[user_key] -new
+                if (parameters[2] === '-new') { // Command: mycloud -ipp=[IP:Port] -key=[user_key] -new
                     try {
                         const [status, stream] = await fetch(
                             `http://${ipp}/mycloud/users/register/`,
@@ -932,12 +1004,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             currentTerminalCore.printToWindow(
                 'Wrong grammar!\n' +
-                'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server',
+                'Usage: mycloud -ipp=[IP:Port] -key=[user_key] -new     to register a new user key on MyCloud server',
                 RGBColor.red
             );
         },
         description: 'Backup and recover the terminal file system to MyCloud server.\n' +
-            'Usage: mycloud -ipp=[ip:port] -key=[user_key] -new     to register a new user key on MyCloud server'
+            'Usage: mycloud -ipp=[IP:Port] -key=[user_key] -new     to register a new user key on MyCloud server'
     }
 
     // // Update!!!
