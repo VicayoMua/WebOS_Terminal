@@ -857,10 +857,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 file.setContent(utf8Encoder.encode(newFileContent).buffer, false);
                                 currentTerminalCore.printToWindow(` --> Updated a text file.`, RGBColor.yellow);
                                 resolve(undefined);
+                                currentTerminalCore.getWindowTextArea().focus();
                             },
                             () => { // cancel
                                 currentTerminalCore.printToWindow(` --> Canceled updates on a text file.`, RGBColor.yellow);
                                 resolve(undefined);
+                                currentTerminalCore.getWindowTextArea().focus();
                             }
                         );
                         currentTerminalCore.printToWindow(` --> Opened a text editor.\n`, RGBColor.green);
