@@ -377,6 +377,60 @@ app.post('/mycloud/files/recover/', multerUpload.none(), (req, res) => {
     );
 });
 
+/**
+ * This POST request
+ *      compiles .js file to .wasm file
+ *
+ * req:
+ *      content            ---> req.file
+ *      (file_size)        <--- req.file
+ *
+ * res.body:
+ *      error              when failure
+ *
+ * res.arrayBuffer:
+ *      content            when success
+ * */
+app.post('/mycloud/compile/javascript', multerUpload.single('content'), async (req, res) => {
+
+});
+
+/**
+ * This POST request
+ *      compiles .c/.cpp file to .wasm file
+ *
+ * req:
+ *      content            ---> req.file
+ *      (file_size)        <--- req.file
+ *
+ * res.body:
+ *      error              when failure
+ *
+ * res.arrayBuffer:
+ *      content            when success
+ * */
+app.post('/mycloud/compile/cpp', multerUpload.single('content'), async (req, res) => {
+
+});
+
+/**
+ * This POST request
+ *      compiles .py file to .wasm file
+ *
+ * req:
+ *      content            ---> req.file
+ *      (file_size)        <--- req.file
+ *
+ * res.body:
+ *      error              when failure
+ *
+ * res.arrayBuffer:
+ *      content            when success
+ * */
+app.post('/mycloud/compile/python', multerUpload.single('content'), async (req, res) => {
+
+});
+
 const
     server = app.listen(PORT, HOST, () => {
         console.log(`Server listening on http://${HOST}:${PORT}`);

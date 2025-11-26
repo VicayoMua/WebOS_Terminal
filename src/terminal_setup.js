@@ -1038,28 +1038,33 @@ document.addEventListener('DOMContentLoaded', () => {
     //     description: ''
     // }
 
+    // Update Needed
+    _supportedCommands_['jstow'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
+
     // // Update Needed
-    // _supportedCommands_['ctow'] = {
+    // _supportedCommands_['cpptow'] = {
     //     executable: (parameters) => {
     //     },
     //     description: ''
     // }
-    //
-    //
+
     // // Update Needed
     // _supportedCommands_['pytow'] = {
     //     executable: (parameters) => {
     //     },
     //     description: ''
     // }
-    //
-    //
-    // // Update Needed
-    // _supportedCommands_['wasm'] = {
-    //     executable: (parameters) => {
-    //     },
-    //     description: ''
-    // }
+
+    // Update Needed
+    _supportedCommands_['wasm'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
 
     // _supportedCommands_[''] = {
     //     executable: (parameters) => {},
