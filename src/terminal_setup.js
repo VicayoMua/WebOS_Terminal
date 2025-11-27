@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_register_on_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
-            divOverlay.classList.add('popup-overlay');
+            divOverlay.classList.add('mycloud-popup-overlay');
             divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_backup_to_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
-            divOverlay.classList.add('popup-overlay');
+            divOverlay.classList.add('mycloud-popup-overlay');
             divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key
@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_recover_from_mycloud_server.addEventListener('click', () => {
             // create overlay
             const divOverlay = document.createElement('div');
-            divOverlay.classList.add('popup-overlay');
+            divOverlay.classList.add('mycloud-popup-overlay');
             divOverlay.addEventListener('click', () => undefined);
 
             // create a divMyCloudPopup input box for IP:Port and User Key

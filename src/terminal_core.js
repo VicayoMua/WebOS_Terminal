@@ -137,57 +137,65 @@ const
             throw new TypeError('callbackToSaveFile must be a function.');
         if (typeof callbackToCancelEdit !== 'function')
             throw new TypeError('callbackToCancelEdit must be a function.');
+        const divOverlay = document.createElement('div');
+        divOverlay.classList.add('popup-overlay');
+        divOverlay.addEventListener('click', () => undefined);
+
         const divAceEditorWindow = document.createElement('div');
         divAceEditorWindow.classList.add('ace-editor-window');
-        {
-            // the title of the editor window
-            const h3Title = document.createElement('h3');
-            h3Title.classList.add('ace-editor-title');
-            h3Title.innerText = `Editing File: ${fileName}`;
-            divAceEditorWindow.appendChild(h3Title);
+        // the title of the editor window
+        const h3Title = document.createElement('h3');
+        h3Title.classList.add('ace-editor-title');
+        h3Title.innerText = `Editing Text File: ${fileName}`;
+        divAceEditorWindow.appendChild(h3Title);
 
-            // Ace-Editor container
-            const divAceEditorContainer = document.createElement('div');
-            divAceEditorContainer.classList.add('ace-editor-container');
-            const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
-                // mode: "ace/mode/javascript",
-                // selectionStyle: "text"
-            });
-            aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
-            aceEditorObject.setOptions({
-                fontSize: "14px",   // set font size
-                showPrintMargin: false, // disable the print margin
-            });
-            aceEditorObject.focus();
-            divAceEditorWindow.appendChild(divAceEditorContainer);
+        // Ace-Editor container
+        const divAceEditorContainer = document.createElement('div');
+        divAceEditorContainer.classList.add('ace-editor-container');
+        const aceEditorObject = ace.edit(divAceEditorContainer, { // create Ace editor in the div container
+            // mode: "ace/mode/javascript",
+            // selectionStyle: "text"
+        });
+        aceEditorObject.setValue(orginalFileContent);  // set the initial content of the file
+        aceEditorObject.setOptions({
+            fontSize: "14px",   // set font size
+            showPrintMargin: false, // disable the print margin
+        });
+        aceEditorObject.focus();
+        divAceEditorWindow.appendChild(divAceEditorContainer);
 
-            // exit buttons container
-            const divExitButtonsContainer = document.createElement('div');
-            divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
-            const saveButton = document.createElement('button');
-            saveButton.classList.add('ace-editor-save-button');
-            saveButton.textContent = '💾 Save';
-            saveButton.addEventListener('click', () => {
-                callbackToSaveFile(aceEditorObject.getValue());
-                divAceEditorWindow.classList.add('fade-out');
-                setTimeout(() => {
-                    divAceEditorWindow.remove();
-                }, 200); // Match animation duration
-            });
-            divExitButtonsContainer.appendChild(saveButton);
-            const cancelButton = document.createElement('button');
-            cancelButton.classList.add('ace-editor-cancel-button');
-            cancelButton.textContent = '✖ Cancel';
-            cancelButton.addEventListener('click', () => {
-                callbackToCancelEdit();
-                divAceEditorWindow.classList.add('fade-out');
-                setTimeout(() => {
-                    divAceEditorWindow.remove();
-                }, 200); // Match animation duration
-            });
-            divExitButtonsContainer.appendChild(cancelButton);
-            divAceEditorWindow.appendChild(divExitButtonsContainer);
-        }
+        // exit buttons container
+        const divExitButtonsContainer = document.createElement('div');
+        divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
+        const saveButton = document.createElement('button');
+        saveButton.classList.add('ace-editor-save-button');
+        saveButton.textContent = '💾 Save';
+        const cancelButton = document.createElement('button');
+        cancelButton.classList.add('ace-editor-cancel-button');
+        cancelButton.textContent = '✖ Cancel';
+        saveButton.addEventListener('click', () => {
+            callbackToSaveFile(aceEditorObject.getValue());
+            divAceEditorWindow.classList.add('fade-out');
+            divOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                divAceEditorWindow.remove();
+                divOverlay.remove();
+            }, 200); // Match animation duration
+        });
+        cancelButton.addEventListener('click', () => {
+            callbackToCancelEdit();
+            divAceEditorWindow.classList.add('fade-out');
+            divOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                divAceEditorWindow.remove();
+                divOverlay.remove();
+            }, 200); // Match animation duration
+        });
+        divExitButtonsContainer.appendChild(saveButton);
+        divExitButtonsContainer.appendChild(cancelButton);
+        divAceEditorWindow.appendChild(divExitButtonsContainer);
+
+        terminalWindowFrame.appendChild(divOverlay);
         terminalWindowFrame.appendChild(divAceEditorWindow);
     };
 
@@ -1936,6 +1944,10 @@ const
      * @throws {TypeError | Error}
      * */
     registerUserKeyToMyCloud = async (ipp, userKey) => {
+        if (typeof ipp !== 'string' || ipp.length < 7)
+            throw new TypeError('ipp must be a string of length at least 7.');
+        if (typeof userKey !== 'string' || userKey.length < 5)
+            throw new TypeError('userKey must be a string of length at least 5.');
         const [status, stream] = await fetch(
             `http://${ipp}/mycloud/users/register/`,
             {

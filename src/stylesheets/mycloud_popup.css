@@ -1,3 +1,34 @@
+.mycloud-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    z-index: 1999;
+    animation: mycloudPopupOverlayFadeIn 0.2s ease forwards;
+}
+
+.mycloud-popup-overlay.fade-out {
+    animation: mycloudPopupOverlayFadeOut 0.2s ease forwards;
+}
+
+@keyframes mycloudPopupOverlayFadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes mycloudPopupOverlayFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
 .mycloud-popup {
     position: fixed;
     top: 50%;
@@ -12,21 +43,21 @@
     width: 400px;
     color: var(--text-color, #111317);
     opacity: 0;
-    animation: popupFadeIn 0.2s ease forwards;
+    animation: mycloudPopupFadeIn 0.2s ease forwards;
 }
 
 .mycloud-popup.fade-out {
-    animation: popupFadeOut 0.2s ease forwards;
+    animation: mycloudPopupFadeOut 0.2s ease forwards;
 }
 
-@keyframes popupFadeIn {
+@keyframes mycloudPopupFadeIn {
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
     }
 }
 
-@keyframes popupFadeOut {
+@keyframes mycloudPopupFadeOut {
     from {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);

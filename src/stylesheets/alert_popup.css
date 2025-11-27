@@ -8,7 +8,7 @@
     border: 1px solid var(--boarder-color, #e6e8ee);
     border-radius: 14px;
     box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
-    z-index: 1001;
+    z-index: 1000;
     width: 400px;
     color: var(--text-color, #111317);
     opacity: 0;

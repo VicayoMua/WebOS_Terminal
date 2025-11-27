@@ -10,7 +10,7 @@
     padding: 20px;
     border: 1px solid var(--boarder-color, #e6e8ee);
     border-radius: 14px;
-    z-index: 200;       /* make the window always in the front */
+    z-index: 1000;       /* make the window always in the front */
     width: 95%;          /* relative to parent (.terminal-tab) */
     height: 95%;         /* relative to parent (.terminal-tab) */
     box-shadow: var(--panel-shadow, 0 8px 28px rgba(2, 6, 23, 0.06));
