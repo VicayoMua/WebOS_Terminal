@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         // set up behaviors on errors
                         reader.onerror = (error) => {
-                            popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: error reading the file '${file.name}'. (${error})`);
+                            popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: error reading the file '${file.name}'. <-- ${error}`);
                         };
                         // set up behaviors on loading
                         reader.onload = (reader_event) => {
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
-            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+            divExitButtonsContainer.classList.add('mycloud-popup-buttons-container');
 
             const registerButton = document.createElement('button');
             registerButton.textContent = '📝 Register';
@@ -322,13 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             registerButton.addEventListener('click', async () => {
                 closePopup();
-                const buttonCloseAlert = popupAlert(document.body, 'Registering a new user key...', '');
+                const alertExists = popupAlert(document.body, 'Registering a new user key...', false, false);
                 try {
                     await registerUserKeyToMyCloud(mycloudIpp, mycloudUserKey);
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     popupAlert(document.body, 'Successfully registered a new user key.');
                 } catch (error) {
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     mycloudUserKey = '';
                     popupAlert(document.body, `${error}`);
                 }
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
-            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+            divExitButtonsContainer.classList.add('mycloud-popup-buttons-container');
 
             const backupButton = document.createElement('button');
             backupButton.textContent = '🗄️ Backup';
@@ -429,14 +429,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             backupButton.addEventListener('click', async () => {
                 closePopup();
-                const buttonCloseAlert = popupAlert(document.body, 'Backing-up the whole file system...', '');
+                const alertExists = popupAlert(document.body, 'Backing-up the whole file system...', false, false);
                 try {
                     await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
                     await backupFSToMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_);
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     popupAlert(document.body, 'Successfully backed-up the whole file system.');
                 } catch (error) {
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     popupAlert(document.body, `${error}`);
                 }
             });
@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // exit buttons container
             const divExitButtonsContainer = document.createElement('div');
-            divExitButtonsContainer.classList.add('mycloud-popup-button-container');
+            divExitButtonsContainer.classList.add('mycloud-popup-buttons-container');
 
             const recoverButton = document.createElement('button');
             recoverButton.textContent = '🔄 Recover';
@@ -536,14 +536,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             recoverButton.addEventListener('click', async () => {
                 closePopup();
-                const buttonCloseAlert = popupAlert(document.body, 'Recovering the whole file system...', '');
+                const alertExists = popupAlert(document.body, 'Recovering the whole file system...', false, false);
                 try {
                     await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
                     await recoverFSFromMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_, _serialLake_);
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     popupAlert(document.body, 'Successfully recovered the whole file system.');
                 } catch (error) {
-                    buttonCloseAlert.click();
+                    alertExists.confirm();
                     popupAlert(document.body, `${error}`);
                 }
             });
@@ -570,15 +570,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // document.getElementById('button-to-test').addEventListener('click', (e) => {
     //     popupAlert(
     //         currentTerminalCore.getWindowFrame(),
-    //         'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.',
-    //         '123456789012345678901234567890'
+    //         'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
     //     );
     // });
 
     _supportedCommands_['tt'] = {
         is_async: true,
         executable: async (_) => {
-            currentTerminalCore.printToWindow(' --> fadsfjkl\ndfdsf', RGBColor.green);
+            popupAlert(
+                currentTerminalCore.getWindowFrame(),
+                'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
+            );
         },
         description: ''
     }

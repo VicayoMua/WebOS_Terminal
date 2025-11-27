@@ -32,28 +32,49 @@ const
     utf8Encoder = new TextEncoder(),
     /**
      * This function pops up an alert window.
-     * If exitButtonText.length === 0, then the button will not appear!
-     * @param {HTMLElement} terminalWindowFrame
+     * If confirmButtonText.length === 0, then the button will not appear!
+     * @param {HTMLElement} parentHTMLElement
      * @param {string} alertMessage
-     * @param {string} exitButtonText
-     * @param {(function():void) | null} callbackAfterExit
-     * @returns {HTMLButtonElement}
+     * @param {boolean} display_confirm_button
+     * @param {boolean} display_cancel_button
+     * @param {string} alertTitle
+     * @param {string} confirmButtonText
+     * @param {(function():void) | null} callbackAfterConfirm
+     * @param {string} cancelButtonText
+     * @param {(function():void) | null} callbackAfterCancel
+     * @returns {{confirm: function():void, cancel: function():void}}
      * @throws {TypeError}
      * */
     popupAlert = (
-        terminalWindowFrame,
+        parentHTMLElement,
         alertMessage,
-        exitButtonText = 'Got it',
-        callbackAfterExit = null
+        display_confirm_button = true, display_cancel_button = false,
+        alertTitle = 'Alert',
+        confirmButtonText = 'Confirm', callbackAfterConfirm = null,
+        cancelButtonText = 'Cancel', callbackAfterCancel = null
     ) => {
-        if (!(terminalWindowFrame instanceof HTMLElement))
-            throw new TypeError('terminalWindowFrame must be an HTMLElement.');
+        if (!(parentHTMLElement instanceof HTMLElement))
+            throw new TypeError('parentHTMLElement must be an HTMLElement.');
         if (typeof alertMessage !== 'string' || alertMessage.length === 0)
             throw new TypeError('alertMessage must be a non-empty string.');
-        if (typeof exitButtonText !== 'string' || exitButtonText.length > 32)
-            throw new TypeError('exitButtonText must be a string of length between 0 and 32 (inclusive).');
-        if (typeof callbackAfterExit !== 'function' && callbackAfterExit !== null)
-            throw new TypeError('callbackAfterExit must be a function or null.');
+        if (typeof display_confirm_button !== 'boolean')
+            throw new TypeError('display_confirm_button must be a boolean.');
+        if (typeof display_cancel_button !== 'boolean')
+            throw new TypeError('display_cancel_button must be a boolean.');
+        if (typeof alertTitle !== 'string' || alertTitle.length < 1 || alertTitle.length > 16)
+            throw new TypeError('alertTitle must be a string of length between 1 and 16 (inclusive).');
+        if (display_confirm_button) {
+            if (typeof confirmButtonText !== 'string' || confirmButtonText.length < 1 || confirmButtonText.length > 16)
+                throw new TypeError('confirmButtonText must be a string of length between 1 and 16 (inclusive).');
+            if (typeof callbackAfterConfirm !== 'function' && callbackAfterConfirm !== null)
+                throw new TypeError('callbackAfterConfirm must be a function or null.');
+        }
+        if (display_cancel_button) {
+            if (typeof cancelButtonText !== 'string' || cancelButtonText.length < 1 || cancelButtonText.length > 16)
+                throw new TypeError('cancelButtonText must be a string of length between 1 and 16 (inclusive).');
+            if (typeof callbackAfterCancel !== 'function' && callbackAfterCancel !== null)
+                throw new TypeError('callbackAfterCancel must be a function or null.');
+        }
         const divOverlay = document.createElement('div');
         divOverlay.classList.add('popup-overlay');
         divOverlay.addEventListener('click', () => undefined);
@@ -62,7 +83,7 @@ const
         divAlertPopup.classList.add('alert-popup');
 
         const h3Title = document.createElement('h3');
-        h3Title.textContent = 'Alert';
+        h3Title.textContent = alertTitle;
         divAlertPopup.appendChild(h3Title);
 
         // alertMessage container
@@ -82,35 +103,50 @@ const
         };
 
         // exit buttons container
-        const divExitButtonContainer = document.createElement('div');
-        divExitButtonContainer.classList.add('alert-popup-button-container');
-
-        const gotitButton = document.createElement('button');
-        gotitButton.textContent = exitButtonText;
-        gotitButton.classList.add('alert-popup-got-it-button');
-        gotitButton.addEventListener('click', () => {
-            closePopup();
-            if (callbackAfterExit !== null)
-                callbackAfterExit();
-        });
-
-        if (exitButtonText.length !== 0) {
-            divExitButtonContainer.appendChild(gotitButton);
-            divAlertPopup.appendChild(divExitButtonContainer);
+        if (display_confirm_button || display_cancel_button) {
+            const divExitButtonsContainer = document.createElement('div');
+            divExitButtonsContainer.classList.add('alert-popup-exit-buttons-container');
+            if (display_confirm_button) {
+                const confirmButton = document.createElement('button');
+                confirmButton.textContent = confirmButtonText;
+                confirmButton.classList.add('alert-popup-confirm-button');
+                confirmButton.addEventListener('click', () => {
+                    closePopup();
+                    if (callbackAfterConfirm !== null)
+                        callbackAfterConfirm();
+                });
+                divExitButtonsContainer.appendChild(confirmButton);
+            }
+            if (display_cancel_button) {
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = cancelButtonText;
+                cancelButton.classList.add('alert-popup-cancel-button');
+                cancelButton.addEventListener('click', () => {
+                    closePopup();
+                    if (callbackAfterCancel !== null)
+                        callbackAfterCancel();
+                });
+                divExitButtonsContainer.appendChild(cancelButton);
+            }
+            divAlertPopup.appendChild(divExitButtonsContainer);
         }
 
-        // Append to terminalWindowFrame
-        terminalWindowFrame.appendChild(divOverlay);
-        terminalWindowFrame.appendChild(divAlertPopup);
+        // Append to parentHTMLElement
+        parentHTMLElement.appendChild(divOverlay);
+        parentHTMLElement.appendChild(divAlertPopup);
 
-        // Focus the OK button for keyboard accessibility
-        if (exitButtonText.length !== 0) {
-            setTimeout(() => {
-                gotitButton.focus();
-            }, 100);
-        }
-
-        return gotitButton;
+        return {
+            confirm: () => {
+                closePopup();
+                if (display_confirm_button && callbackAfterConfirm !== null)
+                    callbackAfterConfirm();
+            },
+            cancel: () => {
+                closePopup();
+                if (display_cancel_button && callbackAfterCancel !== null)
+                    callbackAfterCancel();
+            }
+        };
     },
     /**
      * This function pops up the editor window for the <edit> command.

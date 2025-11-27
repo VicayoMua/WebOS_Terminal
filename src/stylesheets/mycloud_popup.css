@@ -104,7 +104,7 @@
     border-color: var(--accent-color, #7c3aed);
 }
 
-.mycloud-popup-button-container {
+.mycloud-popup-buttons-container {
     display: flex;
     justify-content: flex-end;
     gap: 12px;

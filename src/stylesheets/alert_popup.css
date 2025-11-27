@@ -62,14 +62,14 @@
     white-space: pre-wrap;
 }
 
-.alert-popup-button-container {
+.alert-popup-exit-buttons-container {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: 24px;
 }
 
-.alert-popup-got-it-button {
+.alert-popup-confirm-button {
     padding: 12px 16px;
     border-radius: 12px;
     border: 1px solid transparent;
@@ -81,16 +81,42 @@
     transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-.alert-popup-got-it-button:hover {
+.alert-popup-confirm-button:hover {
     filter: brightness(1.05);
     transform: translateY(-1px);
 }
 
-.alert-popup-got-it-button:active {
+.alert-popup-confirm-button:active {
     transform: translateY(0);
 }
 
-.alert-popup-got-it-button:focus-visible {
+.alert-popup-confirm-button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
+}
+
+.alert-popup-cancel-button {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background-color: #f44336;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.alert-popup-cancel-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+.alert-popup-cancel-button:active {
+    transform: translateY(0);
+}
+
+.alert-popup-cancel-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 4px var(--ring-color, rgba(124, 58, 237, 0.35));
 }
