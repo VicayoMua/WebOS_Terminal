@@ -102,12 +102,21 @@ document.addEventListener('DOMContentLoaded', () => {
             /** @type {HTMLButtonElement} */
             button_to_recover_from_mycloud_server = document.getElementById('button-to-recover-from-mycloud-server');
 
-        // localStorage.getItem()
         button_to_switch_theme.addEventListener('click', () => {
-            button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
+            if (document.body.classList.toggle('dark-body-mode')) { // whether dark-mode is enabled after the call
+                button_to_switch_theme.innerText = '☀️';
+                localStorage.setItem('mini-terminal-dark-body-mode-enabled', 'true');
+            } else {
+                button_to_switch_theme.innerText = '🌙';
+                localStorage.setItem('mini-terminal-dark-body-mode-enabled', 'false');
+            }
             // focus on the terminal window
             currentTerminalCore.getWindowTextArea().focus();
         });
+
+        if (localStorage.getItem('mini-terminal-dark-body-mode-enabled') === 'true') {
+            button_to_switch_theme.click();
+        }
 
         button_to_open_new_terminal_tab.addEventListener('click', () => {
             // check the tab count limit
@@ -257,11 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
             input.click();
         });
 
-        let
-            /** @type {string} */
-            mycloudIpp = '127.0.0.1:8088',
-            /** @type {string} */
-            mycloudUserKey = '';
+        if (localStorage.getItem('mini-terminal-mycloud-ipp') === null) {
+            localStorage.setItem('mini-terminal-mycloud-ipp', '127.0.0.1:8088');
+        }
+        if (localStorage.getItem('mini-terminal-mycloud-user-key') === null) {
+            localStorage.setItem('mini-terminal-mycloud-user-key', '');
+        }
 
         button_to_register_on_mycloud_server.addEventListener('click', () => {
             // create overlay
@@ -287,10 +297,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const ippInput = document.createElement('input');
             ippInput.type = 'text';
-            ippInput.value = mycloudIpp;
+            ippInput.value = localStorage.getItem('mini-terminal-mycloud-ipp');
             ippInput.classList.add('mycloud-popup-input');
             ippInput.addEventListener('change', () => {
-                mycloudIpp = ippInput.value;
+                localStorage.setItem('mini-terminal-mycloud-ipp', ippInput.value);
             });
 
             divIppInputContainer.appendChild(ippLabel);
@@ -308,10 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userKeyInput = document.createElement('input');
             userKeyInput.type = 'text';
-            userKeyInput.value = mycloudUserKey;
+            userKeyInput.value = localStorage.getItem('mini-terminal-mycloud-user-key');
             userKeyInput.classList.add('mycloud-popup-input');
             userKeyInput.addEventListener('change', () => {
-                mycloudUserKey = userKeyInput.value;
+                localStorage.setItem('mini-terminal-mycloud-user-key', userKeyInput.value);
             });
 
             divUserKeyInputContainer.appendChild(userKeyLabel);
@@ -353,7 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     false
                 );
                 try {
-                    await registerUserKeyToMyCloud(mycloudIpp, mycloudUserKey);
+                    await registerUserKeyToMyCloud(
+                        localStorage.getItem('mini-terminal-mycloud-ipp'),
+                        localStorage.getItem('mini-terminal-mycloud-user-key')
+                    );
                     alertExists.primary();
                     popupAlert(
                         document.body,
@@ -362,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 } catch (error) {
                     alertExists.primary();
-                    mycloudUserKey = '';
+                    localStorage.setItem('mini-terminal-mycloud-user-key', '');
                     popupAlert(
                         document.body,
                         'Error',
@@ -410,10 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const ippInput = document.createElement('input');
             ippInput.type = 'text';
-            ippInput.value = mycloudIpp;
+            ippInput.value = localStorage.getItem('mini-terminal-mycloud-ipp');
             ippInput.classList.add('mycloud-popup-input');
             ippInput.addEventListener('change', () => {
-                mycloudIpp = ippInput.value;
+                localStorage.setItem('mini-terminal-mycloud-ipp', ippInput.value);
             });
 
             divIppInputContainer.appendChild(ippLabel);
@@ -431,10 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userKeyInput = document.createElement('input');
             userKeyInput.type = 'text';
-            userKeyInput.value = mycloudUserKey;
+            userKeyInput.value = localStorage.getItem('mini-terminal-mycloud-user-key');
             userKeyInput.classList.add('mycloud-popup-input');
             userKeyInput.addEventListener('change', () => {
-                mycloudUserKey = userKeyInput.value;
+                localStorage.setItem('mini-terminal-mycloud-user-key', userKeyInput.value);
             });
 
             divUserKeyInputContainer.appendChild(userKeyLabel);
@@ -476,8 +489,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     false
                 );
                 try {
-                    await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
-                    await backupFSToMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_);
+                    await verifyMyCloudSetup(
+                        localStorage.getItem('mini-terminal-mycloud-ipp'),
+                        localStorage.getItem('mini-terminal-mycloud-user-key')
+                    );
+                    await backupFSToMyCloud(
+                        localStorage.getItem('mini-terminal-mycloud-ipp'),
+                        localStorage.getItem('mini-terminal-mycloud-user-key'),
+                        _fsRoot_
+                    );
                     alertExists.primary();
                     popupAlert(
                         document.body,
@@ -533,10 +553,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const ippInput = document.createElement('input');
             ippInput.type = 'text';
-            ippInput.value = mycloudIpp;
+            ippInput.value = localStorage.getItem('mini-terminal-mycloud-ipp');
             ippInput.classList.add('mycloud-popup-input');
             ippInput.addEventListener('change', () => {
-                mycloudIpp = ippInput.value;
+                localStorage.setItem('mini-terminal-mycloud-ipp', ippInput.value);
             });
 
             divIppInputContainer.appendChild(ippLabel);
@@ -554,10 +574,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userKeyInput = document.createElement('input');
             userKeyInput.type = 'text';
-            userKeyInput.value = mycloudUserKey;
+            userKeyInput.value = localStorage.getItem('mini-terminal-mycloud-user-key');
             userKeyInput.classList.add('mycloud-popup-input');
             userKeyInput.addEventListener('change', () => {
-                mycloudUserKey = userKeyInput.value;
+                localStorage.setItem('mini-terminal-mycloud-user-key', userKeyInput.value);
             });
 
             divUserKeyInputContainer.appendChild(userKeyLabel);
@@ -599,8 +619,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     false
                 );
                 try {
-                    await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
-                    await recoverFSFromMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_, _serialLake_);
+                    await verifyMyCloudSetup(
+                        localStorage.getItem('mini-terminal-mycloud-ipp'),
+                        localStorage.getItem('mini-terminal-mycloud-user-key')
+                    );
+                    await recoverFSFromMyCloud(
+                        localStorage.getItem('mini-terminal-mycloud-ipp'),
+                        localStorage.getItem('mini-terminal-mycloud-user-key'),
+                        _fsRoot_,
+                        _serialLake_
+                    );
                     alertExists.primary();
                     popupAlert(
                         document.body,
