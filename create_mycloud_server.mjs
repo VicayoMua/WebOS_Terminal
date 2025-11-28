@@ -449,19 +449,20 @@ const
     }),
     shutdownServer = (signal) => {
         console.log(`\n${signal} received: shutting down...`);
-        server.close((serverError) => {
-            if (serverError) {
-                console.error('Error closing server:', serverError.message);
+        server.close((serverCloseError) => {
+            if (serverCloseError) {
+                console.error(`Failed to close the server. <-- ${serverCloseError}`);
                 process.exit(1);
                 return;
             }
-            sql3db.close((sqlError) => {
-                if (sqlError) {
-                    console.error('Error closing DB:', sqlError.message);
+            console.log('The server is closed.');
+            sql3db.close((databaseCloseError) => {
+                if (databaseCloseError) {
+                    console.error(`Failed to close the database. <-- ${databaseCloseError}`);
                     process.exit(1);
                     return;
                 }
-                console.log('DB connection closed.');
+                console.log('The database is closed.');
                 process.exit(0);
             });
         });
