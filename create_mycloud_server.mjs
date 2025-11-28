@@ -93,7 +93,16 @@ const
     utf8Encoder = new TextEncoder(),
     // MAX_TEMP_FILE_SIZE = 1024 * 1024 * 1024 * 1024, // 1T.
     HOST = '127.0.0.1',
-    PORT = 8088;
+    PORT = 80;
+
+app.use(express.static(path.join(__dirname, 'webpage')));
+
+// Basic Webpage Server
+{
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'webpage', 'index.html'));
+    });
+}
 
 app.use(express.json());
 app.use(cors());

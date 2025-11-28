@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (localStorage.getItem('mini-terminal-mycloud-ipp') === null) {
-            localStorage.setItem('mini-terminal-mycloud-ipp', '127.0.0.1:8088');
+            localStorage.setItem('mini-terminal-mycloud-ipp', '127.0.0.1:80');
         }
         if (localStorage.getItem('mini-terminal-mycloud-user-key') === null) {
             localStorage.setItem('mini-terminal-mycloud-user-key', '');
