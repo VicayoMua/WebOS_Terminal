@@ -1,11 +1,11 @@
 {
-  "name": "terminal_demo",
+  "name": "MyCloudServer",
   "version": "1.0.0",
-  "description": "**Project Team 1 (Online)**",
-  "main": "terminal_setup_window.js",
+  "description": "MyCloud Server",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src_server/create_mycloud_server.cjs"
+    "start": "node create_mycloud_server.mjs"
   },
   "private": true,
   "dependencies": {
@@ -18,6 +18,6 @@
     "lib": "lib"
   },
   "keywords": [],
-  "author": "",
+  "author": "Vicayo Zhang",
   "license": "ISC"
 }

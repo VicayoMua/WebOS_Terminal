@@ -1767,7 +1767,7 @@ class TerminalCore {
                     }
                     const
                         [commandName, commandParameters] = previousCommands[indexPrevComm],
-                        command = commandParameters.reduce((acc, str) => `${acc} ${str}`, commandName);
+                        command = commandParameters.reduce((acc, str) => `${acc} ${str.indexOf(' ') === -1 ? str : `'${str}'`}`, commandName);
                     this.clearLineInWindow();
                     this.printToWindow(` $ ${command}`);
                     bufferReset();
@@ -1784,7 +1784,7 @@ class TerminalCore {
                     }
                     const
                         [commandName, commandParameters] = previousCommands[indexPrevComm],
-                        command = commandParameters.reduce((acc, str) => `${acc} ${str}`, commandName);
+                        command = commandParameters.reduce((acc, str) => `${acc} ${str.indexOf(' ') === -1 ? str : `'${str}'`}`, commandName);
                     this.clearLineInWindow();
                     this.printToWindow(` $ ${command}`);
                     bufferReset();
@@ -1892,6 +1892,13 @@ class TerminalCore {
         // write to window object
         this.#xtermObj.write(content);
         return content.length;
+    }
+
+    /**
+     *
+     * */
+    printsToWindow() {
+        //
     }
 
     /**

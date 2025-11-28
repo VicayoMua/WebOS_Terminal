@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let
             /** @type {string} */
-            mycloudIpp = '127.0.0.1:80',
+            mycloudIpp = '127.0.0.1:8088',
             /** @type {string} */
             mycloudUserKey = '';
 
@@ -567,13 +567,6 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_open_new_terminal_tab.click();
     }
 
-    // document.getElementById('button-to-test').addEventListener('click', (e) => {
-    //     popupAlert(
-    //         currentTerminalCore.getWindowFrame(),
-    //         'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
-    //     );
-    // });
-
     _supportedCommands_['tt'] = {
         is_async: true,
         executable: async (_) => {
@@ -589,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['hello'] = {
         is_async: false,
         executable: (_) => {
-            currentTerminalCore.printToWindow(` --> Hello World!`);
+            currentTerminalCore.printToWindow(`Hello World!`);
         },
         description: `Say 'Hello World!'`
     };
@@ -599,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         is_async: false,
         executable: (_) => {
             currentTerminalCore.printToWindow(
-                ` --> This terminal supports:\n${
+                `This terminal supports:\n${
                     Object.keys(_supportedCommands_).reduce(
                         (acc, elem, index) => {
                             if (index === 0) return `     ${elem}`;
@@ -607,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         },
                         ''
                     )
-                }.\n --> For more details, please use the command 'man [command_name]'.`
+                }.\n\nFor more details, please use the command 'man [command_name]'.`
             );
         },
         description: 'A brief manual of the terminal simulator.',
@@ -622,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     commandName = parameters[0],
                     commandObject = _supportedCommands_[commandName];
                 if (commandObject === undefined) {
-                    currentTerminalCore.printToWindow(` --> Command '${commandName}' is not supported!`);
+                    currentTerminalCore.printToWindow(` --> Command '${commandName}' is not supported!`, RGBColor.red);
                 } else {
                     currentTerminalCore.printToWindow(' --> ');
                     currentTerminalCore.printToWindow(commandObject.description, null, null, false, '        ');
@@ -646,8 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 ''
             );
-            currentTerminalCore.printToWindow(' --> ');
-            currentTerminalCore.printToWindow(result.length > 0 ? result : `''`, null, null, false, '        ');
+            currentTerminalCore.printToWindow(result.length > 0 ? result : `''`, RGBColor.black, RGBColor.turquoise);
         },
         description: 'Simply print all the parameters.\n' +
             'Usage: echo [parameters]',

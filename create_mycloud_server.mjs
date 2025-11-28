@@ -1,10 +1,21 @@
 // --------------------------------------- DB ---------------------------------------
-const
-    path = require('path'),
-    SQLITE3_DB_PATH = path.join(__dirname, 'MyCloud.db'),
-    sqlite3 = require('sqlite3').verbose();
-const
-    sql3db = new sqlite3.Database(
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import sqlite3Module from 'sqlite3';
+import { randomUUID } from 'crypto';
+import { hrtime } from 'process';
+import fs from 'fs';
+import multer from 'multer';
+import express from 'express';
+import cors from 'cors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const sqlite3 = sqlite3Module.verbose();
+const SQLITE3_DB_PATH = path.join(__dirname, 'MyCloud.db');
+const sql3db = new sqlite3.Database(
         SQLITE3_DB_PATH,
         sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
         (error) => {
@@ -35,10 +46,6 @@ sql3db.serialize(() => {
 
 // --------------------------------------- MULTER ---------------------------------------
 
-const
-    {randomUUID} = require('crypto'),
-    {hrtime} = require('process');
-
 class TempFileNameLake {
     #lastTime = 0n;
     #idx = 0n;
@@ -57,8 +64,6 @@ class TempFileNameLake {
 
 const
     UPLOAD_DIR = path.join(__dirname, 'uploads'),
-    fs = require('fs'),
-    multer = require('multer'),
     tempFileNameLake = new TempFileNameLake();
 
 if (!fs.existsSync(UPLOAD_DIR))
@@ -78,19 +83,17 @@ const multerUpload = multer({
 });
 
 // ------------------------------------- Server App -------------------------------------
+
 const
-    express = require('express'),
     app = express(),
     legalUserKeyRegExp = /^[A-Za-z_][A-Za-z0-9_]{5,1048576}$/,
     legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
-    cors = require('cors'),
     getISOTimeString = () => new Date().toISOString(),
     utf8Decoder = new TextDecoder('utf-8'),
     utf8Encoder = new TextEncoder(),
     // MAX_TEMP_FILE_SIZE = 1024 * 1024 * 1024 * 1024, // 1T.
-    // path = require('path');
     HOST = '127.0.0.1',
-    PORT = 80;
+    PORT = 8088;
 
 app.use(express.json());
 app.use(cors());
@@ -367,6 +370,9 @@ app.use((error, req, res, next) => {
                         error: 'Failed to find the file serial.'
                     });
                 }
+                if (serial === 'ROOT') {
+                    console.log(` --> User "${user_key.substring(0, 6)}.." requested a previous backup.`);
+                }
                 res.set({
                     'Access-Control-Expose-Headers': 'X_serial, X_created_at, X_updated_at, X_file_size',
                     X_serial: serial,
@@ -463,3 +469,4 @@ const
 
 process.on('SIGINT', () => shutdownServer('SIGINT'));
 process.on('SIGTERM', () => shutdownServer('SIGTERM'));
+
