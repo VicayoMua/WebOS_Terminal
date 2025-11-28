@@ -1,10 +1,10 @@
 // --------------------------------------- DB ---------------------------------------
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import {fileURLToPath} from 'url';
+import {dirname} from 'path';
 import sqlite3Module from 'sqlite3';
-import { randomUUID } from 'crypto';
-import { hrtime } from 'process';
+import {randomUUID} from 'crypto';
+import {hrtime} from 'process';
 import fs from 'fs';
 import multer from 'multer';
 import express from 'express';
@@ -16,12 +16,12 @@ const __dirname = dirname(__filename);
 const sqlite3 = sqlite3Module.verbose();
 const SQLITE3_DB_PATH = path.join(__dirname, 'MyCloud.db');
 const database = new sqlite3.Database(
-        SQLITE3_DB_PATH,
-        sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
-        (error) => {
-            if (error) console.error(`Failed to open the database: ${error.message}`);
-        }
-    );
+    SQLITE3_DB_PATH,
+    sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
+    (error) => {
+        if (error) console.error(`Failed to open the database: ${error.message}`);
+    }
+);
 
 /*
 * Initialize the database
@@ -39,7 +39,7 @@ database.serialize(() => {
                 console.error('Failed to read/create the users table');
                 return;
             }
-            console.log('Successfully located users table');
+            console.log('Successfully located users table.');
         }
     );
 });
@@ -90,10 +90,8 @@ const
     legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
     getISOTimeString = () => new Date().toISOString(),
     utf8Decoder = new TextDecoder('utf-8'),
-    utf8Encoder = new TextEncoder(),
-    // MAX_TEMP_FILE_SIZE = 1024 * 1024 * 1024 * 1024, // 1T.
-    HOST = '127.0.0.1',
-    PORT = 80;
+    utf8Encoder = new TextEncoder();
+// MAX_TEMP_FILE_SIZE = 1024 * 1024 * 1024 * 1024, // 1T.
 
 app.use(express.static(path.join(__dirname, 'webpage')));
 
@@ -149,7 +147,6 @@ app.use((error, req, res, next) => {
             [user_key, getISOTimeString()],
             (insertError) => {
                 if (insertError) {
-                    // console.log(insertError.code);
                     if (insertError.code === 'SQLITE_CONSTRAINT') {
                         return res.status(400).json({
                             error: `This user_key has already been taken by others. Please try another.`
@@ -453,8 +450,10 @@ app.use((error, req, res, next) => {
 }
 
 const
+    HOST = '0.0.0.0',
+    PORT = 80,
     server = app.listen(PORT, HOST, () => {
-        console.log(`Server listening on http://${HOST}:${PORT}`);
+        console.log(`Server listening on http://${HOST}:${PORT}.`);
     }),
     shutdownServer = (signal) => {
         console.log(`\n${signal} received: shutting down...`);
@@ -479,4 +478,3 @@ const
 
 process.on('SIGINT', () => shutdownServer('SIGINT'));
 process.on('SIGTERM', () => shutdownServer('SIGTERM'));
-
