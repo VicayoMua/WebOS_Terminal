@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 
 const sqlite3 = sqlite3Module.verbose();
 const SQLITE3_DB_PATH = path.join(__dirname, 'MyCloud.db');
-const sql3db = new sqlite3.Database(
+const database = new sqlite3.Database(
         SQLITE3_DB_PATH,
         sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
         (error) => {
@@ -26,10 +26,10 @@ const sql3db = new sqlite3.Database(
 /*
 * Initialize the database
 * */
-sql3db.serialize(() => {
-    sql3db.run('PRAGMA foreign_keys = ON;');
-    sql3db.run('PRAGMA journal_mode = WAL;');
-    sql3db.run(
+database.serialize(() => {
+    database.run('PRAGMA foreign_keys = ON;');
+    database.run('PRAGMA journal_mode = WAL;');
+    database.run(
         'CREATE TABLE IF NOT EXISTS users (' +
         '    user_key      TEXT PRIMARY KEY,                                    /* unique user key (string) */' +
         '    created_at    TEXT NOT NULL' +
@@ -135,7 +135,7 @@ app.use((error, req, res, next) => {
             });
         }
         // language=SQL format=false
-        sql3db.run(
+        database.run(
             'INSERT INTO users (user_key, created_at) VALUES (?, ?);',
             [user_key, getISOTimeString()],
             (insertError) => {
@@ -152,7 +152,7 @@ app.use((error, req, res, next) => {
                 }
                 console.log(` --> Registered ${user_key} in the user table.`);
                 // language=SQL format=false
-                sql3db.run(
+                database.run(
                     `CREATE TABLE IF NOT EXISTS ${user_key} (` +
                     '    serial         TEXT PRIMARY KEY,         /* unique file serial number (string) */' +
                     '    content        BLOB NOT NULL,            /* binary-safe content */' +
@@ -163,7 +163,7 @@ app.use((error, req, res, next) => {
                     (createError) => {
                         if (createError) {
                             console.error(` --> Failed to create a file table called ${user_key}.`)
-                            sql3db.run('DELETE FROM users WHERE user_key = ?;', [user_key]);
+                            database.run('DELETE FROM users WHERE user_key = ?;', [user_key]);
                             return res.status(500).json({
                                 error: `Failed to create a new file table: ${createError}.`
                             });
@@ -201,7 +201,7 @@ app.use((error, req, res, next) => {
                 error: `"${user_key}" must be a valid user_key. Please Use [A-Za-z_][A-Za-z0-9_]{1024,1048576}.`
             });
         }
-        sql3db.get(
+        database.get(
             'SELECT ' +
             '   EXISTS(SELECT 1 FROM users WHERE user_key = ?) AS user_present,' +
             "   EXISTS(SELECT 1 FROM main.sqlite_schema WHERE type='table' AND name = ?) AS table_present;",
@@ -299,7 +299,7 @@ app.use((error, req, res, next) => {
             });
         }
         // language=SQL format=false
-        sql3db.run(
+        database.run(
             `INSERT INTO ${user_key} (serial, content, created_at, updated_at, file_size) VALUES (?, ?, ?, ?, ?)` +
             'ON CONFLICT(serial) DO UPDATE SET' +
             '    content    = excluded.content,' +
@@ -361,7 +361,7 @@ app.use((error, req, res, next) => {
             });
         }
         // language=SQL format=false
-        sql3db.get(
+        database.get(
             `SELECT content, created_at, updated_at, file_size FROM ${user_key} WHERE serial = ? LIMIT 1;`,
             [serial],
             (selectError, selectRow) => {
@@ -456,7 +456,7 @@ const
                 return;
             }
             console.log('The server is closed.');
-            sql3db.close((databaseCloseError) => {
+            database.close((databaseCloseError) => {
                 if (databaseCloseError) {
                     console.error(`Failed to close the database. <-- ${databaseCloseError}`);
                     process.exit(1);
