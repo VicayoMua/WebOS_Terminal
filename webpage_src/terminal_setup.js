@@ -112,7 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_open_new_terminal_tab.addEventListener('click', () => {
             // check the tab count limit
             if (tabCount >= MAX_TAB_COUNT) {
-                popupAlert(currentTerminalCore.getWindowFrame(), `You can open at most ${MAX_TAB_COUNT} terminal tabs.`);
+                popupAlert(
+                    currentTerminalCore.getWindowFrame(),
+                    'Limit Reached',
+                    `You can open at most ${MAX_TAB_COUNT} terminal tabs.`
+                );
                 return;
             }
 
@@ -196,20 +200,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (const file of input_event.target.files) {
                     if (!file) continue;
                     if (typeof file.name !== 'string') { // filename is illegal
-                        popupAlert(currentTerminalCore.getWindowFrame(), 'button_to_add_files_to_terminal: file name must be a string.');
+                        popupAlert(
+                            currentTerminalCore.getWindowFrame(),
+                            'Type Error',
+                            'The file name must be a string.'
+                        );
                         return;
                     }
                     const reader = new FileReader();
                     {
                         // set up behaviors on errors
                         reader.onerror = (error) => {
-                            popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: error reading the file '${file.name}'. <-- ${error}`);
+                            popupAlert(
+                                currentTerminalCore.getWindowFrame(),
+                                'Error',
+                                `Failed to read the file "${file.name}". <-- ${error}`
+                            );
                         };
                         // set up behaviors on loading
                         reader.onload = (reader_event) => {
                             const fileContent = reader_event.target.result;
                             if (typeof fileContent !== 'string' && !(fileContent instanceof ArrayBuffer)) {
-                                popupAlert(currentTerminalCore.getWindowFrame(), `button_to_add_files_to_terminal: unexpected error when loading '${file.name}'.`);
+                                popupAlert(
+                                    currentTerminalCore.getWindowFrame(),
+                                    'Error',
+                                    `Unexpectedly failed to load "${file.name}".`
+                                );
                                 return;
                             }
                             const [newFile, _] = currentTerminalCore.getCurrentFolderPointer()
@@ -231,7 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         reader.readAsArrayBuffer(file);  // For binary files (e.g., images)
                     }
                 }
-                popupAlert(currentTerminalCore.getWindowFrame(), `Successfully added ${input_event.target.files.length} file(s) to the current directory.`);
+                popupAlert(
+                    currentTerminalCore.getWindowFrame(),
+                    'Success',
+                    `Added ${input_event.target.files.length} file(s) to the current directory.`
+                );
             });
             // activate the file input element
             input.click();
@@ -325,15 +345,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             registerButton.addEventListener('click', async () => {
                 closePopup();
-                const alertExists = popupAlert(document.body, 'Registering a new user key...', false, false);
+                const alertExists = popupAlert(
+                    document.body,
+                    'Processing',
+                    'Registering a new user key...',
+                    false,
+                    false
+                );
                 try {
                     await registerUserKeyToMyCloud(mycloudIpp, mycloudUserKey);
-                    alertExists.confirm();
-                    popupAlert(document.body, 'Successfully registered a new user key.');
+                    alertExists.primary();
+                    popupAlert(
+                        document.body,
+                        'Success',
+                        'Registered a new user key.'
+                    );
                 } catch (error) {
-                    alertExists.confirm();
+                    alertExists.primary();
                     mycloudUserKey = '';
-                    popupAlert(document.body, `${error}`);
+                    popupAlert(
+                        document.body,
+                        'Error',
+                        `Failed to register a new user key. <-- ${error}`
+                    );
                 }
             });
 
@@ -434,15 +468,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             backupButton.addEventListener('click', async () => {
                 closePopup();
-                const alertExists = popupAlert(document.body, 'Backing-up the whole file system...', false, false);
+                const alertExists = popupAlert(
+                    document.body,
+                    'Processing',
+                    'Backing-up the whole file system...',
+                    false,
+                    false
+                );
                 try {
                     await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
                     await backupFSToMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_);
-                    alertExists.confirm();
-                    popupAlert(document.body, 'Successfully backed-up the whole file system.');
+                    alertExists.primary();
+                    popupAlert(
+                        document.body,
+                        'Success',
+                        'Backed-up the whole file system.'
+                    );
                 } catch (error) {
-                    alertExists.confirm();
-                    popupAlert(document.body, `${error}`);
+                    alertExists.primary();
+                    popupAlert(
+                        document.body,
+                        'Error',
+                        `Failed to back up the whole file system. <-- ${error}`
+                    );
                 }
             });
 
@@ -543,15 +591,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
             recoverButton.addEventListener('click', async () => {
                 closePopup();
-                const alertExists = popupAlert(document.body, 'Recovering the whole file system...', false, false);
+                const alertExists = popupAlert(
+                    document.body,
+                    'Processing',
+                    'Recovering the whole file system...',
+                    false,
+                    false
+                );
                 try {
                     await verifyMyCloudSetup(mycloudIpp, mycloudUserKey);
                     await recoverFSFromMyCloud(mycloudIpp, mycloudUserKey, _fsRoot_, _serialLake_);
-                    alertExists.confirm();
-                    popupAlert(document.body, 'Successfully recovered the whole file system.');
+                    alertExists.primary();
+                    popupAlert(
+                        document.body,
+                        'Success',
+                        'Recovered the whole file system.'
+                    );
                 } catch (error) {
-                    alertExists.confirm();
-                    popupAlert(document.body, `${error}`);
+                    alertExists.primary();
+                    popupAlert(
+                        document.body,
+                        'Error',
+                        `Failed to recover the whole file system. <-- ${error}`
+                    );
                 }
             });
 
@@ -579,6 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         executable: async (_) => {
             popupAlert(
                 currentTerminalCore.getWindowFrame(),
+                '!Alert Title!',
                 'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
             );
         },

@@ -32,48 +32,47 @@ const
     utf8Encoder = new TextEncoder(),
     /**
      * This function pops up an alert window.
-     * If confirmButtonText.length === 0, then the button will not appear!
+     * If primaryButtonText.length === 0, then the button will not appear!
      * @param {HTMLElement} parentHTMLElement
-     * @param {string} alertMessage
-     * @param {boolean} display_confirm_button
-     * @param {boolean} display_cancel_button
      * @param {string} alertTitle
-     * @param {string} confirmButtonText
-     * @param {(function():void) | null} callbackAfterConfirm
-     * @param {string} cancelButtonText
-     * @param {(function():void) | null} callbackAfterCancel
-     * @returns {{confirm: function():void, cancel: function():void}}
+     * @param {string} alertMessage
+     * @param {boolean} display_primary_button
+     * @param {boolean} display_secondary_button
+     * @param {string} primaryButtonText
+     * @param {(function():void) | null} callbackPrimaryButton
+     * @param {string} secondaryButtonText
+     * @param {(function():void) | null} callbackSecondaryButton
+     * @returns {{primary: function():void, secondary: function():void}}
      * @throws {TypeError}
      * */
     popupAlert = (
         parentHTMLElement,
-        alertMessage,
-        display_confirm_button = true, display_cancel_button = false,
-        alertTitle = 'Alert',
-        confirmButtonText = 'Confirm', callbackAfterConfirm = null,
-        cancelButtonText = 'Cancel', callbackAfterCancel = null
+        alertTitle, alertMessage,
+        display_primary_button = true, display_secondary_button = false,
+        primaryButtonText = 'Confirm', callbackPrimaryButton = null,
+        secondaryButtonText = 'Cancel', callbackSecondaryButton = null
     ) => {
         if (!(parentHTMLElement instanceof HTMLElement))
             throw new TypeError('parentHTMLElement must be an HTMLElement.');
-        if (typeof alertMessage !== 'string' || alertMessage.length === 0)
-            throw new TypeError('alertMessage must be a non-empty string.');
-        if (typeof display_confirm_button !== 'boolean')
-            throw new TypeError('display_confirm_button must be a boolean.');
-        if (typeof display_cancel_button !== 'boolean')
-            throw new TypeError('display_cancel_button must be a boolean.');
         if (typeof alertTitle !== 'string' || alertTitle.length < 1 || alertTitle.length > 16)
             throw new TypeError('alertTitle must be a string of length between 1 and 16 (inclusive).');
-        if (display_confirm_button) {
-            if (typeof confirmButtonText !== 'string' || confirmButtonText.length < 1 || confirmButtonText.length > 16)
-                throw new TypeError('confirmButtonText must be a string of length between 1 and 16 (inclusive).');
-            if (typeof callbackAfterConfirm !== 'function' && callbackAfterConfirm !== null)
-                throw new TypeError('callbackAfterConfirm must be a function or null.');
+        if (typeof alertMessage !== 'string' || alertMessage.length === 0)
+            throw new TypeError('alertMessage must be a non-empty string.');
+        if (typeof display_primary_button !== 'boolean')
+            throw new TypeError('display_primary_button must be a boolean.');
+        if (typeof display_secondary_button !== 'boolean')
+            throw new TypeError('display_secondary_button must be a boolean.');
+        if (display_primary_button) {
+            if (typeof primaryButtonText !== 'string' || primaryButtonText.length < 1 || primaryButtonText.length > 16)
+                throw new TypeError('primaryButtonText must be a string of length between 1 and 16 (inclusive).');
+            if (typeof callbackPrimaryButton !== 'function' && callbackPrimaryButton !== null)
+                throw new TypeError('callbackPrimaryButton must be a function or null.');
         }
-        if (display_cancel_button) {
-            if (typeof cancelButtonText !== 'string' || cancelButtonText.length < 1 || cancelButtonText.length > 16)
-                throw new TypeError('cancelButtonText must be a string of length between 1 and 16 (inclusive).');
-            if (typeof callbackAfterCancel !== 'function' && callbackAfterCancel !== null)
-                throw new TypeError('callbackAfterCancel must be a function or null.');
+        if (display_secondary_button) {
+            if (typeof secondaryButtonText !== 'string' || secondaryButtonText.length < 1 || secondaryButtonText.length > 16)
+                throw new TypeError('secondaryButtonText must be a string of length between 1 and 16 (inclusive).');
+            if (typeof callbackSecondaryButton !== 'function' && callbackSecondaryButton !== null)
+                throw new TypeError('callbackSecondaryButton must be a function or null.');
         }
         const divOverlay = document.createElement('div');
         divOverlay.classList.add('popup-overlay');
@@ -103,32 +102,32 @@ const
         };
 
         // exit buttons container
-        if (display_confirm_button || display_cancel_button) {
+        if (display_primary_button || display_secondary_button) {
             const divExitButtonsContainer = document.createElement('div');
             divExitButtonsContainer.classList.add('alert-popup-exit-buttons-container');
-            if (display_confirm_button) {
-                const confirmButton = document.createElement('button');
-                confirmButton.textContent = confirmButtonText;
-                confirmButton.classList.add('button');
-                confirmButton.classList.add('success-button');
-                confirmButton.addEventListener('click', () => {
+            if (display_primary_button) {
+                const primaryButton = document.createElement('button');
+                primaryButton.textContent = primaryButtonText;
+                primaryButton.classList.add('button');
+                primaryButton.classList.add('primary-button');
+                primaryButton.addEventListener('click', () => {
                     closePopup();
-                    if (callbackAfterConfirm !== null)
-                        callbackAfterConfirm();
+                    if (callbackPrimaryButton !== null)
+                        callbackPrimaryButton();
                 });
-                divExitButtonsContainer.appendChild(confirmButton);
+                divExitButtonsContainer.appendChild(primaryButton);
             }
-            if (display_cancel_button) {
-                const cancelButton = document.createElement('button');
-                cancelButton.textContent = cancelButtonText;
-                cancelButton.classList.add('button');
-                cancelButton.classList.add('secondary-button');
-                cancelButton.addEventListener('click', () => {
+            if (display_secondary_button) {
+                const secondaryButton = document.createElement('button');
+                secondaryButton.textContent = secondaryButtonText;
+                secondaryButton.classList.add('button');
+                secondaryButton.classList.add('secondary-button');
+                secondaryButton.addEventListener('click', () => {
                     closePopup();
-                    if (callbackAfterCancel !== null)
-                        callbackAfterCancel();
+                    if (callbackSecondaryButton !== null)
+                        callbackSecondaryButton();
                 });
-                divExitButtonsContainer.appendChild(cancelButton);
+                divExitButtonsContainer.appendChild(secondaryButton);
             }
             divAlertPopup.appendChild(divExitButtonsContainer);
         }
@@ -138,15 +137,15 @@ const
         parentHTMLElement.appendChild(divAlertPopup);
 
         return {
-            confirm: () => {
+            primary: () => {
                 closePopup();
-                if (display_confirm_button && callbackAfterConfirm !== null)
-                    callbackAfterConfirm();
+                if (display_primary_button && callbackPrimaryButton !== null)
+                    callbackPrimaryButton();
             },
-            cancel: () => {
+            secondary: () => {
                 closePopup();
-                if (display_cancel_button && callbackAfterCancel !== null)
-                    callbackAfterCancel();
+                if (display_secondary_button && callbackSecondaryButton !== null)
+                    callbackSecondaryButton();
             }
         };
     },
