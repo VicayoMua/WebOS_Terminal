@@ -217,30 +217,7 @@ body.dark-body-mode {
 }
 
 .additional-buttons button {
-    background-color: var(--accent-color);
-    color: var(--accent-color-contrast);
-    padding: 12px 16px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-    box-shadow: 0 6px 14px rgba(124, 58, 237, 0.25);
     margin-bottom: 6px;
-}
-
-.additional-buttons button:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-}
-
-.additional-buttons button:active {
-    transform: translateY(0);
-}
-
-.additional-buttons button:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 4px var(--ring-color);
 }
 
 /* Styles for the <footer> */

@@ -109,7 +109,8 @@ const
             if (display_confirm_button) {
                 const confirmButton = document.createElement('button');
                 confirmButton.textContent = confirmButtonText;
-                confirmButton.classList.add('alert-popup-confirm-button');
+                confirmButton.classList.add('button');
+                confirmButton.classList.add('success-button');
                 confirmButton.addEventListener('click', () => {
                     closePopup();
                     if (callbackAfterConfirm !== null)
@@ -120,7 +121,8 @@ const
             if (display_cancel_button) {
                 const cancelButton = document.createElement('button');
                 cancelButton.textContent = cancelButtonText;
-                cancelButton.classList.add('alert-popup-cancel-button');
+                cancelButton.classList.add('button');
+                cancelButton.classList.add('secondary-button');
                 cancelButton.addEventListener('click', () => {
                     closePopup();
                     if (callbackAfterCancel !== null)
@@ -204,10 +206,12 @@ const
         const divExitButtonsContainer = document.createElement('div');
         divExitButtonsContainer.classList.add('ace-editor-exit-buttons-container');
         const saveButton = document.createElement('button');
-        saveButton.classList.add('ace-editor-save-button');
+        saveButton.classList.add('button');
+        saveButton.classList.add('success-button');
         saveButton.textContent = '💾 Save';
         const cancelButton = document.createElement('button');
-        cancelButton.classList.add('ace-editor-cancel-button');
+        cancelButton.classList.add('button');
+        cancelButton.classList.add('secondary-button');
         cancelButton.textContent = '✖ Cancel';
         saveButton.addEventListener('click', () => {
             callbackToSaveFile(aceEditorObject.getValue());
@@ -1892,13 +1896,6 @@ class TerminalCore {
         // write to window object
         this.#xtermObj.write(content);
         return content.length;
-    }
-
-    /**
-     *
-     * */
-    printsToWindow() {
-        //
     }
 
     /**

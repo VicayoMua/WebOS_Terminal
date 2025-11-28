@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             /** @type {HTMLButtonElement} */
             button_to_recover_from_mycloud_server = document.getElementById('button-to-recover-from-mycloud-server');
 
+        // localStorage.getItem()
         button_to_switch_theme.addEventListener('click', () => {
             button_to_switch_theme.innerText = document.body.classList.toggle('dark-body-mode') ? '☀️' : '🌙';
             // focus on the terminal window
@@ -314,11 +315,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const registerButton = document.createElement('button');
             registerButton.textContent = '📝 Register';
-            registerButton.classList.add('mycloud-popup-register-button');
+            registerButton.classList.add('button');
+            registerButton.classList.add('primary-button');
 
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
-            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.classList.add('button');
+            cancelButton.classList.add('secondary-button');
 
             registerButton.addEventListener('click', async () => {
                 closePopup();
@@ -421,11 +424,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const backupButton = document.createElement('button');
             backupButton.textContent = '🗄️ Backup';
-            backupButton.classList.add('mycloud-popup-backup-button');
+            backupButton.classList.add('button');
+            backupButton.classList.add('primary-button');
 
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
-            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.classList.add('button');
+            cancelButton.classList.add('secondary-button');
 
             backupButton.addEventListener('click', async () => {
                 closePopup();
@@ -528,11 +533,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const recoverButton = document.createElement('button');
             recoverButton.textContent = '🔄 Recover';
-            recoverButton.classList.add('mycloud-popup-recover-button');
+            recoverButton.classList.add('button');
+            recoverButton.classList.add('primary-button');
 
             const cancelButton = document.createElement('button');
             cancelButton.textContent = '✖ Cancel';
-            cancelButton.classList.add('mycloud-popup-cancel-button');
+            cancelButton.classList.add('button');
+            cancelButton.classList.add('secondary-button');
 
             recoverButton.addEventListener('click', async () => {
                 closePopup();
@@ -615,10 +622,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     commandName = parameters[0],
                     commandObject = _supportedCommands_[commandName];
                 if (commandObject === undefined) {
-                    currentTerminalCore.printToWindow(` --> Command '${commandName}' is not supported!`, RGBColor.red);
+                    currentTerminalCore.printToWindow(`Command '${commandName}' is not supported!`, RGBColor.red);
                 } else {
-                    currentTerminalCore.printToWindow(' --> ');
-                    currentTerminalCore.printToWindow(commandObject.description, null, null, false, '        ');
+                    currentTerminalCore.printToWindow(` --> ${commandObject.description}`, null, null, false, '        ');
                 }
                 return;
             }
