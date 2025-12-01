@@ -664,18 +664,6 @@ document.addEventListener('DOMContentLoaded', () => {
         button_to_open_new_terminal_tab.click();
     }
 
-    _supportedCommands_['tt'] = {
-        is_async: true,
-        executable: async (_) => {
-            popupAlert(
-                currentTerminalCore.getWindowFrame(),
-                '!Alert Title!',
-                'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
-            );
-        },
-        description: ''
-    }
-
     // Finished
     _supportedCommands_['hello'] = {
         is_async: false,
@@ -1093,26 +1081,61 @@ document.addEventListener('DOMContentLoaded', () => {
             '       download -d [directory_path]'
     };
 
+    // Update Needed
+    _supportedCommands_['wget'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['zip'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['omedia'] = {
+        is_async: true,
+        executable: async (parameters) => {
+            //
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['towasm'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
+
+    // Update Needed
+    _supportedCommands_['runwasm'] = {
+        executable: (parameters) => {
+        },
+        description: ''
+    }
+
+    _supportedCommands_['tt'] = {
+        is_async: true,
+        executable: async (_) => {
+            popupAlert(
+                currentTerminalCore.getWindowFrame(),
+                '!Alert Title!',
+                'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
+            );
+        },
+        description: ''
+    }
+
     // // Update!!!
     // _supportedCommands_['ping'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-
-    // // Update!!!
-    // _supportedCommands_['wget'] = {
-    //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
-    //     },
-    //     description: ''
-    // }
-
-    // // Update!!!
-    // _supportedCommands_['zip'] = {
     //     is_async: true,
     //     executable: async (parameters) => {
     //         //
@@ -1128,34 +1151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //     },
     //     description: ''
     // }
-
-    // Update Needed
-    _supportedCommands_['jstow'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
-
-    // // Update Needed
-    // _supportedCommands_['cpptow'] = {
-    //     executable: (parameters) => {
-    //     },
-    //     description: ''
-    // }
-
-    // // Update Needed
-    // _supportedCommands_['pytow'] = {
-    //     executable: (parameters) => {
-    //     },
-    //     description: ''
-    // }
-
-    // Update Needed
-    _supportedCommands_['wasm'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
 
     // _supportedCommands_[''] = {
     //     executable: (parameters) => {},

@@ -10,18 +10,17 @@ import multer from 'multer';
 import express from 'express';
 import cors from 'cors';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const sqlite3 = sqlite3Module.verbose();
-const SQLITE3_DB_PATH = path.join(__dirname, 'MyCloud.db');
-const database = new sqlite3.Database(
-    SQLITE3_DB_PATH,
-    sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
-    (error) => {
-        if (error) console.error(`Failed to open the database: ${error.message}`);
-    }
-);
+const
+    __filename = fileURLToPath(import.meta.url),
+    __dirname = dirname(__filename),
+    sqlite3 = sqlite3Module.verbose(),
+    database = new sqlite3.Database(
+        path.join(__dirname, 'MyCloud.db'),
+        sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
+        (error) => {
+            if (error) console.error(`Failed to open the database: ${error.message}`);
+        }
+    );
 
 /*
 * Initialize the database
@@ -396,7 +395,7 @@ app.use((error, req, res, next) => {
 {
     /**
      * This POST request
-     *      compiles .js file to .wasm file
+     *      compiles .js/.c/.cpp/.py file to .wasm file/////
      *
      * req:
      *      content            ---> req.file
@@ -409,42 +408,6 @@ app.use((error, req, res, next) => {
      *      content            when success
      * */
     app.post('/mycloud/compile/javascript', multerUpload.single('content'), async (req, res) => {
-
-    });
-
-    /**
-     * This POST request
-     *      compiles .c/.cpp file to .wasm file
-     *
-     * req:
-     *      content            ---> req.file
-     *      (file_size)        <--- req.file
-     *
-     * res.body:
-     *      error              when failure
-     *
-     * res.arrayBuffer:
-     *      content            when success
-     * */
-    app.post('/mycloud/compile/cpp', multerUpload.single('content'), async (req, res) => {
-
-    });
-
-    /**
-     * This POST request
-     *      compiles .py file to .wasm file
-     *
-     * req:
-     *      content            ---> req.file
-     *      (file_size)        <--- req.file
-     *
-     * res.body:
-     *      error              when failure
-     *
-     * res.arrayBuffer:
-     *      content            when success
-     * */
-    app.post('/mycloud/compile/python', multerUpload.single('content'), async (req, res) => {
 
     });
 }
