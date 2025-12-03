@@ -1,8 +1,4 @@
-# 326_Mini_Terminal
-
-## Team Number
-
-**Project Team 1 (Online)**
+# WebOS Terminal
 
 ## Project Description
 
@@ -40,9 +36,5 @@
 
 ## Team Member(s)
 
-- **Vicayo Zhang** – Project Manager & Core Service Developer
-    - First Issue To Work ON: Basic terminal input and output logics
-    - Second Issue To Work ON: Log recording logics
-    - Third Issue To Work ON: file system simulation logics
-    - Fourth Issue To Work ON: some demo on-terminal applications/commands (hello, help, man, and echo)
+- **Vicayo Zhang** – Project Manager & Developer
 
