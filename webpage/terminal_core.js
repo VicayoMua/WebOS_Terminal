@@ -436,7 +436,7 @@ const
     };
 
 /**
- * This structure represents the space, which serial numers are picked from.
+ * This structure represents the space, which serial numbers are picked from.
  * Methods may throw Errors due to illegal inputs.
  * */
 class SerialLake {
@@ -470,6 +470,7 @@ class SerialLake {
     }
 
     /**
+     * This method generates a new _unique_ serial number.
      * @returns {string}
      * @throws {Error}
      * */
@@ -511,7 +512,12 @@ class File {
      * @param {string | undefined} updated_at
      * @throws {TypeError}
      * */
-    constructor(fileSerial, content, created_at = undefined, updated_at = undefined) {
+    constructor(
+        fileSerial,
+        content,
+        created_at = undefined,
+        updated_at = undefined
+    ) {
         if (typeof fileSerial !== 'string' || !legalFileSerialRegExp.test(fileSerial))
             throw new TypeError('File serial must be a string that follows the keyname requirements.');
         if (!(content instanceof ArrayBuffer))
@@ -597,10 +603,10 @@ class File {
         } catch (error) {
             throw new Error(`Failed to load ZIP file. <-- ${error}`);
         }
-        
+
         // Create a new root Folder instance to hold the extracted contents
         const rootFolder = new Folder(false);
-        
+
         // // Helper function to get or create a folder path
         // const getOrCreateFolder = (folderPath) => {
         //     if (folderPath === '' || folderPath === '/') {
@@ -1855,7 +1861,13 @@ class TerminalCore {
      * @param {Folder} fsRoot
      * @param {Record<string, {is_async: boolean, executable: function(string[]):void, description: string}>} supportedCommands
      * */
-    constructor(xtermObj, terminalWindowFrame, viewSwitchButton, fsRoot, supportedCommands) {
+    constructor(
+        xtermObj,
+        terminalWindowFrame,
+        viewSwitchButton,
+        fsRoot,
+        supportedCommands
+    ) {
         this.#xtermObj = xtermObj;
         this.#terminalWindowFrame = terminalWindowFrame;
         this.#viewSwitchButton = viewSwitchButton;
@@ -2115,7 +2127,13 @@ class TerminalCore {
      * @returns {number}
      * @throws {TypeError}
      * */
-    printToWindow(content, fontColor = null, backgroundColor = null, prefix_first_line = false, prefixPerLine = '   ') {
+    printToWindow(
+        content,
+        fontColor = null,
+        backgroundColor = null,
+        prefix_first_line = false,
+        prefixPerLine = '   '
+    ) {
         if (typeof content !== 'string' || content.length === 0)
             throw new TypeError('content must be a non-empty string.');
         // if (content.indexOf('\r') !== -1)
@@ -2213,7 +2231,7 @@ class TerminalCore {
 
 const
     /**
-     * This function converts <object> to <FormData>
+     * This function parses <object> to <FormData>
      * @param {Object} object
      * @returns {FormData}
      * @throws {TypeError}

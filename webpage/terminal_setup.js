@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // focus on the terminal window
             currentTerminalCore.getWindowTextArea().focus();
         });
+        button_to_open_new_terminal_tab.click(); // automatically open Tab #1
 
         button_to_save_terminal_log.addEventListener('click', () => {
             const
@@ -267,12 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
             input.click();
         });
 
-        if (localStorage.getItem('mini-terminal-mycloud-ipp') === null) {
+        if (localStorage.getItem('mini-terminal-mycloud-ipp') === null)
             localStorage.setItem('mini-terminal-mycloud-ipp', '127.0.0.1:80');
-        }
-        if (localStorage.getItem('mini-terminal-mycloud-user-key') === null) {
+        if (localStorage.getItem('mini-terminal-mycloud-user-key') === null)
             localStorage.setItem('mini-terminal-mycloud-user-key', '');
-        }
 
         button_to_register_on_mycloud_server.addEventListener('click', () => {
             // create overlay
@@ -660,9 +659,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             ippInput.focus();
         });
-
-        // Automatically Open Window #1
-        button_to_open_new_terminal_tab.click();
     }
 
     // Finished
@@ -1149,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: zip [zip_file_path] [folder_path]',
     }
 
-    // // Update!!!
+    // // Update Needed
     // _supportedCommands_['unzip'] = {
     //     is_async: true,
     //     executable: async (parameters) => {
