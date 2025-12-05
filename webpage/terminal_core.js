@@ -363,6 +363,8 @@ const
 
         terminalWindowFrame.appendChild(divOverlay);
         terminalWindowFrame.appendChild(divMediaPlayerWindow);
+
+        closeButton.focus();
     };
 
 /**
