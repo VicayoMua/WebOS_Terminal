@@ -250,8 +250,6 @@ const
         '.mp3': 'audio/mpeg',
         '.aac': 'audio/aac',
         '.m4a': 'audio/mp4',
-        '.mp4': 'audio/mp4',
-        '.ogg': 'audio/ogg',
         '.oga': 'audio/ogg',
         '.opus': 'audio/ogg',
         '.wav': 'audio/wav',

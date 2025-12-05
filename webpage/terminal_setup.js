@@ -1186,7 +1186,9 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         },
         description: 'Open a media file in a separate window.\n' +
-            'Supported format: .jpg/.jpeg\n' +
+            'Supported video format:   .mp4/.m4v/.mov/.webm/.mkv/.ogv/.ogg/.hevc\n' +
+            '          audio format:   .mp3/.aac/.m4a/.oga/.opus/.wav/.flac/.aiff/.aif\n' +
+            '          picture format: .jpg/.jpeg/.png/.gif/.webp/.avif/.svg/.bmp/.ico/.tiff/.tif\n' +
             'Usage: omedia [media_file_path]'
     }
 
