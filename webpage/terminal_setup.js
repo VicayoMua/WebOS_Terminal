@@ -9,6 +9,7 @@ import {
     utf8Encoder,
     popupAlert,
     popupFileEditor,
+    popupMediaPlayer,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
@@ -1035,12 +1036,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const
                             [fileDir, fileName] = extractDirAndKeyName(parameters[1]),
-                            url = URL.createObjectURL(
-                                new Blob(
-                                    [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
-                                    {type: 'application/octet-stream'}
-                                )
-                            ),
+                            url = URL.createObjectURL(new Blob(
+                                [tfp.gotoPath(fileDir).getFile(fileName).getContent()],
+                                {type: 'application/octet-stream'}
+                            )),
                             link = document.createElement('a');
                         link.href = url;
                         link.download = fileName; // the filename the user sees
@@ -1154,9 +1153,41 @@ document.addEventListener('DOMContentLoaded', () => {
     _supportedCommands_['omedia'] = {
         is_async: true,
         executable: async (parameters) => {
-            //
+            if (parameters.length === 1) {
+                try {
+                    const
+                        mediaFilePath = parameters[0],
+                        [mediaFileFolderPath, mediaFileName] = extractDirAndKeyName(mediaFilePath),
+                        mediaFileContent = currentTerminalCore.getCurrentFolderPointer().duplicate()
+                            .gotoPath(mediaFileFolderPath)
+                            .getFile(mediaFileName)
+                            .getContent();
+                    await new Promise((resolve) => {
+                        popupMediaPlayer(
+                            currentTerminalCore.getWindowFrame(),
+                            mediaFileName,
+                            mediaFileContent,
+                            () => {
+                                resolve(undefined);
+                                currentTerminalCore.getWindowTextArea().focus();
+                            }
+                        );
+                        currentTerminalCore.printToWindow(` --> Opened a media player.`, RGBColor.green);
+                    });
+                } catch (error) {
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: omedia [media_file_path]',
+                RGBColor.red
+            );
         },
-        description: ''
+        description: 'Open a media file in a separate window.\n' +
+            'Supported format: .jpg/.jpeg\n' +
+            'Usage: omedia [media_file_path]'
     }
 
     // Update Needed

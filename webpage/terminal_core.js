@@ -178,6 +178,7 @@ const
 
         const divAceEditorWindow = document.createElement('div');
         divAceEditorWindow.classList.add('ace-editor-window');
+
         // the title of the editor window
         const h3Title = document.createElement('h3');
         h3Title.classList.add('ace-editor-title');
@@ -234,6 +235,136 @@ const
 
         terminalWindowFrame.appendChild(divOverlay);
         terminalWindowFrame.appendChild(divAceEditorWindow);
+    },
+    videoTypes = {
+        '.mp4': 'video/mp4',
+        '.m4v': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.webm': 'video/webm',
+        '.mkv': 'video/x-matroska',
+        '.ogv': 'video/ogg',
+        '.ogg': 'video/ogg',
+        '.hevc': 'video/hevc'
+    },
+    audioTypes = {
+        '.mp3': 'audio/mpeg',
+        '.aac': 'audio/aac',
+        '.m4a': 'audio/mp4',
+        '.mp4': 'audio/mp4',
+        '.ogg': 'audio/ogg',
+        '.oga': 'audio/ogg',
+        '.opus': 'audio/ogg',
+        '.wav': 'audio/wav',
+        '.flac': 'audio/flac',
+        '.aiff': 'audio/aiff',
+        '.aif': 'audio/aiff'
+    },
+    pictureTypes = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.avif': 'image/avif',
+        '.svg': 'image/svg+xml',
+        '.bmp': 'image/bmp',
+        '.ico': 'image/x-icon',
+        '.tiff': 'image/tiff',
+        '.tif': 'image/tiff'
+    },
+    /**
+     * This function pops up the media player window for the <omedia> command.
+     * @param {HTMLDivElement} terminalWindowFrame
+     * @param {string} mediaFileName
+     * @param {ArrayBuffer} mediaFileContent
+     * @param {function():void} callbackToCloseMediaPlayer
+     * @returns {void}
+     * @throws {TypeError | Error}
+     * */
+    popupMediaPlayer = (
+        terminalWindowFrame,
+        mediaFileName,
+        mediaFileContent,
+        callbackToCloseMediaPlayer
+    ) => {
+        if (!(terminalWindowFrame instanceof HTMLDivElement))
+            throw new TypeError('terminalWindowFrame must be an HTMLDivElement');
+        if (typeof mediaFileName !== 'string' || mediaFileName.length < 3)
+            throw new TypeError('mediaFileName must be a string of length at least 3.');
+        const periodIndex = mediaFileName.lastIndexOf('.');
+        if (periodIndex === -1 || periodIndex === 0 || periodIndex === mediaFileName.length - 1)
+            throw new TypeError('mediaFileName must specify a file extension.');
+        if (!(mediaFileContent instanceof ArrayBuffer))
+            throw new TypeError('mediaFileContent must be an ArrayBuffer');
+        if (typeof callbackToCloseMediaPlayer !== 'function')
+            throw new TypeError('callbackToCloseMediaPlayer must be a function.');
+        const divOverlay = document.createElement('div');
+        divOverlay.classList.add('popup-overlay');
+        divOverlay.addEventListener('click', () => undefined);
+
+        const divMediaPlayerWindow = document.createElement('div');
+        divMediaPlayerWindow.classList.add('media-player-window');
+
+        // the title of the media player window
+        const h3Title = document.createElement('h3');
+        h3Title.classList.add('media-player-title');
+        h3Title.innerText = `Playing Media File: ${mediaFileName}`;
+        divMediaPlayerWindow.appendChild(h3Title);
+
+        // media player container
+        const divMediaPlayerContainer = document.createElement('div');
+        divMediaPlayerContainer.classList.add('media-player-container');
+        const
+            fileExtension = mediaFileName.substring(periodIndex),
+            [url, mediaElement] = (function () {
+                if (videoTypes[fileExtension] !== undefined) {
+                    return [
+                        URL.createObjectURL(new Blob([mediaFileContent], {type: videoTypes[fileExtension]})),
+                        document.createElement('video')
+                    ];
+                }
+                if (audioTypes[fileExtension] !== undefined) {
+                    return [
+                        URL.createObjectURL(new Blob([mediaFileContent], {type: audioTypes[fileExtension]})),
+                        document.createElement('audio')
+                    ];
+                }
+                if (pictureTypes[fileExtension] !== undefined) {
+                    return [
+                        URL.createObjectURL(new Blob([mediaFileContent], {type: pictureTypes[fileExtension]})),
+                        document.createElement('img')
+                    ];
+                }
+                throw new Error(`The file extension ${fileExtension} is not supported.`);
+            })();
+        mediaElement.classList.add('media-player-element');
+        mediaElement.src = url;
+        mediaElement.controls = true;
+        divMediaPlayerContainer.appendChild(mediaElement);
+        divMediaPlayerWindow.appendChild(divMediaPlayerContainer);
+
+        // exit buttons container
+        const divExitButtonsContainer = document.createElement('div');
+        divExitButtonsContainer.classList.add('media-player-exit-buttons-container');
+        const closeButton = document.createElement('button');
+        closeButton.classList.add('button');
+        closeButton.classList.add('secondary-button');
+        closeButton.textContent = '✖ Close';
+        closeButton.addEventListener('click', () => {
+            URL.revokeObjectURL(url);
+            callbackToCloseMediaPlayer();
+            divMediaPlayerWindow.classList.add('fade-out');
+            divOverlay.classList.add('fade-out');
+            setTimeout(() => {
+                divMediaPlayerWindow.remove();
+                divOverlay.remove();
+            }, 200); // Match animation duration
+        });
+        divExitButtonsContainer.appendChild(closeButton);
+        divMediaPlayerWindow.appendChild(divExitButtonsContainer);
+
+        terminalWindowFrame.appendChild(divOverlay);
+        terminalWindowFrame.appendChild(divMediaPlayerWindow);
     };
 
 /**
@@ -949,7 +1080,7 @@ class Folder {
 /**
  * This function extracts the directory-path and key-name from <path>.
  * @param {string} path
- * @returns {[string, string]}
+ * @returns {[string, string]} [fileFolderPath, fileName]
  * */
 function extractDirAndKeyName(path) {
     const index = path.lastIndexOf('/');
@@ -2298,6 +2429,7 @@ export {
     utf8Encoder,
     popupAlert,
     popupFileEditor,
+    popupMediaPlayer,
     legalFileSystemKeyNameRegExp,
     legalFileSerialRegExp,
     SerialLake,
