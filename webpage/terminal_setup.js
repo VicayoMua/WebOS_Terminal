@@ -1117,13 +1117,37 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: wget [URL] [file_path]'
     }
 
-    // Update Needed
+    // Finished
     _supportedCommands_['zip'] = {
         is_async: true,
         executable: async (parameters) => {
-            //
+            if (parameters.length === 2) {
+                try {
+                    const
+                        [zipFilePath, folderPath] = parameters,
+                        zipBlob = await currentTerminalCore.getCurrentFolderPointer().duplicate()
+                            .gotoPath(folderPath)
+                            .getZipBlob(),
+                        arrayBuffer = await zipBlob.arrayBuffer(),
+                        [zipFileFolderPath, zipFileName] = extractDirAndKeyName(zipFilePath),
+                        [zipFile, _] = currentTerminalCore.getCurrentFolderPointer().duplicate()
+                            .gotoPath(zipFileFolderPath)
+                            .createFile(true, zipFileName, _serialLake_.generateNext());
+                    zipFile.setContent(arrayBuffer, false);
+                    currentTerminalCore.printToWindow(' --> Created a zip file.', RGBColor.green);
+                } catch (error) {
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: zip [zip_file_path] [folder_path]',
+                RGBColor.red
+            );
         },
-        description: ''
+        description: 'Create a zip file from a folder path.\n' +
+            'Usage: zip [zip_file_path] [folder_path]',
     }
 
     // Update Needed
