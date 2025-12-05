@@ -342,7 +342,7 @@ const
         // the title of the media player window
         const h3Title = document.createElement('h3');
         h3Title.classList.add('media-player-title');
-        h3Title.innerText = `Playing Media File: ${mediaFileName}`;
+        h3Title.innerText = `Playing Media: ${mediaFileName}`;
         divMediaPlayerWindow.appendChild(h3Title);
 
         // media player container
