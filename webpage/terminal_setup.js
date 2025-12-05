@@ -1081,13 +1081,40 @@ document.addEventListener('DOMContentLoaded', () => {
             '       download -d [directory_path]'
     };
 
-    // Update Needed
+    // Finished
     _supportedCommands_['wget'] = {
         is_async: true,
         executable: async (parameters) => {
-            //
+            if (parameters.length === 2) {
+                try {
+                    const
+                        [URL, filePath] = parameters,
+                        res = await fetch(URL);
+                    if (res.status !== 200) {
+                        currentTerminalCore.printToWindow('Failed to download the file.', RGBColor.red);
+                        return;
+                    }
+                    const
+                        [fileFolderPath, fileName] = extractDirAndKeyName(filePath),
+                        arrayBuffer = await res.arrayBuffer(),
+                        [file, _] = currentTerminalCore.getCurrentFolderPointer().duplicate()
+                            .gotoPath(fileFolderPath)
+                            .createFile(true, fileName, _serialLake_.generateNext());
+                    file.setContent(arrayBuffer, false);
+                    currentTerminalCore.printToWindow(' --> Downloaded a file.', RGBColor.green);
+                } catch (error) {
+                    currentTerminalCore.printToWindow(`${error}`, RGBColor.red);
+                }
+                return;
+            }
+            currentTerminalCore.printToWindow(
+                'Wrong grammar!\n' +
+                'Usage: wget [URL] [file_path]',
+                RGBColor.red
+            );
         },
-        description: ''
+        description: 'Download a single file from a URL to a path.\n' +
+            'Usage: wget [URL] [file_path]'
     }
 
     // Update Needed
