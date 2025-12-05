@@ -1150,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Finished
-    _supportedCommands_['omedia'] = {
+    _supportedCommands_['media'] = {
         is_async: true,
         executable: async (parameters) => {
             if (parameters.length === 1) {
@@ -1181,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             currentTerminalCore.printToWindow(
                 'Wrong grammar!\n' +
-                'Usage: omedia [media_file_path]',
+                'Usage: media [media_file_path]',
                 RGBColor.red
             );
         },
@@ -1189,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Supported video format:   .mp4/.m4v/.mov/.webm/.mkv/.ogv/.ogg/.hevc\n' +
             '          audio format:   .mp3/.aac/.m4a/.oga/.opus/.wav/.flac/.aiff/.aif\n' +
             '          picture format: .jpg/.jpeg/.png/.gif/.webp/.avif/.svg/.bmp/.ico/.tiff/.tif\n' +
-            'Usage: omedia [media_file_path]'
+            'Usage: media [media_file_path]'
     }
 
     // Update Needed
