@@ -13,6 +13,34 @@ import {SerializeAddon} from "./js_libs/xterm-addon-serialize.js";
 // import JSZip class
 import JSZip from "./js_libs/jszip.js";
 
+export {
+    Terminal,
+    FitAddon,
+    SerializeAddon,
+    // JSZip,
+    getISOTimeString,
+    randomInt,
+    utf8Decoder,
+    utf8Encoder,
+    popupAlert,
+    popupFileEditor,
+    popupMediaPlayer,
+    legalFileSystemKeyNameRegExp,
+    legalFileSerialRegExp,
+    SerialLake,
+    File,
+    Folder,
+    extractDirAndKeyName,
+    TerminalFolderPointer,
+    RGBColor,
+    TerminalCore,
+    formData,
+    registerUserKeyToMyCloud,
+    verifyMyCloudSetup,
+    backupFSToMyCloud,
+    recoverFSFromMyCloud
+};
+
 const
     /**
      * This function returns a string representing this date in the date time string format, UTC.
@@ -2431,31 +2459,3 @@ const
             })(plainRootFolderObject, fsRoot.clear());
         }
     };
-
-export {
-    Terminal,
-    FitAddon,
-    SerializeAddon,
-    // JSZip,
-    getISOTimeString,
-    randomInt,
-    utf8Decoder,
-    utf8Encoder,
-    popupAlert,
-    popupFileEditor,
-    popupMediaPlayer,
-    legalFileSystemKeyNameRegExp,
-    legalFileSerialRegExp,
-    SerialLake,
-    File,
-    Folder,
-    extractDirAndKeyName,
-    TerminalFolderPointer,
-    RGBColor,
-    TerminalCore,
-    formData,
-    registerUserKeyToMyCloud,
-    verifyMyCloudSetup,
-    backupFSToMyCloud,
-    recoverFSFromMyCloud
-};
