@@ -1095,25 +1095,17 @@ class Folder {
      * @returns {Promise<Blob>}
      * */
     getZipBlob() {
-        /**
-         * This method helps recursively add folder content to the zip file
-         * @param {Folder} folderObject
-         * @param {Object} zipObject
-         * @returns {void}
-         * */
-        const addFolderToZip = (folderObject, zipObject) => {
+        // Create a new JSZip instance to generate the .zip file
+        const zip = new JSZip();
+        // Start the process from the current folder
+        (function addFolderToZip(folderObject, zipObject) {
             Object.entries(folderObject.getFiles()).forEach(([fileName, file]) => {
                 zipObject.file(fileName, file.getContent(), {binary: true});
             });
             Object.entries(folderObject.getSubfolders()).forEach(([subfolderName, subfolderObject]) => {
                 addFolderToZip(subfolderObject, zipObject.folder(subfolderName));
             });
-        };
-
-        // Create a new JSZip instance to generate the .zip file
-        const zip = new JSZip();
-        // Start the process from the current folder
-        addFolderToZip(this, zip); // '' means root of the zip
+        })(this, zip);
         // Generate the zip file as a Blob
         return zip.generateAsync({type: 'blob'});
     }

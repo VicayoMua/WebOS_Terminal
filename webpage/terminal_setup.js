@@ -1149,6 +1149,15 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: zip [zip_file_path] [folder_path]',
     }
 
+    // // Update!!!
+    // _supportedCommands_['unzip'] = {
+    //     is_async: true,
+    //     executable: async (parameters) => {
+    //         //
+    //     },
+    //     description: ''
+    // }
+
     // Finished
     _supportedCommands_['media'] = {
         is_async: true,
@@ -1206,29 +1215,20 @@ document.addEventListener('DOMContentLoaded', () => {
         description: ''
     }
 
-    _supportedCommands_['tt'] = {
-        is_async: true,
-        executable: async (_) => {
-            popupAlert(
-                currentTerminalCore.getWindowFrame(),
-                '!Alert Title!',
-                'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
-            );
-        },
-        description: ''
-    }
-
-    // // Update!!!
-    // _supportedCommands_['ping'] = {
+    // _supportedCommands_['tt'] = {
     //     is_async: true,
-    //     executable: async (parameters) => {
-    //         //
+    //     executable: async (_) => {
+    //         popupAlert(
+    //             currentTerminalCore.getWindowFrame(),
+    //             '!Alert Title!',
+    //             'Tdsfhfis adsfis thdsafasdfef alertedfdsfdsafadsfdsafsdafdsafsadfdffasfadsf message.'
+    //         );
     //     },
     //     description: ''
     // }
 
     // // Update!!!
-    // _supportedCommands_['unzip'] = {
+    // _supportedCommands_['ping'] = {
     //     is_async: true,
     //     executable: async (parameters) => {
     //         //

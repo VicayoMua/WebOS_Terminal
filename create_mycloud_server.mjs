@@ -407,7 +407,7 @@ app.use((error, req, res, next) => {
      * res.arrayBuffer:
      *      content            when success
      * */
-    app.post('/mycloud/compile/javascript', multerUpload.single('content'), async (req, res) => {
+    app.post('/mycloud/compile/', multerUpload.single('content'), async (req, res) => {
 
     });
 }
