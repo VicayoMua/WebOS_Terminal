@@ -270,6 +270,12 @@ const
         '.tiff': 'image/tiff',
         '.tif': 'image/tiff'
     },
+    documentTypes = {
+        '.pdf': 'application/pdf',
+        '.html': 'text/html',
+        '.htm': 'text/html',
+        '.xml': 'text/xml',
+    },
     /**
      * This function pops up the media player window for the <omedia> command.
      * @param {HTMLDivElement} terminalWindowFrame
@@ -318,26 +324,34 @@ const
                 if (videoTypes[fileExtension] !== undefined) {
                     return [
                         URL.createObjectURL(new Blob([mediaFileContent], {type: videoTypes[fileExtension]})),
-                        document.createElement('video')
+                        document.createElement('video') // HTMLVideoElement
                     ];
                 }
                 if (audioTypes[fileExtension] !== undefined) {
                     return [
                         URL.createObjectURL(new Blob([mediaFileContent], {type: audioTypes[fileExtension]})),
-                        document.createElement('audio')
+                        document.createElement('audio') // HTMLAudioElement
                     ];
                 }
                 if (pictureTypes[fileExtension] !== undefined) {
                     return [
                         URL.createObjectURL(new Blob([mediaFileContent], {type: pictureTypes[fileExtension]})),
-                        document.createElement('img')
+                        document.createElement('img') // HTMLImageElement
+                    ];
+                }
+                if (documentTypes[fileExtension] !== undefined) {
+                    return [
+                        URL.createObjectURL(new Blob([mediaFileContent], {type: documentTypes[fileExtension]})),
+                        document.createElement('iframe') // HTMLIFrameElement
                     ];
                 }
                 throw new Error(`The file extension ${fileExtension} is not supported.`);
             })();
         mediaElement.classList.add('media-player-element');
         mediaElement.src = url;
-        mediaElement.controls = true;
+        if (mediaElement instanceof HTMLVideoElement || mediaElement instanceof HTMLAudioElement) {
+            mediaElement.controls = true;
+        }
         divMediaPlayerContainer.appendChild(mediaElement);
         divMediaPlayerWindow.appendChild(divMediaPlayerContainer);
 
