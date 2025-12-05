@@ -1054,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parameters[0] === '-d') {
                     try {
                         const
-                            url = URL.createObjectURL(await tfp.gotoPath(parameters[1]).getZipBlob()),
+                            url = URL.createObjectURL(await tfp.gotoPath(parameters[1]).getZipBlobPromise()),
                             link = document.createElement('a'),
                             zipFileName = tfp.getFullPath().substring(1).replaceAll('/', '_');
                         link.href = url;
@@ -1126,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         [zipFilePath, folderPath] = parameters,
                         zipBlob = await currentTerminalCore.getCurrentFolderPointer().duplicate()
                             .gotoPath(folderPath)
-                            .getZipBlob(),
+                            .getZipBlobPromise(),
                         arrayBuffer = await zipBlob.arrayBuffer(),
                         [zipFileFolderPath, zipFileName] = extractDirAndKeyName(zipFilePath),
                         [zipFile, _] = currentTerminalCore.getCurrentFolderPointer().duplicate()
@@ -1201,19 +1201,19 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: media [media_file_path]'
     }
 
-    // Update Needed
-    _supportedCommands_['towasm'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
-
-    // Update Needed
-    _supportedCommands_['runwasm'] = {
-        executable: (parameters) => {
-        },
-        description: ''
-    }
+    // // Update Needed
+    // _supportedCommands_['towasm'] = {
+    //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
+    //
+    // // Update Needed
+    // _supportedCommands_['runwasm'] = {
+    //     executable: (parameters) => {
+    //     },
+    //     description: ''
+    // }
 
     // _supportedCommands_['tt'] = {
     //     is_async: true,

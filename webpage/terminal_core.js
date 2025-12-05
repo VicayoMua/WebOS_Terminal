@@ -55,7 +55,9 @@ const
      * */
     randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
     utf8Decoder = new TextDecoder('utf-8'),
-    utf8Encoder = new TextEncoder(),
+    utf8Encoder = new TextEncoder();
+
+const
     /**
      * This function pops up an alert window.
      * If primaryButtonText.length === 0, then the button will not appear!
@@ -414,7 +416,24 @@ const
  * */
 const
     legalFileSystemKeyNameRegExp = /^(?!\.{1,2}$)[^\/\0\b\r]{1,1024}$/,
-    legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/;
+    legalFileSerialRegExp = /^(?:ROOT|[A-Za-z_][A-Za-z0-9_]{127,4096})$/,
+    /**
+     * This function extracts the directory-path and key-name from <path>.
+     * @param {string} path
+     * @returns {[string, string]} [fileFolderPath, fileName]
+     * @throws {TypeError}
+     * */
+    extractDirAndKeyName = (path) => {
+        if (typeof path !== 'string')
+            throw new TypeError('path must be a string');
+        const index = path.lastIndexOf('/');
+        if (index === -1) // <path> is a single filename
+            return ['.', path];
+        if (index === 0) // file is in the ROOT
+            return ['/', path.slice(1)];
+        //     [   parent directory path, immediate key name   ]
+        return [path.substring(0, index), path.substring(index + 1)];
+    };
 
 /**
  * This structure represents the space, which serial numers are picked from.
@@ -560,6 +579,94 @@ class File {
         this.#content = do_copy ? newContent.slice(0) : newContent;
         this.#updated_at = getISOTimeString();
         return this;
+    }
+
+    /**
+     * This method extracts the contents of this file as a ZIP archive and returns a Folder structure.
+     * @param {SerialLake} serialLake - SerialLake instance for generating file serials
+     * @returns {Promise<Folder>}
+     * @throws {TypeError | Error}
+     * */
+    async extractContentsAsZip(serialLake) {
+        if (!(serialLake instanceof SerialLake))
+            throw new TypeError('serialLake must be a SerialLake.');
+        // Use JSZip to load and verify that this file is a zip file
+        let zipObject;
+        try {
+            zipObject = await JSZip.loadAsync(this.getContent());
+        } catch (error) {
+            throw new Error(`Failed to load ZIP file. <-- ${error}`);
+        }
+        
+        // Create a new root Folder instance to hold the extracted contents
+        const rootFolder = new Folder(false);
+        
+        // // Helper function to get or create a folder path
+        // const getOrCreateFolder = (folderPath) => {
+        //     if (folderPath === '' || folderPath === '/') {
+        //         return rootFolder;
+        //     }
+        //
+        //     // Split path and navigate/create folders
+        //     const pathParts = folderPath.split('/').filter(part => part.length > 0);
+        //     let currentFolder = rootFolder;
+        //
+        //     for (const folderName of pathParts) {
+        //         const subfolders = currentFolder.getSubfolders();
+        //         if (subfolders[folderName]) {
+        //             currentFolder = subfolders[folderName];
+        //         } else {
+        //             currentFolder = currentFolder.createSubfolder(false, folderName);
+        //         }
+        //     }
+        //
+        //     return currentFolder;
+        // };
+        //
+        // // Process all files in the ZIP
+        // const filePromises = [];
+        //
+        // for (const [filePath, zipEntry] of Object.entries(zipObject.files)) {
+        //     // Skip directory entries (they are handled when creating folder structure)
+        //     if (zipEntry.dir) {
+        //         continue;
+        //     }
+        //
+        //     // Extract file content as ArrayBuffer
+        //     const contentPromise = zipEntry.async('arraybuffer').then(fileContent => {
+        //         // Get the directory path and filename
+        //         const lastSlashIndex = filePath.lastIndexOf('/');
+        //         const folderPath = lastSlashIndex >= 0 ? filePath.substring(0, lastSlashIndex) : '';
+        //         const fileName = lastSlashIndex >= 0
+        //             ? filePath.substring(lastSlashIndex + 1)
+        //             : filePath;
+        //
+        //         // Validate file name
+        //         if (!legalFileSystemKeyNameRegExp.test(fileName)) {
+        //             throw new Error(`Invalid file name in ZIP: ${fileName}`);
+        //         }
+        //
+        //         // Get or create the parent folder
+        //         const parentFolder = getOrCreateFolder(folderPath);
+        //
+        //         // Generate a file serial and create a File object
+        //         const fileSerial = serialLake.generateNext();
+        //         const file = new File(fileSerial, fileContent);
+        //
+        //         // Add file to the folder
+        //         parentFolder.createFileDangerous(fileName, file);
+        //     }).catch(error => {
+        //         throw new Error(`Failed to extract file ${filePath} from ZIP. <-- ${error}`);
+        //     });
+        //
+        //     filePromises.push(contentPromise);
+        // }
+        //
+        // // Wait for all files to be extracted
+        // await Promise.all(filePromises);
+        //
+        // // Return the Folder instance with extracted contents
+        // return rootFolder;
     }
 }
 
@@ -1094,7 +1201,7 @@ class Folder {
      * This method converts <this> folder to a zip blob using JSZip.
      * @returns {Promise<Blob>}
      * */
-    getZipBlob() {
+    async getZipBlobPromise() {
         // Create a new JSZip instance to generate the .zip file
         const zip = new JSZip();
         // Start the process from the current folder
@@ -1107,23 +1214,8 @@ class Folder {
             });
         })(this, zip);
         // Generate the zip file as a Blob
-        return zip.generateAsync({type: 'blob'});
+        return await zip.generateAsync({type: 'blob'});
     }
-}
-
-/**
- * This function extracts the directory-path and key-name from <path>.
- * @param {string} path
- * @returns {[string, string]} [fileFolderPath, fileName]
- * */
-function extractDirAndKeyName(path) {
-    const index = path.lastIndexOf('/');
-    if (index === -1) // <path> is a single filename
-        return ['.', path];
-    if (index === 0) // file is in the ROOT
-        return ['/', path.slice(1)];
-    //     [   parent directory path, immediate key name   ]
-    return [path.substring(0, index), path.substring(index + 1)];
 }
 
 /**
