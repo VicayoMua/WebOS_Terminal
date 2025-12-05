@@ -1149,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Usage: zip [zip_file_path] [folder_path]',
     }
 
-    // Update Needed
+    // Finished
     _supportedCommands_['omedia'] = {
         is_async: true,
         executable: async (parameters) => {
