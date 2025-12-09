@@ -3,14 +3,14 @@
 ## Project Description
 
 - **Problems:**
-    1. Large universities, like UMass, usually provide ssh server environments, like EdLab, for students to get familiar
-       with Linux-styled commands. However, most students only use the most basic features on EdLab, so the power
-       assumption and the continuous maintenance cost are not worth it.
-    2. Students, who are not enrolled in a university and have no previous experience in installing and using Linux,
-       usually find it hard to install a Linux distribution on their PCs.
+    1.  Large universities usually provide ssh server environments for students to get familiar with Linux-styled 
+        commands. Since only the most basic Linux-commands are frequently used, the power assumption and the 
+        continuous maintenance cost are not worth it.
+    2.  Students, who have no previous experience with Linux, usually find it hard to install a Linux distribution on 
+        their PCs.
 
 - **Solutions:**
-    1. A Linux-terminal simulator accessible with web browsers on mobile devices and PCs can perfectly solve this problem.
+    - A Linux-terminal simulator accessible with web browsers on mobile devices and PCs helps.
 
 - **Key Features:**
     - The Linux-terminal simulator will support the most usual Linux commands, for example, man, ls, pwd, cd, mkdir, 
@@ -22,12 +22,11 @@
 
 ## Team Member(s)
 
-- **Vicayo Zhang** – Project Manager & Developer
+- **Vicayo (Haoran) Zhang** – Project Founder & Developer
 
 ## License
 
 © 2025 Haoran Zhang. All rights reserved.
 
-This code is provided for viewing and learning purposes only.  
-You may not copy, modify, distribute, or use this code in your own projects  
-without my explicit written permission.
+This code is provided for viewing and learning purposes only. You may not copy, modify, distribute, or use this code in 
+your own projects without my explicit written permission.
